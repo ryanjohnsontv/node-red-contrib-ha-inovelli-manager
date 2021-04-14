@@ -5,7 +5,7 @@
     "type": "git",
     "url": "https://github.com/ryanjohnsontv/node-red-contrib-ha-inovelli-manager.git"
   },
-  "description": "Nodes for easily managing scenes and parameters of Inovelli switches paired through various Home Assistant integrations",
+  "description": "Nodes for easily managing scenes, parameters, and notifications of Inovelli switches paired through various Home Assistant integrations",
   "keywords": [
     "inovelli",
     "node-red",
@@ -15,7 +15,8 @@
   ],
   "node-red": {
     "nodes": {
-      "inovelli-notification-manager": "nodes/inovelli-notification-manager.js"
+      "inovelli-notification-manager": "nodes/inovelli-notification-manager.js",
+      "inovelli-led-manager": "nodes/inovelli-led-manager.js"
     }
   },
   "author": "Ryan Johnson",
