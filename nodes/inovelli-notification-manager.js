@@ -81,7 +81,7 @@ module.exports = function (RED) {
           }
         } else if (![8, 16, 24, 25, 49].includes(parameter)) {
           node.error(
-            `Incorrect Switch Value: ${parameter}. Valid values are 8, 16, 24, 25, or 49.`
+            `Incorrect Switch Value: ${parameter}. Valid values are 8, 16, 24, 25, or 49`
           );
           error++;
         }
@@ -127,7 +127,7 @@ module.exports = function (RED) {
       function inputBrightnessCheck(brightness) {
         if (brightness < 0 || brightness > 11) {
           node.error(
-            `Invalid brightness value: ${brightness}. Please enter a value between 0 and 10.`
+            `Invalid brightness value: ${brightness}. Please enter a value between 0 and 10`
           );
           error++;
         }
@@ -211,27 +211,61 @@ module.exports = function (RED) {
                 `Incorrect Effect: ${effect}. Valid effects for this switch type are Off, Solid, Chase, Fast Blink, Slow Blink, or Pulse`
               );
             } else {
-              node.error(`Incorrect Effect: ${effect}, check switch type.`);
+              node.error(`Incorrect Effect: ${effect}, check switch type`);
             }
             error++;
           }
         } else if (![0, 1, 2, 3, 4, 5].includes(effect)) {
-          node.error(`Incorrect Effect: ${effect}. Valid effect range is 0-5.`);
+          node.error(`Incorrect Effect: ${effect}. Valid effect range is 0-5`);
           error++;
         }
         return effect;
       }
 
-      parameter = inputSwitchConvert(parameter);
-      color = inputColorConvert(color);
-      inputBrightnessCheck(brightness);
-      duration = inputDurationConvert(duration);
-      effect = inputEffectConvert(effect, parameter);
+      function inputDomainCheck(domain) {
+        if (!["ozw", "zwave", "zwave_js"].includes(domain)) {
+          node.error(
+            `Invalid Z-Wave domain: ${domain}. Supported domains are zwave, ozw, or zwave_js`
+          );
+          error++;
+        }
+      }
 
-      function sendNotification(domain, service, id, parameter, value) {
+      function sendNotification(service, id) {
         var size = domain === "zwave" ? { size: 4 } : {};
-        if (parameter === 49) {
-          for (parameter = 24; parameter < 26; parameter++) {
+        var value, hsl, keyword, hue;
+        if (clear === true || effect === 0 || duration === 0) {
+          switch (domain) {
+            case "zwave_js":
+              value = 65536;
+              break;
+            default:
+              value = 0;
+              break;
+          }
+          node.status(`Cleared notification!`);
+        } else {
+          hsl = [convert.rgb.hsl(color)[0], 100, 50];
+          keyword = convert.rgb.keyword(convert.hsl.rgb(hsl));
+          hue = parseInt((hsl[0] * (17 / 24)).toFixed(0));
+          value = hue + brightness * 256 + duration * 65536 + effect * 16777216;
+          node.status(`Sent Color: ${keyword}`);
+        }
+        switch (parameter) {
+          case 49:
+            let params = [24, 25];
+            for (let x in params) {
+              parameter = params[x];
+              node.send({
+                payload: {
+                  domain,
+                  service,
+                  data: { ...id, parameter, ...size, value },
+                },
+              });
+            }
+            break;
+          default:
             node.send({
               payload: {
                 domain,
@@ -239,52 +273,28 @@ module.exports = function (RED) {
                 data: { ...id, parameter, ...size, value },
               },
             });
-          }
-        } else {
-          node.send({
-            payload: {
-              domain,
-              service,
-              data: { ...id, parameter, ...size, value },
-            },
-          });
         }
       }
 
+      parameter = inputSwitchConvert(parameter);
+      color = inputColorConvert(color);
+      inputBrightnessCheck(brightness);
+      duration = inputDurationConvert(duration);
+      effect = inputEffectConvert(effect, parameter);
+      inputDomainCheck(domain);
+
       if (error === 0) {
-        const hsl = [convert.rgb.hsl(color)[0], 100, 50];
-        const keyword = convert.rgb.keyword(convert.hsl.rgb(hsl));
-        const hue = parseInt((hsl[0] * (17 / 24)).toFixed(0));
-        var value =
-          hue + brightness * 256 + duration * 65536 + effect * 16777216;
         var service, id;
         if (domain === "zwave_js") {
           const entity_id = payload.entity_id || entityid;
           id = entity_id ? { entity_id } : {};
           service = "bulk_set_partial_config_parameters";
-          if (clear === true || effect === 0 || duration === 0) {
-            value = 65536;
-            node.status(`Cleared notification!`);
-          } else {
-            node.status(`Sent Color: ${keyword}`);
-          }
-          sendNotification(domain, service, id, parameter, value);
         } else if (["ozw", "zwave"].includes(domain)) {
           const node_id = payload.node_id || nodeid;
           id = node_id ? { node_id } : {};
           service = "set_config_parameter";
-          if (clear === true || effect === 0 || duration === 0) {
-            value = 0;
-            node.status(`Cleared notification!`);
-          } else {
-            node.status(`Sent Color: ${keyword}`);
-          }
-          sendNotification(domain, service, id, parameter, value);
-        } else {
-          node.error(
-            `Invalid Z-Wave Domain: ${domain}. Accepted values are zwave_js, ozw, or zwave`
-          );
         }
+        sendNotification(service, id);
       } else {
         node.status(`Error! Check debug window for more info`);
       }

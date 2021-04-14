@@ -1,5 +1,5 @@
 <script type="text/javascript">
-  RED.nodes.registerType("inovelli-notification-manager", {
+  RED.nodes.registerType("inovelli-led-manager", {
     category: "inovelli",
     color: "#B68181",
     defaults: {
@@ -7,36 +7,29 @@
       nodeid: { value: "" },
       entityid: { value: "" },
       zwave: { value: "zwave_js" },
-      color: { value: 0 },
+      color: { value: 180 },
       brightness: { value: 5 },
-      duration: { value: 10 },
-      effect: { value: 4 },
       switchtype: { value: 8 },
-      clear: { value: false}
     },
     inputs: 1,
     outputs: 1,
     icon: "light.svg",
     align: "right",
     label: function () {
-      return this.name || "inovelli-notification-manager";
+      return this.name || "inovelli-led-manager";
     },
     oneditprepare: function () {
-      const onOffOptions = `<option value="0">Off</option>
-          <option value="1">Solid</option>
-          <option value="2">Fast Blink</option>
-          <option value="3">Slow Blink</option>
-          <option value="4">Pulse</option>`;
+      const blackSeries = `<option value="0">On/Off (LZW30)</option>
+        <option value="1">Dimmer (LZW-31)</option>`;
 
-      const dimmerOptions = `<option value="0">Off</option>
-          <option value="1">Solid</option>
-          <option value="2">Chase</option>
-          <option value="3">Fast Blink</option>
-          <option value="4">Slow Blink</option>
-          <option value="5">Pulse</option>`;
+      const redSeries = `<option value="8">On/Off (LZW30-SN)</option>
+        <option value="16">Dimmer (LZW31-SN)</option>
+        <option value="24">Light Dimmer (LZW36)</option>
+        <option value="25">Fan Dimmer (LZW36)</option>
+        <option value="49">Fan & Light (LZW36)</option>`;
 
       $("#node-input-zwave").change(function () {
-        var zwave = $("#node-input-zwave").val();
+        let zwave = $("#node-input-zwave").val();
         switch (zwave) {
           case "zwave_js":
             $(".nodeid-input").hide();
@@ -51,29 +44,54 @@
             $(".entityid-input").hide();
         }
       });
-      $("#node-input-switchtype").change(function () {
-        const effectInput = $("#node-input-effect");
-        let previous;
-        if (previous) previous = "0";
-        if (!previous) previous = effectInput.val();
-        if (this.value === "8") {
-          effectInput.html(onOffOptions);
+      $("#node-input-series").change(function () {
+        let switchInput = $("#node-input-switchtype");
+        if (this.value === "Black") {
+          switchInput.html(blackSeries);
         } else {
-          effectInput.html(dimmerOptions);
+          switchInput.html(redSeries);
         }
-        effectInput.val(previous);
       });
-      $("#node-input-color").change(function () {
-        var color = document.getElementById("node-input-color");
-        var colorOutput = document.getElementById("colorOutput");
+      $("#node-input-switchtype").change(function () {
+        let switchInput = $("#node-input-switchtype").val();
+        switch (switchtype) {
+          case "lzw36":
+            $(".color-input-fan").show();
+            $(".brightness-input-fan").show();
+            break;
+          default:
+            $(".color-input-fan").hide();
+            $(".brightness-input-fan").hide();
+            break;
+        }
+      });
+      $("#node-input-color-light").change(function () {
+        let color = document.getElementById("node-input-color-light");
+        let colorOutput = document.getElementById("lightColorOutput");
         colorOutput.innerHTML = color.value;
         color.oninput = function () {
           colorOutput.innerHTML = this.value;
         };
       });
-      $("#node-input-brightness").change(function () {
-        var brightness = document.getElementById("node-input-brightness");
-        var brightnessOutput = document.getElementById("brightnessOutput");
+      $("#node-input-color-fan").change(function () {
+        let color = document.getElementById("node-input-color-fan");
+        let colorOutput = document.getElementById("fanColorOutput");
+        colorOutput.innerHTML = color.value;
+        color.oninput = function () {
+          colorOutput.innerHTML = this.value;
+        };
+      });
+      $("#node-input-brightness-light").change(function () {
+        let brightness = document.getElementById("node-input-brightness-light");
+        let brightnessOutput = document.getElementById("lightBrightnessOutput");
+        brightnessOutput.innerHTML = brightness.value;
+        brightness.oninput = function () {
+          brightnessOutput.innerHTML = this.value;
+        };
+      });
+      $("#node-input-brightness-fan").change(function () {
+        let brightness = document.getElementById("node-input-brightness-fan");
+        let brightnessOutput = document.getElementById("fanBrightnessOutput");
         brightnessOutput.innerHTML = brightness.value;
         brightness.oninput = function () {
           brightnessOutput.innerHTML = this.value;
@@ -83,7 +101,7 @@
   });
 </script>
 
-<script type="text/x-red" data-template-name="inovelli-notification-manager">
+<script type="text/x-red" data-template-name="inovelli-led-manager">
   <style>
     .color-picker {
       -webkit-appearance: none;
@@ -163,63 +181,15 @@
     <input type="text" id="node-input-entityid">
   </div>
   <div class="form-row">
+    <label for="node-input-series"><i class="icon-tag"></i>Switch Series</label>
+    <select name="node-input-series" id="node-input-series">
+        <option value="Black">Black Series</option>
+        <option value="Red">Red Series</option>
+    </select>
+  </div>
+  <div class="form-row">
     <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
     <select name="node-input-switchtype" id="node-input-switchtype">
-        <option value="8">On/Off (LZW30-SN)</option>
-        <option value="16">Dimmer (LZW31-SN)</option>
-        <option value="24">Light Dimmer (LZW36)</option>
-        <option value="25">Fan Dimmer (LZW36)</option>
-        <option value="49">Fan & Light (LZW36)</option>
-    </select>
-  </div>
-  <div class="form-row color-input">
-    <label for="node-input-color"><i class="icon-tag"></i>Color</label>
-    <div class="color-picker-input">
-      <input type="range" id="node-input-color" min="0" max="360" class="color-picker" oninput="hue.value = this.value">
-    </div>
-    <output id="colorOutput"></output>
-  </div>
-  <div class="form-row brightness-input">
-    <label for="node-input-brightness"><i class="icon-tag"></i>Brightness Level</label>
-    <div class="brightness-picker-input">
-      <input type="range" id="node-input-brightness" min="0" max="10" class="brightness-picker" oninput="brightness.value = this.value">
-    </div>
-    <output id="brightnessOutput"></output>
-  </div>
-  <div class="form-row">
-    <label for="node-input-duration"><i class="icon-tag"></i>Duration</label>
-    <select name="node-input-duration" id="node-input-duration">
-        <option value="0">Off</option>
-        <option value="1">1 Second</option>
-        <option value="2">2 Seconds</option>
-        <option value="3">3 Seconds</option>
-        <option value="4">4 Seconds</option>
-        <option value="5">5 Seconds</option>
-        <option value="6">6 Seconds</option>
-        <option value="7">7 Seconds</option>
-        <option value="8">8 Seconds</option>
-        <option value="9">9 Seconds</option>
-        <option value="10">10 Seconds</option>
-        <option value="15">15 Seconds</option>
-        <option value="30">30 Seconds</option>
-        <option value="45">45 Seconds</option>
-        <option value="60">1 Minute</option>
-        <option value="62">2 Minutes</option>
-        <option value="63">3 Minutes</option>
-        <option value="64">4 Minutes</option>
-        <option value="65">5 Minutes</option>
-        <option value="70">10 Minutes</option>
-        <option value="75">15 Minutes</option>
-        <option value="90">30 Minutes</option>
-        <option value="105">45 Minutes</option>
-        <option value="120">1 Hour</option>
-        <option value="122">2 Hours</option>
-        <option value="255">Indefinitely</option>
-    </select>
-  </div>
-  <div class="form-row">
-    <label for="node-input-effect"><i class="icon-tag"></i>Effect Type</label>
-    <select name="node-input-effect" id="node-input-effect">
         <option value="0">Placeholder</option>
         <option value="1">Placeholder</option>
         <option value="2">Placeholder</option>
@@ -228,13 +198,37 @@
         <option value="5">Placeholder</option>
     </select>
   </div>
-  <div class="form-row">
-    <label for="node-input-clear"><i class="icon-tag"></i>Clear Notification</label>
-    <input type="checkbox" id="node-input-clear">
+  <div class="form-row color-input-light">
+    <label for="node-input-color-light"><i class="icon-tag"></i>Color</label>
+    <div class="color-picker-light-input">
+      <input type="range" id="node-input-color-light" min="0" max="360" class="color-picker" oninput="lightHue.value = this.value">
+    </div>
+    <output id="lightColorOutput"></output>
+  </div>
+  <div class="form-row brightness-input-light">
+    <label for="node-input-brightness-light"><i class="icon-tag"></i>Brightness Level</label>
+    <div class="brightness-picker-input-light">
+      <input type="range" id="node-input-brightness-light" min="0" max="10" class="brightness-picker" oninput="lightBrightness.value = this.value">
+    </div>
+    <output id="lightBrightnessOutput"></output>
+  </div>
+  <div class="form-row color-input-fan">
+    <label for="node-input-color-fan"><i class="icon-tag"></i>Color (Fan)</label>
+    <div class="color-picker-fan-input">
+      <input type="range" id="node-input-color-fan" min="0" max="360" class="color-picker" oninput="fanHue.value = this.value">
+    </div>
+    <output id="fanColorOutput"></output>
+  </div>
+  <div class="form-row brightness-input-fan">
+    <label for="node-input-brightness-fan"><i class="icon-tag"></i>Brightness Level (Fan)</label>
+    <div class="brightness-picker-input-fan">
+      <input type="range" id="node-input-brightness-fan" min="0" max="10" class="brightness-picker" oninput="fanBrightness.value = this.value">
+    </div>
+    <output id="fanBrightnessOutput"></output>
   </div>
 </script>
 
-<script type="text/x-red" data-help-name="inovelli-notification-manager">
+<script type="text/x-red" data-help-name="inovelli-led-manager">
     <p>This node will help construct the value for controlling LED notifications on an Inovelli Red Series switch. The output should be connected to a Home Assistant call service node.</p>
     <dl class="message-properties">
         <dt>Z-Wave Integration<span class="property-type">string</span></dt>
@@ -246,23 +240,27 @@
         <dt>Node Id<span class="property-type">number</span></dt>
         <dd>(For OpenZWave or Z-Wave) Node id of the Inovelli switch you are trying to configure</dd>
 
+        <dt>Switch Series<span class="property-type">string</span></dt>
+        <dd>The series of your Inovelli switch. (Black or Red))</dd>
+
         <dt>Switch Type<span class="property-type">number|string</span></dt>
-        <dd>Determines which parameter to set. (LZW30-SN, LZW31-SN, LZW36 (fan and/or light))</dd>
+        <dd>Determines which parameters to set. (On/Off, Dimmer, Fan/Light Dimmer)</dd>
 
         <dt>Color<span class="property-type">number|string|array</span></dt>
         <dd>Color you want to display (accepts color names, RGB arrays, hexadeciaml and 0-360 hue values)</dd>
 
-        <dt>Brightness Level<span class="property-type">number</span></dt>
-        <dd>Brightness level of the LED light (0-10) for the notification</dd>
+        <dt>Brightness Level (On)<span class="property-type">number</span></dt>
+        <dd>Brightness level of the LED light (0-10) when on</dd>
 
-        <dt>Duration<span class="property-type">number|string</span></dt>
-        <dd>Duration to display the notification</dd>
+        <dt>Brightness Level (Off)<span class="property-type">number</span></dt>
+        <dd>Brightness level of the LED light (0-10) when off</dd>
 
-        <dt>Effect<span class="property-type">number|string</span></dt>
-        <dd>Effect for the notifications. (Off, Solid, Chase, Fast Blink, Slow Blink, Pulse)</dd>
+        <dt>LZW36: Fan Brightness Level (On)<span class="property-type">number</span></dt>
+        <dd>Brightness level of the LED light (0-10) when on</dd>
 
-        <dt>Clear Notification<span class="property-type">boolean</span></dt>
-        <dd>Check this box or set msg.payload.clear to true to clear the current LED notification</dd>
+        <dt>LZW36: Fan Brightness Level (Off)<span class="property-type">number</span></dt>
+        <dd>Brightness level of the LED light (0-10) when off</dd>
+
     </dl>
     <p>
       It is possible to override values set on this node by passing values in a payload e.g.
@@ -272,8 +270,6 @@
       zwave: zwave_js,
       entity_id: "light.bedroom",
       color: "Red",
-      duration: "10 Seconds",
-      effect: "Slow Blink",
       brightness: 10,
       switchtype: "combo_fan"
     }
@@ -286,8 +282,6 @@
       zwave: ozw,
       node_id: 13,
       color: [255,0,00],
-      duration: 10,
-      effect: 3,
       brightness: 10,
       switchtype: 25,
       clear: false
