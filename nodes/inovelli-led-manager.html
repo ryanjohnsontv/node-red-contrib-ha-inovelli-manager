@@ -331,31 +331,4 @@
         <dd>Brightness level of the LED light (0-10) when off</dd>
 
     </dl>
-    <p>
-      It is possible to override values set on this node by passing values in a payload e.g.
-      <pre>
-  msg = {
-    payload: {
-      zwave: zwave_js,
-      entity_id: "light.bedroom",
-      color: "Red",
-      brightness: 10,
-      switchtype: "combo_fan"
-    }
-  }
-
-  or
-
-  msg = {
-    payload: {
-      zwave: ozw,
-      node_id: 13,
-      color: [255,0,00],
-      brightness: 10,
-      switchtype: 25,
-      clear: false
-    }
-  }
-      </pre>
-    </p>
 </script>
