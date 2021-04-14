@@ -61,7 +61,7 @@ A checkbox to toggle clearing the the current LED Notification, when checked thi
 
 
 
-# Inovelli Notification Manager
+# Inovelli LED Manager
 
 This node allows you to easily set the appropriate color and brightness values for Red & Black series switches when they're on or off.
 
