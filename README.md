@@ -76,6 +76,7 @@ This node allows you to easily set the appropriate color and brightness values f
 
 This node interepts scenes sent by multi-clicking on a Red series switch. Connect to a Home Assistant events-all, node adds appropriate number of outputs for triggering scenes.
 
+## Currently being developed and should be added in the next day or two
 
 ![image](https://user-images.githubusercontent.com/43426700/114770466-1965ea80-9d31-11eb-92f7-8fec410095c1.png)
 
