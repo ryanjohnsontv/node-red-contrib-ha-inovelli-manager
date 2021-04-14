@@ -15,8 +15,6 @@
   ],
   "node-red": {
     "nodes": {
-      "inovelli-scene-manager": "nodes/inovelli-scene-manager.js",
-      "inovelli-led-manager": "nodes/inovelli-led-manager.js",
       "inovelli-notification-manager": "nodes/inovelli-notification-manager.js"
     }
   },
