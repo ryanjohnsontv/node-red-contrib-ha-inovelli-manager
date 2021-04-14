@@ -1,0 +1,298 @@
+<script type="text/javascript">
+  RED.nodes.registerType("inovelli-notification-manager", {
+    category: "home assistant",
+    color: "#B68181",
+    defaults: {
+      name: { value: "" },
+      nodeid: { value: "" },
+      entityid: { value: "" },
+      zwave: { value: "zwave_js" },
+      color: { value: 0 },
+      brightness: { value: 5 },
+      duration: { value: 10 },
+      effect: { value: 4 },
+      switchtype: { value: 8 },
+      clear: { value: false}
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: "light.svg",
+    align: "right",
+    label: function () {
+      return this.name || "inovelli-notification-manager";
+    },
+    oneditprepare: function () {
+      const onOffOptions = `<option value="0">Off</option>
+          <option value="1">Solid</option>
+          <option value="2">Fast Blink</option>
+          <option value="3">Slow Blink</option>
+          <option value="4">Pulse</option>`;
+
+      const dimmerOptions = `<option value="0">Off</option>
+          <option value="1">Solid</option>
+          <option value="2">Chase</option>
+          <option value="3">Fast Blink</option>
+          <option value="4">Slow Blink</option>
+          <option value="5">Pulse</option>`;
+
+      $("#node-input-zwave").change(function () {
+        var zwave = $("#node-input-zwave").val();
+        switch (zwave) {
+          case "zwave_js":
+            $(".nodeid-input").hide();
+            $(".entityid-input").show();
+            break;
+          case "ozw":
+            $(".nodeid-input").show();
+            $(".entityid-input").hide();
+            break;
+          case "zwave":
+            $(".nodeid-input").show();
+            $(".entityid-input").hide();
+        }
+      });
+      $("#node-input-switchtype").change(function () {
+        const effectInput = $("#node-input-effect");
+        let previous;
+        if (previous) previous = "0";
+        if (!previous) previous = effectInput.val();
+        if (this.value === "8") {
+          effectInput.html(onOffOptions);
+        } else {
+          effectInput.html(dimmerOptions);
+        }
+        effectInput.val(previous);
+      });
+      $("#node-input-color").change(function () {
+        var color = document.getElementById("node-input-color");
+        var colorOutput = document.getElementById("colorOutput");
+        colorOutput.innerHTML = color.value;
+        color.oninput = function () {
+          colorOutput.innerHTML = this.value;
+        };
+      });
+      $("#node-input-brightness").change(function () {
+        var brightness = document.getElementById("node-input-brightness");
+        var brightnessOutput = document.getElementById("brightnessOutput");
+        brightnessOutput.innerHTML = brightness.value;
+        brightness.oninput = function () {
+          brightnessOutput.innerHTML = this.value;
+        };
+      });
+    },
+  });
+</script>
+
+<script type="text/x-red" data-template-name="inovelli-notification-manager">
+  <style>
+    .color-picker {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 10px;
+      border-radius: 5px;
+      background: linear-gradient(to right, rgb(255,0,0), rgb(255,125,0), rgb(255,255,0), rgb(125,255,0), rgb(0,255,0), rgb(0,255,125), rgb(0,255,255), rgb(0,125,255), rgb(0,0,255), rgb(125,0,255), rgb(255,0,255), rgb(255,0,125), rgb(255,0,0));
+      outline: none;
+    }
+    .color-input input {
+      width: 100% !important;
+    }
+    .color-picker-input {
+      display: inline-block;
+      width: 70%;
+    }
+    .color-picker::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 5px;
+      height: 20px;
+      background: #FFFFFF;
+    }
+    .color-picker::-moz-range-thumb {
+      width: 5px;
+      height: 20px;
+      background:	#FFFFFF;
+    }
+    .brightness-picker {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 10px;
+      border-radius: 5px;
+      background: linear-gradient(to right, rgb(0,0,0), rgb(255,255,255));
+      outline: none;
+    }
+    .brightness-input input {
+      width: 100% !important;
+    }
+    .brightness-picker-input {
+      display: inline-block;
+      width: 70%;
+    }
+    .brightness-picker::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 5px;
+      height: 20px;
+      background: #FFFFFF;
+    }
+    .brightness-picker::-moz-range-thumb {
+      width: 5px;
+      height: 20px;
+      background:	#FFFFFF;
+    }
+  </style>
+  <div class="form-row">
+      <label for="node-input-name"><i class="icon-tag"></i>Name</label>
+      <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+  <div class="form-row">
+    <label for="node-input-zwave"><i class="icon-tag"></i>Z-Wave Integration</label>
+    <select name="node-input-zwave" id="node-input-zwave">
+        <option value="zwave_js">Z-Wave JS</option>
+        <option value="ozw">OpenZWave (1.6)</option>
+        <option value="zwave">Z-Wave (Deprecated)</option>
+    </select>
+  </div>
+  <div class="form-row nodeid-input">
+    <label for="node-input-nodeid"><i class="icon-tag"></i>Node Id</label>
+    <input type="number" id="node-input-nodeid" min="1">
+  </div>
+  <div class="form-row entityid-input">
+    <label for="node-input-entityid"><i class="icon-tag"></i>Entity Id</label>
+    <input type="text" id="node-input-entityid">
+  </div>
+  <div class="form-row">
+    <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
+    <select name="node-input-switchtype" id="node-input-switchtype">
+        <option value="8">On/Off (LZW30-SN)</option>
+        <option value="16">Dimmer (LZW31-SN)</option>
+        <option value="24">Light Dimmer (LZW36)</option>
+        <option value="25">Fan Dimmer (LZW36)</option>
+        <option value="49">Fan & Light (LZW36)</option>
+    </select>
+  </div>
+  <div class="form-row color-input">
+    <label for="node-input-color"><i class="icon-tag"></i>Color</label>
+    <div class="color-picker-input">
+      <input type="range" id="node-input-color" min="0" max="360" class="color-picker" oninput="hue.value = this.value">
+    </div>
+    <output id="colorOutput"></output>
+  </div>
+  <div class="form-row brightness-input">
+    <label for="node-input-brightness"><i class="icon-tag"></i>Brightness Level</label>
+    <div class="brightness-picker-input">
+      <input type="range" id="node-input-brightness" min="0" max="10" class="brightness-picker" oninput="brightness.value = this.value">
+    </div>
+    <output id="brightnessOutput"></output>
+  </div>
+  <div class="form-row">
+    <label for="node-input-duration"><i class="icon-tag"></i>Duration</label>
+    <select name="node-input-duration" id="node-input-duration">
+        <option value="0">Off</option>
+        <option value="1">1 Second</option>
+        <option value="2">2 Seconds</option>
+        <option value="3">3 Seconds</option>
+        <option value="4">4 Seconds</option>
+        <option value="5">5 Seconds</option>
+        <option value="6">6 Seconds</option>
+        <option value="7">7 Seconds</option>
+        <option value="8">8 Seconds</option>
+        <option value="9">9 Seconds</option>
+        <option value="10">10 Seconds</option>
+        <option value="15">15 Seconds</option>
+        <option value="30">30 Seconds</option>
+        <option value="45">45 Seconds</option>
+        <option value="60">1 Minute</option>
+        <option value="62">2 Minutes</option>
+        <option value="63">3 Minutes</option>
+        <option value="64">4 Minutes</option>
+        <option value="65">5 Minutes</option>
+        <option value="70">10 Minutes</option>
+        <option value="75">15 Minutes</option>
+        <option value="90">30 Minutes</option>
+        <option value="105">45 Minutes</option>
+        <option value="120">1 Hour</option>
+        <option value="122">2 Hours</option>
+        <option value="255">Indefinitely</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-effect"><i class="icon-tag"></i>Effect Type</label>
+    <select name="node-input-effect" id="node-input-effect">
+        <option value="0">Placeholder</option>
+        <option value="1">Placeholder</option>
+        <option value="2">Placeholder</option>
+        <option value="3">Placeholder</option>
+        <option value="4">Placeholder</option>
+        <option value="5">Placeholder</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-clear"><i class="icon-tag"></i>Clear Notification</label>
+    <input type="checkbox" id="node-input-clear">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="inovelli-notification-manager">
+    <p>This node will help construct the value for controlling LED notifications on an Inovelli Red Series switch. The output should be connected to a Home Assistant call service node.</p>
+    <dl class="message-properties">
+        <dt>Z-Wave Integration<span class="property-type">string</span></dt>
+        <dd>Your Z-Wave integration used in Home Assistant (zwave_js, ozw, or zwave)</dd>
+
+        <dt>Entity Id<span class="property-type">string</span></dt>
+        <dd>(For Z-Wave JS) Entity (or a comma-delimited list of entity ids) to set the configuration parameter on</dd>
+
+        <dt>Node Id<span class="property-type">number</span></dt>
+        <dd>(For OpenZWave or Z-Wave) Node id of the Inovelli switch you are trying to configure</dd>
+
+        <dt>Switch Type<span class="property-type">number|string</span></dt>
+        <dd>Determines which parameter to set. (LZW30-SN, LZW31-SN, LZW36 (fan and/or light))</dd>
+
+        <dt>Color<span class="property-type">number|string|array</span></dt>
+        <dd>Color you want to display (accepts color names, RGB arrays, hexadeciaml and 0-360 hue values)</dd>
+
+        <dt>Brightness Level<span class="property-type">number</span></dt>
+        <dd>Brightness level of the LED light (0-10) for the notification</dd>
+
+        <dt>Duration<span class="property-type">number|string</span></dt>
+        <dd>Duration to display the notification</dd>
+
+        <dt>Effect<span class="property-type">number|string</span></dt>
+        <dd>Effect for the notifications. (Off, Solid, Chase, Fast Blink, Slow Blink, Pulse)</dd>
+
+        <dt>Clear Notification<span class="property-type">boolean</span></dt>
+        <dd>Check this box or set msg.payload.clear to true to clear the current LED notification</dd>
+    </dl>
+    <p>
+      It is possible to override values set on this node by passing values in a payload e.g.
+      <pre>
+  msg = {
+    payload: {
+      zwave: zwave_js,
+      entity_id: "light.bedroom",
+      color: "Red",
+      duration: "10 Seconds",
+      effect: "Slow Blink",
+      brightness: 10,
+      switchtype: "combo_fan"
+    }
+  }
+
+  or
+
+  msg = {
+    payload: {
+      zwave: ozw,
+      node_id: 13,
+      color: [255,0,00],
+      duration: 10,
+      effect: 3,
+      brightness: 10,
+      switchtype: 25,
+      clear: false
+    }
+  }
+      </pre>
+    </p>
+</script>
