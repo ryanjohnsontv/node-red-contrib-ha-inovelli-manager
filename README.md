@@ -33,7 +33,7 @@ You are able to choose between Z-Wave JS, OpenZWave, or Z-Wave (deprecated) as y
 
 ### Entity ID/Node ID
 
-Depending on your Z-Wave integration, you'll have the option to add one ID, or a comma delimited list of IDs, or your corresponding device(s). For Z-Wave JS you can set this entity ID in the Home Assistant call-service node, in this node, or send a message with your ID(s) in the msg.payload.entity_id field. For OZW you cna set the ID(s) in this node or send a messages with your ID(s) in the msg.payload.node_id field.
+Depending on your Z-Wave integration, you'll have the option to add one ID, or a comma delimited list of IDs, or your corresponding device(s). For Z-Wave JS you can set this entity ID in the Home Assistant call-service node, in this node, or send a message with your ID(s) in the msg.payload.entity_id field. For OZW you can set the ID(s) in this node or send a messages with your ID(s) in the msg.payload.node_id field.
 
 ### Switch Type
 
@@ -76,9 +76,21 @@ This node allows you to easily set the appropriate color and brightness values f
 
 This node interepts scenes sent by multi-clicking on a Red series switch. Connect to a Home Assistant events-all, node adds appropriate number of outputs for triggering scenes.
 
-## Currently being developed and should be added in the next day or two
+## Currently being developed, support for OZW and Z-Wave JS integrations and LZW30-SN, LZW31-SN, and LZW36.
 
 ![image](https://user-images.githubusercontent.com/43426700/114770466-1965ea80-9d31-11eb-92f7-8fec410095c1.png)
 
 
 ## How to use:
+
+### Z-Wave Integration
+
+You are able to choose between Z-Wave JS or OpenZWave as your integration.
+
+### Node ID
+
+The Node ID of the switch being used for scene control
+
+### Switch Type
+
+This option lets you specify your switch model (LZW30-SN, LZW31-SN, LZW36, and LZW45).
