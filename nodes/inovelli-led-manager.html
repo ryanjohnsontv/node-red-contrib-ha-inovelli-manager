@@ -225,7 +225,7 @@
   </div>
   <div class="form-row nodeid-input">
     <label for="node-input-nodeid"><i class="icon-tag"></i>Node ID</label>
-    <input type="number" id="node-input-nodeid" min="1">
+    <input type="text" id="node-input-nodeid">
   </div>
   <div class="form-row entityid-input">
     <label for="node-input-entityid"><i class="icon-tag"></i>Entity ID</label>
@@ -286,37 +286,37 @@
 </script>
 
 <script type="text/x-red" data-help-name="inovelli-led-manager">
-    <p>This node will help construct the value for controlling LED notifications on an Inovelli Red Series switch. The output should be connected to a Home Assistant call service node.</p>
-    <dl class="message-properties">
-        <dt>Z-Wave Integration<span class="property-type">string</span></dt>
-        <dd>Your Z-Wave integration used in Home Assistant (zwave_js, ozw, or zwave)</dd>
+  <p>This node will help construct the value for controlling LED notifications on an Inovelli Red Series switch. The output should be connected to a Home Assistant call service node.</p>
+  <dl class="message-properties">
+      <dt>Z-Wave Integration<span class="property-type">string</span></dt>
+      <dd>Your Z-Wave integration used in Home Assistant (zwave_js, ozw, or zwave)</dd>
 
-        <dt>Entity ID<span class="property-type">string</span></dt>
-        <dd>(For Z-Wave JS) Entity (or a comma-delimited list of entity IDs) to set the configuration parameter on</dd>
+      <dt>Entity ID<span class="property-type">string</span></dt>
+      <dd>(For Z-Wave JS) Entity (or a comma-delimited list of entity IDs) to set the configuration parameter on</dd>
 
-        <dt>Node ID<span class="property-type">number</span></dt>
-        <dd>(For OpenZWave or Z-Wave) Node ID of the Inovelli switch you are trying to configure</dd>
+      <dt>Node ID<span class="property-type">number</span></dt>
+      <dd>(For OpenZWave or Z-Wave) Node ID (or a comma-delimited list of Node IDs) of the Inovelli switch you are trying to configure</dd>
 
-        <dt>Switch Series<span class="property-type">string</span></dt>
-        <dd>The series of your Inovelli switch. (Black or Red))</dd>
+      <dt>Switch Series<span class="property-type">string</span></dt>
+      <dd>The series of your Inovelli switch. (Black or Red))</dd>
 
-        <dt>Switch Type<span class="property-type">number|string</span></dt>
-        <dd>Determines which parameters to set. (On/Off, Dimmer, Fan/Light Dimmer)</dd>
+      <dt>Switch Type<span class="property-type">number|string</span></dt>
+      <dd>Determines which parameters to set. (On/Off, Dimmer, Fan/Light Dimmer)</dd>
 
-        <dt>Color<span class="property-type">number|string|array</span></dt>
-        <dd>Color you want to display (accepts color names, RGB arrays, hexadeciaml and 0-360 hue values)</dd>
+      <dt>Color<span class="property-type">number|string|array</span></dt>
+      <dd>Color you want to display (accepts color names, RGB arrays, hexadeciaml and 0-360 hue values)</dd>
 
-        <dt>Brightness Level (On)<span class="property-type">number</span></dt>
-        <dd>Brightness level of the LED light (0-10) when on</dd>
+      <dt>Brightness Level (On)<span class="property-type">number</span></dt>
+      <dd>Brightness level of the LED light (0-10) when on</dd>
 
-        <dt>Brightness Level (Off)<span class="property-type">number</span></dt>
-        <dd>Brightness level of the LED light (0-10) when off</dd>
+      <dt>Brightness Level (Off)<span class="property-type">number</span></dt>
+      <dd>Brightness level of the LED light (0-10) when off</dd>
 
-        <dt>LZW36: Fan Brightness Level (On)<span class="property-type">number</span></dt>
-        <dd>Brightness level of the LED light (0-10) when on</dd>
+      <dt>LZW36: Fan Brightness Level (On)<span class="property-type">number</span></dt>
+      <dd>Brightness level of the LED light (0-10) when on</dd>
 
-        <dt>LZW36: Fan Brightness Level (Off)<span class="property-type">number</span></dt>
-        <dd>Brightness level of the LED light (0-10) when off</dd>
+      <dt>LZW36: Fan Brightness Level (Off)<span class="property-type">number</span></dt>
+      <dd>Brightness level of the LED light (0-10) when off</dd>
 
-    </dl>
+  </dl>
 </script>

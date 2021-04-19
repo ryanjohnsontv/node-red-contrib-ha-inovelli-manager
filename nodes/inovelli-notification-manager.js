@@ -17,7 +17,7 @@ module.exports = function (RED) {
 
     this.zwave = zwave;
     this.entityid = entityid;
-    this.nodeid = parseInt(nodeid, 10);
+    this.nodeid = nodeid;
     this.color = parseInt(color, 10);
     this.brightness = parseInt(brightness, 10);
     this.duration = parseInt(duration, 10);
@@ -289,12 +289,17 @@ module.exports = function (RED) {
           const entity_id = payload.entity_id || entityid;
           id = entity_id ? { entity_id } : {};
           service = "bulk_set_partial_config_parameters";
+          sendNotification(service, id);
         } else if (["ozw", "zwave"].includes(domain)) {
-          const node_id = payload.node_id || nodeid;
-          id = node_id ? { node_id } : {};
+          var node_id = payload.node_id || nodeid;
+          const nodes = node_id.split(",").map(Number);
           service = "set_config_parameter";
+          for (let x in nodes) {
+            node_id = nodes[x];
+            id = node_id ? { node_id } : {};
+            sendNotification(service, id);
+          }
         }
-        sendNotification(service, id);
       } else {
         node.status(`Error! Check debug window for more info`);
       }

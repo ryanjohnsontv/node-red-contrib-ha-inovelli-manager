@@ -202,7 +202,9 @@ module.exports = function (RED) {
             fanHSL = [convert.rgb.hsl(fanColor)[0], 100, 50];
             fanKeyword = convert.rgb.keyword(convert.hsl.rgb(fanHSL));
             fanHue = parseInt((fanHSL[0] * (17 / 24)).toFixed(0));
-            node.status(`Fan Color: ${fanKeyword}, On/Off:${fanBrightness}/${fanBrightnessOff}`);
+            node.status(
+              `Fan Color: ${fanKeyword}, On/Off:${fanBrightness}/${fanBrightnessOff}`
+            );
             params = {
               20: fanHue,
               21: fanBrightness,
@@ -213,7 +215,9 @@ module.exports = function (RED) {
             lightHSL = [convert.rgb.hsl(lightColor)[0], 100, 50];
             lightKeyword = convert.rgb.keyword(convert.hsl.rgb(lightHSL));
             lightHue = parseInt((lightHSL[0] * (17 / 24)).toFixed(0));
-            node.status(`Light Color: ${lightKeyword}, On/Off:${lightBrightness}/${lightBrightnessOff}`);
+            node.status(
+              `Light Color: ${lightKeyword}, On/Off:${lightBrightness}/${lightBrightnessOff}`
+            );
             params = {
               18: lightHue,
               19: lightBrightness,
@@ -224,7 +228,9 @@ module.exports = function (RED) {
             lightHSL = [convert.rgb.hsl(lightColor)[0], 100, 50];
             lightKeyword = convert.rgb.keyword(convert.hsl.rgb(lightHSL));
             lightHue = parseInt((lightHSL[0] * (17 / 24)).toFixed(0));
-            node.status(`Light Color: ${lightKeyword}, On/Off:${lightBrightness}/${lightBrightnessOff}`);
+            node.status(
+              `Light Color: ${lightKeyword}, On/Off:${lightBrightness}/${lightBrightnessOff}`
+            );
             params = {
               13: lightHue,
               14: lightBrightness,
@@ -235,7 +241,9 @@ module.exports = function (RED) {
             lightHSL = [convert.rgb.hsl(lightColor)[0], 100, 50];
             lightKeyword = convert.rgb.keyword(convert.hsl.rgb(lightHSL));
             lightHue = parseInt((lightHSL[0] * (17 / 24)).toFixed(0));
-            node.status(`Light Color: ${lightKeyword}, On/Off:${lightBrightness}/${lightBrightnessOff}`);
+            node.status(
+              `Light Color: ${lightKeyword}, On/Off:${lightBrightness}/${lightBrightnessOff}`
+            );
             params = {
               5: lightHue,
               6: lightBrightness,
@@ -261,11 +269,16 @@ module.exports = function (RED) {
         if (domain === "zwave_js") {
           const entity_id = payload.entity_id || entityid;
           id = entity_id ? { entity_id } : {};
+          generateMsg(id);
         } else if (["ozw", "zwave"].includes(domain)) {
-          const node_id = payload.node_id || nodeid;
-          id = node_id ? { node_id } : {};
+          var node_id = payload.node_id || nodeid;
+          const nodes = node_id.split(",").map(Number);
+          for (let x in nodes) {
+            node_id = nodes[x];
+            id = node_id ? { node_id } : {};
+            generateMsg(id);
+          }
         }
-        generateMsg(id);
       } else {
         node.status(`Error! Check debug window for more info`);
       }
