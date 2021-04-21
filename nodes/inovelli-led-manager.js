@@ -258,8 +258,19 @@ module.exports = function (RED) {
             const nodes = id.node_id.split(",").map(Number);
             for (let y in nodes) {
               node_id = nodes[y];
-              let data = { node_id, ...size, parameter, value };
-              sendMsg(data);
+              if (isNaN(node_id)) {
+                node.error(
+                  `Invalid Node ID List. Please make sure your list of Node IDs contains integers seprated by commas.`
+                );
+                node.status({
+                  fill: "red",
+                  shape: "ring",
+                  text: "Error! Check debug window for more info",
+                });
+              } else {
+                let data = { node_id, ...size, parameter, value };
+                sendMsg(data);
+              }
             }
           } else {
             let data = { ...id, parameter, ...size, value };
