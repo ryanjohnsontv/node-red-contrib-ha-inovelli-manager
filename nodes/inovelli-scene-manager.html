@@ -24,7 +24,6 @@
     oneditprepare: function () {},
     oneditsave: function () {
       const switchtype = $("#node-input-switchtype").val();
-      //const scenes = require("common/scenes.js");
       let label;
       switch (switchtype) {
         case "LZW30":
@@ -148,7 +147,7 @@
   <p>This node will decipher button clicks on an Inovelli Red Series switch allowing for easy scene control in Home Assistant. Just connect this input of this node to the output of a Home Assistant "events: all" node</p>
   <dl class="message-properties">
       <dt>Z-Wave Integration<span class="property-type">string</span></dt>
-      <dd>Your Z-Wave integration used in Home Assistant (zwave_js or ozw)</dd>
+      <dd>Your Z-Wave integration used in Home Assistant (zwave_js, ozw or zwave)</dd>
 
       <dt>Node ID<span class="property-type">number</span></dt>
       <dd>Node ID (or a comma-delimited list of node IDs) of the Inovelli switch you are trying to configure</dd>
