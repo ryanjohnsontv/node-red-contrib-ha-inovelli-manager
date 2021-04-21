@@ -18,7 +18,7 @@ module.exports = function (RED) {
 
     this.zwave = zwave;
     this.entityid = entityid;
-    this.nodeid = parseInt(nodeid, 10);
+    this.nodeid = nodeid;
     this.switchtype = parseInt(switchtype, 10);
     this.lightColor = parseInt(lightColor, 10);
     this.lightBrightness = parseInt(lightBrightness, 10);
@@ -169,8 +169,6 @@ module.exports = function (RED) {
       }
 
       function generateMsg(id) {
-        var service = "set_config_parameter";
-        var size = domain === "zwave" ? { size: 4 } : {};
         let lightHSL,
           fanHSL,
           lightKeyword,
@@ -190,12 +188,12 @@ module.exports = function (RED) {
               `Set Fan Color: ${fanKeyword}; Set Light Color: ${lightKeyword}`
             );
             params = {
-              18: lightHue,
-              19: lightBrightness,
-              20: fanHue,
-              21: fanBrightness,
-              22: lightBrightnessOff,
-              23: fanBrightnessOff,
+              18: { value: lightHue, size: 2 },
+              19: { value: lightBrightness, size: 1 },
+              20: { value: fanHue, size: 2 },
+              21: { value: fanBrightness, size: 1 },
+              22: { value: lightBrightnessOff, size: 1 },
+              23: { value: fanBrightnessOff, size: 1 },
             };
             break;
           case 20:
@@ -206,9 +204,9 @@ module.exports = function (RED) {
               `Fan Color: ${fanKeyword}, On/Off:${fanBrightness}/${fanBrightnessOff}`
             );
             params = {
-              20: fanHue,
-              21: fanBrightness,
-              23: fanBrightnessOff,
+              20: { value: fanHue, size: 2 },
+              21: { value: fanBrightness, size: 1 },
+              23: { value: fanBrightnessOff, size: 1 },
             };
             break;
           case 18:
@@ -219,9 +217,9 @@ module.exports = function (RED) {
               `Light Color: ${lightKeyword}, On/Off:${lightBrightness}/${lightBrightnessOff}`
             );
             params = {
-              18: lightHue,
-              19: lightBrightness,
-              22: lightBrightnessOff,
+              18: { value: lightHue, size: 2 },
+              19: { value: lightBrightness, size: 1 },
+              22: { value: lightBrightnessOff, size: 1 },
             };
             break;
           case 13:
@@ -232,9 +230,9 @@ module.exports = function (RED) {
               `Light Color: ${lightKeyword}, On/Off:${lightBrightness}/${lightBrightnessOff}`
             );
             params = {
-              13: lightHue,
-              14: lightBrightness,
-              15: lightBrightnessOff,
+              13: { value: lightHue, size: 2 },
+              14: { value: lightBrightness, size: 1 },
+              15: { value: lightBrightnessOff, size: 1 },
             };
             break;
           case 5:
@@ -245,23 +243,40 @@ module.exports = function (RED) {
               `Light Color: ${lightKeyword}, On/Off:${lightBrightness}/${lightBrightnessOff}`
             );
             params = {
-              5: lightHue,
-              6: lightBrightness,
-              7: lightBrightnessOff,
+              5: { value: lightHue, size: 2 },
+              6: { value: lightBrightness, size: 1 },
+              7: { value: lightBrightnessOff, size: 1 },
             };
             break;
         }
         for (let x in params) {
           parameter = parseInt(x);
-          value = parseInt(params[x]);
-          node.send({
-            payload: {
-              domain,
-              service,
-              data: { ...id, parameter, ...size, value },
-            },
-          });
+          value = parseInt(params[x].value);
+          let size = parseInt(params[x].size);
+          size = domain === "zwave" ? { size } : {};
+          if (domain !== "zwave_js" && id.node_id.includes(",")) {
+            const nodes = id.node_id.split(",").map(Number);
+            for (let y in nodes) {
+              node_id = nodes[y];
+              let data = { node_id, ...size, parameter, value };
+              sendMsg(data);
+            }
+          } else {
+            let data = { ...id, parameter, ...size, value };
+            sendMsg(data);
+          }
         }
+      }
+
+      function sendMsg(data) {
+        var service = "set_config_parameter";
+        node.send({
+          payload: {
+            domain,
+            service,
+            data,
+          },
+        });
       }
 
       if (error === 0) {
@@ -272,12 +287,8 @@ module.exports = function (RED) {
           generateMsg(id);
         } else if (["ozw", "zwave"].includes(domain)) {
           var node_id = payload.node_id || nodeid;
-          const nodes = node_id.split(",").map(Number);
-          for (let x in nodes) {
-            node_id = nodes[x];
-            id = node_id ? { node_id } : {};
-            generateMsg(id);
-          }
+          id = node_id ? { node_id } : {};
+          generateMsg(id);
         }
       } else {
         node.status(`Error! Check debug window for more info`);
