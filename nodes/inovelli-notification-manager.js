@@ -37,23 +37,15 @@ module.exports = function (RED) {
         switchtype: presetSwitchtype,
         clear: presetClear,
       } = node;
-      //const { payload } = msg.payload ? msg : {};
-      var { payload } = msg;
-      if (payload === undefined) {
-        payload = {};
-      }
+      
+      const payload = msg.payload || {};
       const domain = payload.zwave || presetZwave;
       const brightness = payload.brightness || presetBrightness;
       var color = payload.color || presetColor;
       var duration = payload.duration || presetDuration;
       var effect = payload.effect || presetEffect;
       var parameter = payload.switchtype || presetSwitchtype;
-      var clear;
-      if (payload.clear === undefined) {
-        clear = presetClear;
-      } else {
-        clear = payload.clear;
-      }
+      const clear = (payload.clear != undefined) ? payload.clear : presetClear;
       var error = 0;
 
       function inputSwitchConvert(parameter) {
@@ -285,20 +277,23 @@ module.exports = function (RED) {
 
       if (error === 0) {
         var service, id;
-        if (domain === "zwave_js") {
-          const entity_id = payload.entity_id || entityid;
-          id = entity_id ? { entity_id } : {};
-          service = "bulk_set_partial_config_parameters";
-          sendNotification(service, id);
-        } else if (["ozw", "zwave"].includes(domain)) {
-          var node_id = payload.node_id || nodeid;
-          const nodes = node_id.split(",").map(Number);
-          service = "set_config_parameter";
-          for (let x in nodes) {
-            node_id = nodes[x];
-            id = node_id ? { node_id } : {};
+        switch (domain) {
+          case "zwave_js":
+            const entity_id = payload.entity_id || entityid;
+            id = entity_id ? { entity_id } : {};
+            service = "bulk_set_partial_config_parameters";
             sendNotification(service, id);
-          }
+            break;
+          default:
+            var node_id = payload.node_id || nodeid;
+            const nodes = node_id.split(",").map(Number);
+            service = "set_config_parameter";
+            for (let x in nodes) {
+              node_id = nodes[x];
+              id = node_id ? { node_id } : {};
+              sendNotification(service, id);
+              break;
+            }
         }
       } else {
         node.status(`Error! Check debug window for more info`);

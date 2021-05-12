@@ -40,10 +40,8 @@ module.exports = function (RED) {
         fanBrightness: presetFanBrightness,
         fanBrightnessOff: presetFanBrightnessOff,
       } = node;
-      var { payload } = msg;
-      if (payload === undefined) {
-        payload = {};
-      }
+      
+      const payload = msg.payload || {};
       const domain = payload.zwave || presetZwave;
       var parameter = payload.switchtype || presetSwitchtype;
       var lightColor = payload.lightColor || presetLightColor;
@@ -292,14 +290,17 @@ module.exports = function (RED) {
 
       if (error === 0) {
         var id;
-        if (domain === "zwave_js") {
-          const entity_id = payload.entity_id || entityid;
-          id = entity_id ? { entity_id } : {};
-          generateMsg(id);
-        } else if (["ozw", "zwave"].includes(domain)) {
-          var node_id = payload.node_id || nodeid;
-          id = node_id ? { node_id } : {};
-          generateMsg(id);
+        switch (domain) {
+          case "zwave_js":
+            const entity_id = payload.entity_id || entityid;
+            id = entity_id ? { entity_id } : {};
+            generateMsg(id);
+            break;
+          default:
+            var node_id = payload.node_id || nodeid;
+            id = node_id ? { node_id } : {};
+            generateMsg(id);
+            break;
         }
       } else {
         node.status(`Error! Check debug window for more info`);
