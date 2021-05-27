@@ -10,7 +10,7 @@ module.exports = function (RED) {
 
     node.on("input", (msg) => {
       const { zwave: presetZwave, nodeid, switchtype, outputs } = node;
-      const { payload } = msg;
+      const payload = msg.payload;
       const domain = payload.event.domain;
       const event_type = payload.event_type;
       const nodes = nodeid.split(',').map(Number);
@@ -109,7 +109,7 @@ module.exports = function (RED) {
         const LZW31Map = {
           0: {
             button: 2,
-            scene: 1,
+            scene: 3,
           },
           1: {
             button: 2,
@@ -125,47 +125,39 @@ module.exports = function (RED) {
           },
           4: {
             button: 2,
-            scene: 7,
+            scene: 2,
           },
           5: {
             button: 2,
-            scene: 2,
+            scene: 1,
           },
           6: {
-            button: 2,
+            button: 1,
             scene: 3,
           },
           7: {
             button: 1,
-            scene: 1,
+            scene: 4,
           },
           8: {
             button: 1,
-            scene: 4,
+            scene: 5,
           },
           9: {
             button: 1,
-            scene: 5,
+            scene: 6,
           },
           10: {
             button: 1,
-            scene: 6,
+            scene: 2,
           },
           11: {
             button: 1,
-            scene: 7,
+            scene: 1,
           },
           12: {
-            button: 1,
-            scene: 2,
-          },
-          13: {
-            button: 1,
-            scene: 3,
-          },
-          14: {
             button: 3,
-            scene: 1,
+            scene: 0,
           },
         };
         const LZW36Map = {

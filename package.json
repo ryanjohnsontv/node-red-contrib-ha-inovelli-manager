@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-ha-inovelli-manager",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/ryanjohnsontv/node-red-contrib-ha-inovelli-manager.git"
