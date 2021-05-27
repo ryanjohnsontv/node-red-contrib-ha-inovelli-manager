@@ -106,56 +106,64 @@ module.exports = function (RED) {
             scene: 1,
           },
         };
-        const LZW31Map = {
+       const LZW31Map = {
           0: {
             button: 2,
-            scene: 3,
+            scene: 0,
           },
           1: {
             button: 2,
-            scene: 4,
+            scene: 3,
           },
           2: {
             button: 2,
-            scene: 5,
+            scene: 4,
           },
           3: {
             button: 2,
-            scene: 6,
+            scene: 5,
           },
           4: {
             button: 2,
-            scene: 2,
+            scene: 6,
           },
           5: {
             button: 2,
-            scene: 1,
+            scene: 2,
           },
           6: {
-            button: 1,
-            scene: 3,
+            button: 2,
+            scene: 1,
           },
           7: {
             button: 1,
-            scene: 4,
+            scene: 0,
           },
           8: {
             button: 1,
-            scene: 5,
+            scene: 3,
           },
           9: {
             button: 1,
-            scene: 6,
+            scene: 4,
           },
           10: {
             button: 1,
-            scene: 2,
+            scene: 5,
           },
           11: {
             button: 1,
-            scene: 1,
+            scene: 6,
           },
           12: {
+            button: 1,
+            scene: 2,
+          },
+          13: {
+            button: 1,
+            scene: 1,
+          },
+          14: {
             button: 3,
             scene: 0,
           },
