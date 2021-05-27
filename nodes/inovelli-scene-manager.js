@@ -106,7 +106,7 @@ module.exports = function (RED) {
             scene: 1,
           },
         };
-       const LZW31Map = {
+        const LZW31Map = {
           0: {
             button: 2,
             scene: 0,
