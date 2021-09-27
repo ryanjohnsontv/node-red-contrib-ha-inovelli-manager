@@ -4,6 +4,7 @@ Nodes for easily managing scenes, parameters, and notifications of Inovelli swit
 If you notice any problems open an issue or a pull request, I'll respond ASAP.  Thanks!
 
 ## Features:
+-   Multicast Support
 -   Support for OpenZWave, Z-Wave (deprectaed), and Z-Wave JS (Requires Home Assistant 2021.4.0 or newer)
 -   Allows all fields to be controlled by the payload of an incoming message
 -   Use color-convert library to accept color names, RGB arrays, hexadecimals, or hue value as input
@@ -58,6 +59,10 @@ Based on your switch choice, choose between Off, Solid, Chase, Fast Blink, Slow 
 ### Clear Notification
 
 A checkbox to toggle clearing the the current LED Notification, when checked this will clear the current notification for your specified switch. Also configurable by setting msg.payload.clear to a boolean value of true or false.
+
+### Use Multicast
+
+A checkbox to toggle the use of multicast, or sending the same value to multiple nodes simultaneously. Requires additional Z-Wave JS configuration.
 
 
 
