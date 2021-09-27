@@ -2,18 +2,25 @@ module.exports = function (RED) {
   function InovelliSceneManager(config) {
     RED.nodes.createNode(this, config);
     var node = this;
-    const { zwave, nodeid, switchtype, outputs } = config;
+    const { zwave, nodeid, switchtype, outputs, passthrough } = config;
     this.zwave = zwave;
     this.nodeid = nodeid;
     this.switchtype = switchtype;
     this.outputs = parseInt(outputs, 10);
+    this.passthrough = passthrough;
 
     node.on("input", (msg) => {
-      const { zwave: presetZwave, nodeid, switchtype, outputs } = node;
+      const {
+        zwave: presetZwave,
+        nodeid,
+        switchtype,
+        outputs,
+        passthrough,
+      } = node;
       const payload = msg.payload;
       const domain = payload.event.domain;
       const event_type = payload.event_type;
-      const nodes = nodeid.split(',').map(Number);
+      const nodes = nodeid.split(",").map(Number);
       const node_id = parseInt(payload.event.node_id);
       const event_types = {
         zwave_js: "zwave_js_value_notification",
@@ -43,7 +50,15 @@ module.exports = function (RED) {
       }
       validateDomain(presetZwave, domain);
 
-      if (nodes.includes(node_id) === true && error === 0) {
+      function validateNodeID() {
+        if (!nodes.includes(node_id) && !passthrough) {
+          error++;
+        }
+      }
+
+      validateNodeID();
+
+      if (error === 0) {
         const LZW30Map = {
           0: {
             button: 2,

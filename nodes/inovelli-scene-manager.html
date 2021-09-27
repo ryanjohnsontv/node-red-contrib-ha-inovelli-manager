@@ -9,6 +9,7 @@
       switchtype: { value: "LZW30" },
       outputs: { value: 1 },
       labels: { value: ["Please select a Switch Type"] },
+      passthrough: { default: false },
     },
     inputs: 1,
     outputs: 1,
@@ -126,6 +127,8 @@
     <label for="node-input-zwave"><i class="icon-tag"></i>Z-Wave Integration</label>
     <select name="node-input-zwave" id="node-input-zwave">
         <option value="zwave_js">Z-Wave JS</option>
+        <option value="ozw">Open Z-Wave</option>
+        <option value="zwave">Z-Wave</option>
     </select>
   </div>
   <div class="form-row nodeid-input">
@@ -141,6 +144,10 @@
         <option value="LZW45">Lightstrip & Controller Kit (LZW45)</option>
     </select>
   </div>
+  <div class="form-row">
+    <label for="node-input-passthrough"><i class="icon-tag"></i>Node ID Passthrough</label>
+    <input type="checkbox" id="node-input-passthrough">
+  </div>
 </script>
 
 <script type="text/x-red" data-help-name="inovelli-scene-manager">
@@ -154,5 +161,8 @@
 
       <dt>Switch Type<span class="property-type">number|string</span></dt>
       <dd>Determines which Inovelli switch is being used. (LZW30-SN, LZW31-SN, LZW36, LZW45)</dd>
+
+      <dt>Node ID Passthrough<span class="property-type">boolean</span></dt>
+      <dd>Disables specifying a node id, node will instead pass through all value/scene notifications (ideal when your Z-Wave network uses ALL of the same switch)</dd>
   </dl>
 </script>
