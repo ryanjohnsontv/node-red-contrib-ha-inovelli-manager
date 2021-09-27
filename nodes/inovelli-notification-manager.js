@@ -254,7 +254,7 @@ module.exports = function (RED) {
             let params = [24, 25];
             for (let x in params) {
               if (multicast) {
-                property = params[x];
+                var property = params[x];
                 node.send({
                   payload: {
                     domain,
@@ -276,6 +276,7 @@ module.exports = function (RED) {
             break;
           default:
             if (multicast) {
+              var property = parameter;
               node.send({
                 payload: {
                   domain,
