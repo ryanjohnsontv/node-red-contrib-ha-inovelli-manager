@@ -10,11 +10,17 @@ module.exports = function (RED) {
     this.passthrough = passthrough;
 
     node.on("input", (msg) => {
-      const { zwave: presetZwave, nodeid, switchtype, outputs, passthrough } = node;
+      const {
+        zwave: presetZwave,
+        nodeid,
+        switchtype,
+        outputs,
+        passthrough,
+      } = node;
       const payload = msg.payload;
       const domain = payload.event.domain;
       const event_type = payload.event_type;
-      const nodes = nodeid.split(',').map(Number);
+      const nodes = nodeid.split(",").map(Number);
       const node_id = parseInt(payload.event.node_id);
       const event_types = {
         zwave_js: "zwave_js_value_notification",
@@ -44,7 +50,15 @@ module.exports = function (RED) {
       }
       validateDomain(presetZwave, domain);
 
-      if (nodes.includes(node_id) === true || passthrough && error === 0) {
+      function validateNodeID() {
+        if (!nodes.includes(node_id) && !passthrough) {
+          error++;
+        }
+      }
+
+      validateNodeID();
+
+      if (error === 0) {
         const LZW30Map = {
           0: {
             button: 2,

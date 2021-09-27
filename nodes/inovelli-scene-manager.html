@@ -9,6 +9,7 @@
       switchtype: { value: "LZW30" },
       outputs: { value: 1 },
       labels: { value: ["Please select a Switch Type"] },
+      passthrough: { default: false },
     },
     inputs: 1,
     outputs: 1,
@@ -21,18 +22,7 @@
     label: function () {
       return this.name || "inovelli-scene-manager";
     },
-    oneditprepare: function () {
-      $("#node-input-passthrough").change(function () {
-        switch (this.value) {
-          case true:
-            $(".nodeid-input").hide();
-            break;
-          default:
-            $(".nodeid-input").show();
-            break;
-        }
-      });
-    },
+    oneditprepare: function () {},
     oneditsave: function () {
       const switchtype = $("#node-input-switchtype").val();
       let label;
@@ -137,6 +127,8 @@
     <label for="node-input-zwave"><i class="icon-tag"></i>Z-Wave Integration</label>
     <select name="node-input-zwave" id="node-input-zwave">
         <option value="zwave_js">Z-Wave JS</option>
+        <option value="ozw">Open Z-Wave</option>
+        <option value="zwave">Z-Wave</option>
     </select>
   </div>
   <div class="form-row nodeid-input">
@@ -170,7 +162,7 @@
       <dt>Switch Type<span class="property-type">number|string</span></dt>
       <dd>Determines which Inovelli switch is being used. (LZW30-SN, LZW31-SN, LZW36, LZW45)</dd>
 
-      <dt>Node ID Passthrough<span class="property-type">number|string</span></dt>
-      <dd>Disables specifying a node id, node will instead pass through all Z-Wave JS value notification (ideal when your Z-Wave network uses all of the same switch)</dd>
+      <dt>Node ID Passthrough<span class="property-type">boolean</span></dt>
+      <dd>Disables specifying a node id, node will instead pass through all value/scene notifications (ideal when your Z-Wave network uses ALL of the same switch)</dd>
   </dl>
 </script>
