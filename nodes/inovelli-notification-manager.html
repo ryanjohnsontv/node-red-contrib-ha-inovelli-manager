@@ -13,6 +13,7 @@
       effect: { value: 4 },
       switchtype: { value: 8 },
       clear: { value: false },
+      multicast: { value: false },
     },
     inputs: 1,
     outputs: 1,
@@ -229,6 +230,10 @@
     <label for="node-input-clear"><i class="icon-tag"></i>Clear Notification</label>
     <input type="checkbox" id="node-input-clear">
   </div>
+  <div class="form-row">
+    <label for="node-input-multicast"><i class="icon-tag"></i>Use Multicast</label>
+    <input type="checkbox" id="node-input-multicast">
+  </div>
 </script>
 
 <script type="text/x-red" data-help-name="inovelli-notification-manager">
@@ -260,6 +265,9 @@
 
         <dt>Clear Notification<span class="property-type">boolean</span></dt>
         <dd>Check this box or set msg.payload.clear to true to clear the current LED notification</dd>
+
+        <dt>Use Multicast<span class="property-type">boolean</span></dt>
+        <dd>Check this box if your devices are set up to support multicasting</dd>
     </dl>
     <p>
       It is possible to override values set on this node by passing values in a payload e.g.

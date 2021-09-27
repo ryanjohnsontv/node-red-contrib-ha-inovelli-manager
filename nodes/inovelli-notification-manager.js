@@ -13,6 +13,7 @@ module.exports = function (RED) {
       effect,
       switchtype,
       clear,
+      multicast,
     } = config;
 
     this.zwave = zwave;
@@ -24,6 +25,7 @@ module.exports = function (RED) {
     this.effect = parseInt(effect, 10);
     this.switchtype = parseInt(switchtype, 10);
     this.clear = clear;
+    this.multicast = multicast;
 
     node.on("input", (msg) => {
       const {
@@ -36,8 +38,9 @@ module.exports = function (RED) {
         effect: presetEffect,
         switchtype: presetSwitchtype,
         clear: presetClear,
+        multicast: presetMulticast,
       } = node;
-      
+
       const payload = msg.payload || {};
       const domain = payload.zwave || presetZwave;
       const brightness = payload.brightness || presetBrightness;
@@ -45,7 +48,9 @@ module.exports = function (RED) {
       var duration = payload.duration || presetDuration;
       var effect = payload.effect || presetEffect;
       var parameter = payload.switchtype || presetSwitchtype;
-      const clear = (payload.clear != undefined) ? payload.clear : presetClear;
+      const clear = payload.clear != undefined ? payload.clear : presetClear;
+      const multicast =
+        payload.multicast != undefined ? payload.multicast : presetMulticast;
       var error = 0;
 
       function inputSwitchConvert(parameter) {
@@ -225,6 +230,7 @@ module.exports = function (RED) {
 
       function sendNotification(service, id) {
         var size = domain === "zwave" ? { size: 4 } : {};
+        const command_class = 112;
         var value, hsl, keyword, hue;
         if (clear === true || effect === 0 || duration === 0) {
           switch (domain) {
@@ -247,7 +253,38 @@ module.exports = function (RED) {
           case 49:
             let params = [24, 25];
             for (let x in params) {
-              parameter = params[x];
+              if (multicast) {
+                var property = params[x];
+                node.send({
+                  payload: {
+                    domain,
+                    service,
+                    data: { ...id, property, command_class, value },
+                  },
+                });
+              } else {
+                parameter = params[x];
+                node.send({
+                  payload: {
+                    domain,
+                    service,
+                    data: { ...id, parameter, ...size, value },
+                  },
+                });
+              }
+            }
+            break;
+          default:
+            if (multicast) {
+              var property = parameter;
+              node.send({
+                payload: {
+                  domain,
+                  service,
+                  data: { ...id, property, command_class, value },
+                },
+              });
+            } else {
               node.send({
                 payload: {
                   domain,
@@ -256,15 +293,6 @@ module.exports = function (RED) {
                 },
               });
             }
-            break;
-          default:
-            node.send({
-              payload: {
-                domain,
-                service,
-                data: { ...id, parameter, ...size, value },
-              },
-            });
         }
       }
 
@@ -281,7 +309,11 @@ module.exports = function (RED) {
           case "zwave_js":
             const entity_id = payload.entity_id || entityid;
             id = entity_id ? { entity_id } : {};
-            service = "bulk_set_partial_config_parameters";
+            if (multicast) {
+              service = "multicast_set_value";
+            } else {
+              service = "bulk_set_partial_config_parameters";
+            }
             sendNotification(service, id);
             break;
           default:
