@@ -77,6 +77,19 @@
           brightnessOutput.innerHTML = this.value;
         };
       });
+      $("#node-input-clear").change(function () {
+        if ($('#node-input-clear').is(":checked")) {
+          $(".color-input").hide();
+          $(".brightness-input").hide();
+          $(".duration-input").hide();
+          $(".effect-input").hide();
+        } else {
+          $(".color-input").show();
+          $(".brightness-input").show();
+          $(".duration-input").show();
+          $(".effect-input").show();
+        }
+      });
     },
   });
 </script>
@@ -184,7 +197,7 @@
     </div>
     <output id="brightnessOutput"></output>
   </div>
-  <div class="form-row">
+  <div class="form-row duration-input">
     <label for="node-input-duration"><i class="icon-tag"></i>Duration</label>
     <select name="node-input-duration" id="node-input-duration">
         <option value="0">Off</option>
@@ -215,7 +228,7 @@
         <option value="255">Indefinitely</option>
     </select>
   </div>
-  <div class="form-row">
+  <div class="form-row effect-input">
     <label for="node-input-effect"><i class="icon-tag"></i>Effect Type</label>
     <select name="node-input-effect" id="node-input-effect">
         <option value="0">Placeholder</option>
