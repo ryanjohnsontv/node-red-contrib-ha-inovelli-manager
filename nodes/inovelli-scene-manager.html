@@ -22,7 +22,15 @@
     label: function () {
       return this.name || "inovelli-scene-manager";
     },
-    oneditprepare: function () {},
+    oneditprepare: function () {
+      $("#node-input-passthrough").change(function () {
+        if ($('#node-input-passthrough').is(":checked")) {
+          $(".nodeid-input").hide();
+        } else {
+          $(".nodeid-input").show();
+        }
+      });
+    },
     oneditsave: function () {
       const switchtype = $("#node-input-switchtype").val();
       let label;

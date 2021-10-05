@@ -1,5 +1,5 @@
 # Instant Notifications - Multicast Method
-This requires a bit more setup but replaces the service zwave_js.bulk_set_parameters with the faster zwave_js.multicast_set_value alternative.
+This requires a bit more setup but replaces the service zwave_js.bulk_set_parameters with the faster zwave_js.multicast_set_value alternative. Requires relevant nodes to be on the same Z-Wave network with the same security level.
 
 ## How To Use:
 

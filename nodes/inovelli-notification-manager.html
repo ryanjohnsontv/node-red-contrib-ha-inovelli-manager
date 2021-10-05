@@ -42,10 +42,12 @@
           case "zwave_js":
             $(".nodeid-input").hide();
             $(".entityid-input").show();
+            $(".multicast-input").show();
             break;
           default:
             $(".nodeid-input").show();
             $(".entityid-input").hide();
+            $(".multicast-input").hide();
             break;
         }
       });
@@ -76,6 +78,19 @@
         brightness.oninput = function () {
           brightnessOutput.innerHTML = this.value;
         };
+      });
+      $("#node-input-clear").change(function () {
+        if ($('#node-input-clear').is(":checked")) {
+          $(".color-input").hide();
+          $(".brightness-input").hide();
+          $(".duration-input").hide();
+          $(".effect-input").hide();
+        } else {
+          $(".color-input").show();
+          $(".brightness-input").show();
+          $(".duration-input").show();
+          $(".effect-input").show();
+        }
       });
     },
   });
@@ -184,7 +199,7 @@
     </div>
     <output id="brightnessOutput"></output>
   </div>
-  <div class="form-row">
+  <div class="form-row duration-input">
     <label for="node-input-duration"><i class="icon-tag"></i>Duration</label>
     <select name="node-input-duration" id="node-input-duration">
         <option value="0">Off</option>
@@ -215,7 +230,7 @@
         <option value="255">Indefinitely</option>
     </select>
   </div>
-  <div class="form-row">
+  <div class="form-row effect-input">
     <label for="node-input-effect"><i class="icon-tag"></i>Effect Type</label>
     <select name="node-input-effect" id="node-input-effect">
         <option value="0">Placeholder</option>
@@ -230,7 +245,7 @@
     <label for="node-input-clear"><i class="icon-tag"></i>Clear Notification</label>
     <input type="checkbox" id="node-input-clear">
   </div>
-  <div class="form-row">
+  <div class="form-row multicast-input">
     <label for="node-input-multicast"><i class="icon-tag"></i>Use Multicast</label>
     <input type="checkbox" id="node-input-multicast">
   </div>
