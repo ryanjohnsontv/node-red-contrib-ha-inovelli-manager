@@ -11,8 +11,7 @@ be connected to an api-call-service node. This node will automatically fill in t
 -   Support for OpenZWave, Z-Wave (deprectaed), and Z-Wave JS (Requires Home Assistant 2021.4.0 or newer)
 -   Allows all fields to be controlled by the payload of an incoming message
 -   Use color-convert library to accept color names, RGB arrays, hexadecimals, or hue value as input
--   (For notifications) Automatically convert input values to proper format (ie. inputting "2 Hours" converts to 168 for Inovelli math)
--   Detect color input to properly convert to Inovelli's hue range
+-   Automatically convert input values to proper format (ie. inputting "2 Hours" converts to 168 for Inovelli math)
 -   Support for ALL Inovelli switches
 -   Easily clear notifications
 
