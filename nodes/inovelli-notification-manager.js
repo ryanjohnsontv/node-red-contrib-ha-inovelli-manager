@@ -27,7 +27,7 @@ module.exports = function (RED) {
     this.clear = clear;
     this.multicast = multicast;
 
-    node.on("input", (msg) => {
+    node.on("input", (msg, send, done) => {
       const {
         zwave: presetZwave,
         entityid,
@@ -51,47 +51,47 @@ module.exports = function (RED) {
       const clear = payload.clear != undefined ? payload.clear : presetClear;
       const multicast =
         payload.multicast != undefined ? payload.multicast : presetMulticast;
-      var error = 0;
+      var parameter, service, err;
 
       function inputSwitchConvert(parameter) {
         if (isNaN(parameter)) {
           parameter = parameter.toLowerCase();
-          var switchConvert;
-          if (["switch", "lzw30", "lzw30-sn", "on/off"].includes(parameter)) {
-            switchConvert = 8;
-          } else if (["dimmer", "lzw31", "lzw31-sn"].includes(parameter)) {
-            switchConvert = 16;
-          } else if (["combo_light", "lzw36_light"].includes(parameter)) {
-            switchConvert = 24;
-          } else if (["combo_fan", "lzw36_fan", "fan"].includes(parameter)) {
-            switchConvert = 25;
-          } else if (
-            ["lzw36", "fan and light", "light and fan"].includes(parameter)
-          ) {
-            switchConvert = 49;
-          }
-          if (switchConvert !== undefined) {
-            parameter = switchConvert;
+        }
+        if (["switch", "lzw30", "lzw30-sn", "on/off", 8].includes(parameter)) {
+          parameter = 8;
+        } else if (["dimmer", "lzw31", "lzw31-sn", 16].includes(parameter)) {
+          parameter = 16;
+        } else if (["combo_light", "lzw36_light", 24].includes(parameter)) {
+          parameter = 24;
+        } else if (["combo_fan", "lzw36_fan", "fan", 25].includes(parameter)) {
+          parameter = 25;
+        } else if (
+          ["lzw36", "fan and light", "light and fan", 49].includes(parameter)
+        ) {
+          parameter = 49;
+        } else {
+          err = `Incorrect Switch Type: ${parameter}`;
+          if (done) {
+            done(err);
           } else {
-            node.error(`Incorrect Switch Type: ${parameter}`);
-            error++;
+            node.error(err);
           }
-        } else if (![8, 16, 24, 25, 49].includes(parameter)) {
-          node.error(
-            `Incorrect Switch Value: ${parameter}. Valid values are 8, 16, 24, 25, or 49`
-          );
-          error++;
         }
         return parameter;
       }
 
       function inputColorConvert(color) {
+        var rgb;
         if (Array.isArray(color) && typeof color === "object") {
           if (color.length === 3) {
             rgb = color;
           } else {
-            node.error(`Check your RGB values: ${color}`);
-            error++;
+            err = `Check your RGB values: ${color}`;
+            if (done) {
+              done(err);
+            } else {
+              node.error(err);
+            }
           }
         } else if (typeof color === "string") {
           if (color.startsWith("#") === true) {
@@ -105,16 +105,17 @@ module.exports = function (RED) {
             let conv_hsv = [color, 100, 100];
             rgb = convert.hsv.rgb(conv_hsv);
           } else {
-            node.error(`Incorrect Hue Value: ${color}`);
-            error++;
+            err = `Incorrect Hue Value: ${color}`;
+            if (done) {
+              done(err);
+            } else {
+              node.error(err);
+            }
           }
-        } else {
-          node.error(`Incorrect Color: ${color}. Using default color: Red`);
         }
-        if (rgb === undefined) {
-          node.error(
-            `Incorrect Color: ${color}. Using preset color value: ${presetColor}`
-          );
+        if (!rgb) {
+          err = `Incorrect Color: ${color}. Using preset color value: ${presetColor}`;
+          node.error(err);
           let conv_hsv = [presetColor, 100, 100];
           rgb = convert.hsv.rgb(conv_hsv);
         }
@@ -123,10 +124,12 @@ module.exports = function (RED) {
 
       function inputBrightnessCheck(brightness) {
         if (brightness < 0 || brightness > 11) {
-          node.error(
-            `Invalid brightness value: ${brightness}. Please enter a value between 0 and 10`
-          );
-          error++;
+          err = `Invalid brightness value: ${brightness}. Please enter a value between 0 and 10`;
+          if (done) {
+            done(err);
+          } else {
+            node.error(err);
+          }
         }
       }
 
@@ -167,8 +170,12 @@ module.exports = function (RED) {
             error++;
           }
         } else if (duration < 0 || duration > 255) {
-          node.error(`Incorrect Duration: ${duration}. `);
-          error++;
+          err = `Incorrect Duration: ${duration}.`;
+          if (done) {
+            done(err);
+          } else {
+            node.error(err);
+          }
         }
         return duration;
       }
@@ -200,37 +207,65 @@ module.exports = function (RED) {
             effect = dimmerOptions[effect];
           } else {
             if (parameter === 8) {
-              node.error(
-                `Incorrect Effect: ${effect}. Valid effects for this switch type are Off, Solid, Fast Blink, Slow Blink, or Pulse`
-              );
+              err = `Incorrect Effect: ${effect}. Valid effects for this switch type are Off, Solid, Fast Blink, Slow Blink, or Pulse`;
+              if (done) {
+                done(err);
+              } else {
+                node.error(err);
+              }
             } else if ([16, 24, 25, 49].includes(parameter)) {
-              node.error(
-                `Incorrect Effect: ${effect}. Valid effects for this switch type are Off, Solid, Chase, Fast Blink, Slow Blink, or Pulse`
-              );
+              err = `Incorrect Effect: ${effect}. Valid effects for this switch type are Off, Solid, Chase, Fast Blink, Slow Blink, or Pulse`;
+              if (done) {
+                done(err);
+              } else {
+                node.error(err);
+              }
             } else {
-              node.error(`Incorrect Effect: ${effect}, check switch type`);
+              err = `Incorrect Effect: ${effect}, check switch type`;
+              if (done) {
+                done(err);
+              } else {
+                node.error(err);
+              }
             }
-            error++;
           }
         } else if (![0, 1, 2, 3, 4, 5].includes(effect)) {
-          node.error(`Incorrect Effect: ${effect}. Valid effect range is 0-5`);
-          error++;
+          err = `Incorrect Effect: ${effect}. Valid effect range is 0-5`;
+          if (done) {
+            done(err);
+          } else {
+            node.error(err);
+          }
         }
         return effect;
       }
 
       function inputDomainCheck(domain) {
-        if (!["ozw", "zwave", "zwave_js"].includes(domain)) {
-          node.error(
-            `Invalid Z-Wave domain: ${domain}. Supported domains are zwave, ozw, or zwave_js`
-          );
-          error++;
+        switch (domain) {
+          case "zwave_js":
+            if (multicast) {
+              service = "multicast_set_value";
+            } else {
+              service = "bulk_set_config_parameter";
+            }
+            break;
+          case "ozw":
+            service = "set_config_parameter";
+            break;
+          case "zwave":
+            service = "set_config_parameter";
+            break;
+          default:
+            err = `Invalid Z-Wave domain: ${domain}. Supported domains are zwave, ozw, or zwave_js.`;
+            if (done) {
+              done(err);
+            } else {
+              node.error(err);
+            }
         }
       }
 
-      function sendNotification(service, id) {
-        var size = domain === "zwave" ? { size: 4 } : {};
-        const command_class = 112;
+      function calculateValue() {
         var value, hsl, keyword, hue;
         if (clear === true || effect === 0 || duration === 0) {
           switch (domain) {
@@ -249,50 +284,30 @@ module.exports = function (RED) {
           value = hue + brightness * 256 + duration * 65536 + effect * 16777216;
           node.status(`Sent Color: ${keyword}`);
         }
-        switch (parameter) {
-          case 49:
-            let params = [24, 25];
-            for (let x in params) {
-              if (multicast) {
-                var property = params[x];
-                node.send({
-                  payload: {
-                    domain,
-                    service,
-                    data: { ...id, property, command_class, value },
-                  },
-                });
-              } else {
-                parameter = params[x];
-                node.send({
-                  payload: {
-                    domain,
-                    service,
-                    data: { ...id, parameter, ...size, value },
-                  },
-                });
-              }
-            }
+        return value;
+      }
+
+      function sendNotification(parameter, value, id) {
+        var size = domain === "zwave" ? { size: 4 } : {};
+        switch (service) {
+          case "multicast_set_value":
+            node.send({
+              payload: {
+                domain,
+                service,
+                data: { ...id, property: parameter, command_class: 112, value },
+              },
+            });
             break;
           default:
-            if (multicast) {
-              var property = parameter;
-              node.send({
-                payload: {
-                  domain,
-                  service,
-                  data: { ...id, property, command_class, value },
-                },
-              });
-            } else {
-              node.send({
-                payload: {
-                  domain,
-                  service,
-                  data: { ...id, parameter, ...size, value },
-                },
-              });
-            }
+            node.send({
+              payload: {
+                domain,
+                service,
+                data: { ...id, parameter, ...size, value },
+              },
+            });
+            break;
         }
       }
 
@@ -303,32 +318,41 @@ module.exports = function (RED) {
       effect = inputEffectConvert(effect, parameter);
       inputDomainCheck(domain);
 
-      if (error === 0) {
-        var service, id;
+      if (!err) {
+        var id;
+        var value = calculateValue();
         switch (domain) {
           case "zwave_js":
             const entity_id = payload.entity_id || entityid;
             id = entity_id ? { entity_id } : {};
-            if (multicast) {
-              service = "multicast_set_value";
-            } else {
-              service = "bulk_set_partial_config_parameters";
+            switch (parameter) {
+              case 49:
+                sendNotification(24, value, id);
+                sendNotification(25, value, id);
+                break;
+              default:
+                sendNotification(parameter, value, id);
+                break;
             }
-            sendNotification(service, id);
             break;
           default:
             var node_id = payload.node_id || nodeid;
             const nodes = node_id.split(",").map(Number);
-            service = "set_config_parameter";
             for (let x in nodes) {
               node_id = nodes[x];
               id = node_id ? { node_id } : {};
-              sendNotification(service, id);
-              break;
+              switch (parameter) {
+                case 49:
+                  sendNotification(24, value, id);
+                  sendNotification(25, value, id);
+                  break;
+                default:
+                  sendNotification(parameter, value, id);
+                  break;
+              }
             }
+            break;
         }
-      } else {
-        node.status(`Error! Check debug window for more info`);
       }
     });
   }

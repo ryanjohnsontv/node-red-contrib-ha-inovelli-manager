@@ -8,91 +8,165 @@ module.exports = function (RED) {
       nodeid,
       entityid,
       switchtype,
-      lightColor,
-      lightBrightness,
-      lightBrightnessOff,
+      color,
+      brightness,
+      brightnessOff,
       fanColor,
       fanBrightness,
       fanBrightnessOff,
+      toggleColor,
+      toggleBrightness,
+      toggleBrightnessOff,
+      toggleFanColor,
+      toggleFanBrightness,
+      toggleFanBrightnessOff,
+      multicast,
     } = config;
 
     this.zwave = zwave;
     this.entityid = entityid;
     this.nodeid = nodeid;
     this.switchtype = parseInt(switchtype, 10);
-    this.lightColor = parseInt(lightColor, 10);
-    this.lightBrightness = parseInt(lightBrightness, 10);
-    this.lightBrightnessOff = parseInt(lightBrightnessOff, 10);
+    this.color = parseInt(color, 10);
+    this.brightness = parseInt(brightness, 10);
+    this.brightnessOff = parseInt(brightnessOff, 10);
     this.fanColor = parseInt(fanColor, 10);
     this.fanBrightness = parseInt(fanBrightness, 10);
     this.fanBrightnessOff = parseInt(fanBrightnessOff, 10);
+    this.toggleColor = toggleColor;
+    this.toggleBrightness = toggleBrightness;
+    this.toggleBrightnessOff = toggleBrightnessOff;
+    this.toggleFanColor = toggleFanColor;
+    this.toggleFanBrightness = toggleFanBrightness;
+    this.toggleFanBrightnessOff = toggleFanBrightnessOff;
+    this.multicast = multicast;
 
-    node.on("input", (msg) => {
+    node.on("input", (msg, send, done) => {
       const {
         zwave: presetZwave,
         entityid,
         nodeid,
         switchtype: presetSwitchtype,
-        lightColor: presetLightColor,
-        lightBrightness: presetLightBrightness,
-        lightBrightnessOff: presetLightBrightnessOff,
+        color: presetColor,
+        brightness: presetBrightness,
+        brightnessOff: presetBrightnessOff,
         fanColor: presetFanColor,
         fanBrightness: presetFanBrightness,
         fanBrightnessOff: presetFanBrightnessOff,
+        toggleColor,
+        toggleBrightness,
+        toggleBrightnessOff,
+        toggleFanColor,
+        toggleFanBrightness,
+        toggleFanBrightnessOff,
+        multicast: presetMulticast,
       } = node;
-      
+
       const payload = msg.payload || {};
       const domain = payload.zwave || presetZwave;
       var parameter = payload.switchtype || presetSwitchtype;
-      var lightColor = payload.lightColor || presetLightColor;
-      const lightBrightness = payload.lightBrightness || presetLightBrightness;
-      const lightBrightnessOff =
-        payload.lightBrightnessOff || presetLightBrightnessOff;
-      var fanColor = payload.fanColor || presetFanColor;
-      const fanBrightness = payload.fanBrightness || presetFanBrightness;
-      const fanBrightnessOff =
-        payload.fanBrightnessOff || presetFanBrightnessOff;
-      var error = 0;
+      var err,
+        id,
+        color,
+        brightness,
+        brightnessOff,
+        fanColor,
+        fanBrightness,
+        fanBrightnessOff;
+      const multicast =
+        payload.multicast != undefined ? payload.multicast : presetMulticast;
+      const output = {};
+
+      function inputDomainCheck(domain) {
+        let node_id;
+        switch (domain) {
+          case "zwave_js":
+            var entity_id = payload.entity_id || entityid;
+            id = entity_id ? { entity_id } : {};
+            output.domain = "zwave_js";
+            if (multicast) {
+              output.service = "multicast_set_value";
+            } else {
+              output.service = "set_config_parameter";
+            }
+            break;
+          case "ozw":
+            node_id = payload.node_id || nodeid;
+            id = node_id.split(",").map(Number);
+            output.service = "set_config_parameter";
+            break;
+          case "zwave":
+            node_id = payload.node_id || nodeid;
+            id = node_id.split(",").map(Number);
+            output.service = "set_config_parameter";
+            break;
+          default:
+            err = `Invalid Z-Wave domain: ${domain}. Supported domains are zwave, ozw, or zwave_js.`;
+            if (done) {
+              done(err);
+            } else {
+              node.error(err);
+            }
+        }
+      }
 
       function inputSwitchConvert(parameter) {
         if (isNaN(parameter)) {
           parameter = parameter.toLowerCase();
-          var switchConvert;
-          if (["switch", "lzw30", "lzw30-sn"].includes(parameter)) {
-            switchConvert = 5;
-          } else if (["dimmer", "lzw31", "lzw31-sn"].includes(parameter)) {
-            switchConvert = 13;
-          } else if (["combo_light", "lzw36_light"].includes(parameter)) {
-            switchConvert = 18;
-          } else if (["combo_fan", "lzw36_fan", "fan"].includes(parameter)) {
-            switchConvert = 20;
-          } else if (
-            ["lzw36", "fan and light", "light and fan"].includes(parameter)
-          ) {
-            switchConvert = 38;
-          }
-          if (switchConvert !== undefined) {
-            parameter = switchConvert;
-          } else {
-            node.error(`Incorrect Switch Type: ${parameter}`);
-            error++;
-          }
-        } else if (![5, 13, 18, 20, 38].includes(parameter)) {
-          node.error(
-            `Incorrect Switch Value: ${parameter}. Valid values are 5, 13, 18, 20, or 38.`
-          );
-          error++;
         }
-        return parameter;
+        if (["switch", "lzw30", "lzw30-sn", 5].includes(parameter)) {
+          output.colorParam = 5;
+          output.brightnessParam = 6;
+          output.brightnessOffParam = 7;
+          LightHandler();
+        } else if (["dimmer", "lzw31", "lzw31-sn", 13].includes(parameter)) {
+          output.colorParam = 13;
+          output.brightnessParam = 14;
+          output.brightnessOffParam = 15;
+          LightHandler();
+        } else if (["combo_light", "lzw36_light", 18].includes(parameter)) {
+          output.colorParam = 18;
+          output.brightnessParam = 19;
+          output.brightnessOffParam = 22;
+          LightHandler();
+        } else if (["combo_fan", "lzw36_fan", "fan", 20].includes(parameter)) {
+          output.fanColorParam = 20;
+          output.fanBrightnessParam = 21;
+          output.fanBrightnessOffParam = 23;
+          FanHandler();
+        } else if (
+          ["lzw36", "fan and light", "light and fan", 38].includes(parameter)
+        ) {
+          output.colorParam = 18;
+          output.brightnessParam = 19;
+          output.brightnessOffParam = 22;
+          output.fanColorParam = 20;
+          output.fanBrightnessParam = 21;
+          output.fanBrightnessOffParam = 23;
+          LightHandler();
+          FanHandler();
+        } else {
+          err = `Incorrect Switch Type: ${parameter}`;
+          if (done) {
+            done(err);
+          } else {
+            node.error(err);
+          }
+        }
       }
 
-      function inputColorConvert(color, source, presetColor) {
+      function inputColorConvert(color, source) {
+        var rgb;
         if (Array.isArray(color) && typeof color === "object") {
           if (color.length === 3) {
             rgb = color;
           } else {
-            node.error(`Check your RGB values for ${source}: ${color}`);
-            error++;
+            err = `Check your RGB values for ${source}: ${color}`;
+            if (done) {
+              done(err);
+            } else {
+              node.error(err);
+            }
           }
         } else if (typeof color === "string") {
           if (color.startsWith("#") === true) {
@@ -105,205 +179,152 @@ module.exports = function (RED) {
           if (color >= 0 && color <= 360) {
             let conv_hsv = [color, 100, 100];
             rgb = convert.hsv.rgb(conv_hsv);
-          } else {
-            node.error(`Incorrect Hue Value for ${source}: ${color}`);
-            error++;
           }
+        }
+        if (rgb) {
+          return rgb;
         } else {
-          node.error(
-            `Incorrect Color for ${source}: ${color}. Using default color: Red`
-          );
+          err = `Incorrect Color for ${source}: ${color}.`;
+          if (done) {
+            done(err);
+          } else {
+            node.error(err);
+          }
         }
-        if (rgb === undefined) {
-          node.error(
-            `Incorrect Color for ${source}: ${color}. Using preset color value: ${presetColor}`
-          );
-          let conv_hsv = [presetColor, 100, 100];
-          rgb = convert.hsv.rgb(conv_hsv);
-        }
-        return rgb;
       }
 
       function inputBrightnessCheck(brightness, source) {
         if (brightness < 0 || brightness > 11) {
-          node.error(
-            `Invalid brightness value for brightness while ${source}: ${brightness}. Please enter a value between 0 and 10.`
-          );
-          error++;
-        }
-      }
-
-      function inputDomainCheck(domain) {
-        if (!["ozw", "zwave", "zwave_js"].includes(domain)) {
-          node.error(
-            `Invalid Z-Wave domain: ${domain}. Supported domains are zwave, ozw, or zwave_js.`
-          );
-          error++;
-        }
-      }
-
-      inputDomainCheck(domain);
-      parameter = inputSwitchConvert(parameter);
-
-      switch (parameter) {
-        case 38:
-          lightColor = inputColorConvert(lightColor, "Light", presetLightColor);
-          inputBrightnessCheck(lightBrightness, "on");
-          inputBrightnessCheck(lightBrightnessOff, "off");
-          fanColor = inputColorConvert(fanColor, "Fan", presetFanColor);
-          inputBrightnessCheck(fanBrightness, "on");
-          inputBrightnessCheck(fanBrightnessOff, "off");
-          break;
-        case 20:
-          fanColor = inputColorConvert(fanColor, "Fan", presetFanColor);
-          inputBrightnessCheck(fanBrightness, "on");
-          inputBrightnessCheck(fanBrightnessOff, "off");
-          break;
-        default:
-          lightColor = inputColorConvert(lightColor, "Light", presetLightColor);
-          inputBrightnessCheck(lightBrightness, "on");
-          inputBrightnessCheck(lightBrightnessOff, "off");
-          break;
-      }
-
-      function generateMsg(id) {
-        let lightHSL,
-          fanHSL,
-          lightKeyword,
-          fanKeyword,
-          lightHue,
-          fanHue,
-          params;
-        switch (parameter) {
-          case 38:
-            lightHSL = [convert.rgb.hsl(lightColor)[0], 100, 50];
-            lightKeyword = convert.rgb.keyword(convert.hsl.rgb(lightHSL));
-            lightHue = parseInt((lightHSL[0] * (17 / 24)).toFixed(0));
-            fanHSL = [convert.rgb.hsl(fanColor)[0], 100, 50];
-            fanKeyword = convert.rgb.keyword(convert.hsl.rgb(fanHSL));
-            fanHue = parseInt((fanHSL[0] * (17 / 24)).toFixed(0));
-            node.status(
-              `Set Fan Color: ${fanKeyword}; Set Light Color: ${lightKeyword}`
-            );
-            params = {
-              18: { value: lightHue, size: 2 },
-              19: { value: lightBrightness, size: 1 },
-              20: { value: fanHue, size: 2 },
-              21: { value: fanBrightness, size: 1 },
-              22: { value: lightBrightnessOff, size: 1 },
-              23: { value: fanBrightnessOff, size: 1 },
-            };
-            break;
-          case 20:
-            fanHSL = [convert.rgb.hsl(fanColor)[0], 100, 50];
-            fanKeyword = convert.rgb.keyword(convert.hsl.rgb(fanHSL));
-            fanHue = parseInt((fanHSL[0] * (17 / 24)).toFixed(0));
-            node.status(
-              `Fan Color: ${fanKeyword}, On/Off:${fanBrightness}/${fanBrightnessOff}`
-            );
-            params = {
-              20: { value: fanHue, size: 2 },
-              21: { value: fanBrightness, size: 1 },
-              23: { value: fanBrightnessOff, size: 1 },
-            };
-            break;
-          case 18:
-            lightHSL = [convert.rgb.hsl(lightColor)[0], 100, 50];
-            lightKeyword = convert.rgb.keyword(convert.hsl.rgb(lightHSL));
-            lightHue = parseInt((lightHSL[0] * (17 / 24)).toFixed(0));
-            node.status(
-              `Light Color: ${lightKeyword}, On/Off:${lightBrightness}/${lightBrightnessOff}`
-            );
-            params = {
-              18: { value: lightHue, size: 2 },
-              19: { value: lightBrightness, size: 1 },
-              22: { value: lightBrightnessOff, size: 1 },
-            };
-            break;
-          case 13:
-            lightHSL = [convert.rgb.hsl(lightColor)[0], 100, 50];
-            lightKeyword = convert.rgb.keyword(convert.hsl.rgb(lightHSL));
-            lightHue = parseInt((lightHSL[0] * (17 / 24)).toFixed(0));
-            node.status(
-              `Light Color: ${lightKeyword}, On/Off:${lightBrightness}/${lightBrightnessOff}`
-            );
-            params = {
-              13: { value: lightHue, size: 2 },
-              14: { value: lightBrightness, size: 1 },
-              15: { value: lightBrightnessOff, size: 1 },
-            };
-            break;
-          case 5:
-            lightHSL = [convert.rgb.hsl(lightColor)[0], 100, 50];
-            lightKeyword = convert.rgb.keyword(convert.hsl.rgb(lightHSL));
-            lightHue = parseInt((lightHSL[0] * (17 / 24)).toFixed(0));
-            node.status(
-              `Light Color: ${lightKeyword}, On/Off:${lightBrightness}/${lightBrightnessOff}`
-            );
-            params = {
-              5: { value: lightHue, size: 2 },
-              6: { value: lightBrightness, size: 1 },
-              7: { value: lightBrightnessOff, size: 1 },
-            };
-            break;
-        }
-        for (let x in params) {
-          parameter = parseInt(x);
-          value = parseInt(params[x].value);
-          let size = parseInt(params[x].size);
-          size = domain === "zwave" ? { size } : {};
-          if (domain !== "zwave_js" && id.node_id.includes(",")) {
-            const nodes = id.node_id.split(",").map(Number);
-            for (let y in nodes) {
-              node_id = nodes[y];
-              if (isNaN(node_id)) {
-                node.error(
-                  `Invalid Node ID List. Please make sure your list of Node IDs contains integers seprated by commas.`
-                );
-                node.status({
-                  fill: "red",
-                  shape: "ring",
-                  text: "Error! Check debug window for more info",
-                });
-              } else {
-                let data = { node_id, ...size, parameter, value };
-                sendMsg(data);
-              }
-            }
+          err = `Invalid brightness value for brightness while ${source}: ${brightness}. Please enter a value between 0 and 10.`;
+          if (done) {
+            done(err);
           } else {
-            let data = { ...id, parameter, ...size, value };
-            sendMsg(data);
+            node.error(err);
           }
         }
       }
 
+      inputDomainCheck(domain);
+      inputSwitchConvert(parameter);
+
+      function LightHandler() {
+        if (!err) {
+          if (toggleColor || payload.color) {
+            color = payload.color || presetColor;
+            color = inputColorConvert(color, "Light", color);
+            let HSL = [convert.rgb.hsl(color)[0], 100, 50];
+            let keyword = convert.rgb.keyword(convert.hsl.rgb(HSL));
+            let hue = parseInt((HSL[0] * (17 / 24)).toFixed(0));
+            node.status(`Light Color: ${keyword}`);
+            constructMsg("color", hue, output.colorParam);
+          }
+          if (toggleBrightness || payload.brightness) {
+            brightness = payload.brightness || presetBrightness;
+            inputBrightnessCheck(brightness, "on");
+            constructMsg("brightness", brightness, output.brightnessParam);
+          }
+          if (toggleBrightnessOff || payload.brightnessOff) {
+            brightnessOff = payload.brightnessOff || presetBrightnessOff;
+            inputBrightnessCheck(brightnessOff, "off");
+            constructMsg(
+              "brightnessOff",
+              brightnessOff,
+              output.brightnessOffParam
+            );
+          }
+        }
+      }
+
+      function FanHandler() {
+        if (!err) {
+          if (toggleFanColor || payload.fanColor) {
+            fanColor = payload.fanColor || presetFanColor;
+            fanColor = inputColorConvert(fanColor, "Fan", fanColor);
+            let fanHSL = [convert.rgb.hsl(fanColor)[0], 100, 50];
+            let fanKeyword = convert.rgb.keyword(convert.hsl.rgb(fanHSL));
+            let fanHue = parseInt((fanHSL[0] * (17 / 24)).toFixed(0));
+            node.status(`Fan Color: ${fanKeyword}`);
+            constructMsg("fanColor", fanHue, output.fanColorParam);
+          }
+          if (toggleFanBrightness || payload.fanBrightness) {
+            fanBrightness = payload.fanBrightness || presetFanBrightness;
+            inputBrightnessCheck(fanBrightness, "on");
+            constructMsg(
+              "fanBrightness",
+              fanBrightness,
+              output.fanBrightnessParam
+            );
+          }
+          if (toggleFanBrightnessOff || payload.fanBrightnessOff) {
+            fanBrightnessOff =
+              payload.fanBrightnessOff || presetFanBrightnessOff;
+            inputBrightnessCheck(fanBrightnessOff, "off");
+            constructMsg(
+              "fanBrightnessOff",
+              fanBrightnessOff,
+              output.fanBrightnessOffParam
+            );
+          }
+        }
+      }
+
+      function constructMsg(type, value, param) {
+        var data = {};
+        switch (output.service) {
+          case "multicast_set_value":
+            data = {
+              ...id,
+              property: param,
+              command_class: 112,
+              value,
+            };
+            sendMsg(data);
+            break;
+          default:
+            switch (domain) {
+              case "zwave_js":
+                data = { ...id, parameter: param, value };
+                sendMsg(data);
+                break;
+              case "ozw":
+                for (let x in id) {
+                  let node_id = id[x];
+                  node_id = node_id ? { node_id } : {};
+                  data = { ...node_id, parameter: param, value };
+                  sendMsg(data);
+                }
+                break;
+              case "zwave":
+                let size;
+                switch (type) {
+                  case "color":
+                    size = 2;
+                    break;
+                  case "fanColor":
+                    size = 2;
+                    break;
+                  default:
+                    size = 1;
+                    break;
+                }
+                for (let x in id) {
+                  let node_id = id[x];
+                  node_id = node_id ? { node_id } : {};
+                  data = { ...node_id, parameter: param, size, value };
+                  sendMsg(data);
+                }
+                break;
+            }
+        }
+      }
       function sendMsg(data) {
-        var service = "set_config_parameter";
         node.send({
           payload: {
             domain,
-            service,
+            service: output.service,
             data,
           },
         });
-      }
-
-      if (error === 0) {
-        var id;
-        switch (domain) {
-          case "zwave_js":
-            const entity_id = payload.entity_id || entityid;
-            id = entity_id ? { entity_id } : {};
-            generateMsg(id);
-            break;
-          default:
-            var node_id = payload.node_id || nodeid;
-            id = node_id ? { node_id } : {};
-            generateMsg(id);
-            break;
-        }
-      } else {
-        node.status(`Error! Check debug window for more info`);
       }
     });
   }

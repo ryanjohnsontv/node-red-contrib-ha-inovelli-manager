@@ -42,10 +42,12 @@
           case "zwave_js":
             $(".nodeid-input").hide();
             $(".entityid-input").show();
+            $(".multicast-input").show();
             break;
           default:
             $(".nodeid-input").show();
             $(".entityid-input").hide();
+            $(".multicast-input").hide();
             break;
         }
       });
@@ -243,7 +245,7 @@
     <label for="node-input-clear"><i class="icon-tag"></i>Clear Notification</label>
     <input type="checkbox" id="node-input-clear">
   </div>
-  <div class="form-row">
+  <div class="form-row multicast-input">
     <label for="node-input-multicast"><i class="icon-tag"></i>Use Multicast</label>
     <input type="checkbox" id="node-input-multicast">
   </div>

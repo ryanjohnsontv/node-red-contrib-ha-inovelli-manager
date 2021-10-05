@@ -42,11 +42,11 @@ This option lets you specify your switch model, and can also be configured by se
 
 ### Color
 
-Choose a value between 0 and 360 to determine the hue of your notification. This node will automatically convert that value to Inovelli's hue range (0-255), and it also accepts RGB arrays (255,0,0), color names (Red), or hexadecimals (#ff0000) through msg.payload.color. Range: 0-360
+Choose a value between 0 and 360 to determine the hue of your notification. This node will automatically convert that value to Inovelli's hue range (0-255), and it also accepts RGB arrays (255,0,0), color names (Red), or hexadecimals (#ff0000) through msg.payload.color. Range: 0-360.
 
 ### Brightness Level
 
-The brightness of your LED Notification, also configurable through msg.payload.brightness. Range: 0-10
+The brightness of your LED Notification, also configurable through msg.payload.brightness. Range: 0-10.
 
 ### Duration
 
@@ -58,11 +58,11 @@ Based on your switch choice, choose between Off, Solid, Chase, Fast Blink, Slow 
 
 ### Clear Notification
 
-A checkbox to toggle clearing the the current LED Notification, when checked this will clear the current notification for your specified switch. Also configurable by setting msg.payload.clear to a boolean value of true or false.
+A checkbox to toggle clearing the the current LED Notification, when checked this will clear the current notification for your specified switch(es). Also configurable by setting msg.payload.clear to a boolean value of true.
 
 ### Use Multicast
 
-A checkbox to toggle the use of multicast, or sending the same value to multiple nodes simultaneously. Requires additional Z-Wave JS configuration.
+A checkbox to toggle the use of multicast, or sending the same value to multiple nodes simultaneously. Requires additional Z-Wave JS configuration. Also configurable by setting msg.payload.multicast to a boolean value of true.
 
 
 # Inovelli LED Manager
@@ -87,19 +87,31 @@ This option lets you specify your switch model, and can also be configured by se
 
 ### Color
 
-Choose a value between 0 and 360 to determine the hue of your notification. This node will automatically convert that value to Inovelli's hue range (0-255), and it also accepts RGB arrays (255,0,0), color names (Red), or hexadecimals (#ff0000). Can be set through msg.payload.lightColor (or msg.payload.fanColor for LZW-36). Range: 0-360
+Choose a value between 0 and 360 to determine the hue of your notification. This node will automatically convert that value to Inovelli's hue range (0-255), and it also accepts RGB arrays (255,0,0), color names (Red), or hexadecimals (#ff0000). Can be set through msg.payload.color. Range: 0-360.
 
 ### Brightness Level (When On)
 
-The brightness of your LED bar when the relay is on. Also configurable through msg.payload.lightBrightness (or msg.payload.fanBrightness for LZW-36). Range: 0-10
+The brightness of your LED bar when the relay is on. Also configurable through msg.payload.brightness. Range: 0-10.
 
 ### Brightness Level (When Off)
 
-The brightness of your LED bar when the relay is off. Also configurable through msg.payload.lightBrightnessOff (or msg.payload.fanBrightnessOff for LZW-36). Range: 0-10
+The brightness of your LED bar when the relay is off. Also configurable through msg.payload.brightnessOff. Range: 0-10.
+
+### Fan Color
+
+Choose a value between 0 and 360 to determine the hue of your notification. This node will automatically convert that value to Inovelli's hue range (0-255), and it also accepts RGB arrays (255,0,0), color names (Red), or hexadecimals (#ff0000). Can be set through msg.payload.fanColor. Range: 0-360.
+
+### Fan Brightness Level (When On)
+
+The brightness of your fan LED bar when the fan relay is on. Also configurable through msg.payload.fanBrightness (or msg.payload.fanBrightness for LZW-36). Range: 0-10.
+
+### Fan Brightness Level (When Off)
+
+The brightness of your fan LED bar when the fan relay is off. Also configurable through msg.payload.fanBrightnessOff (or msg.payload.fanBrightnessOff for LZW-36). Range: 0-10.
 
 ### Use Multicast
 
-A checkbox to toggle the use of multicast, or sending the same value to multiple nodes simultaneously. Requires additional Z-Wave JS configuration.
+A checkbox to toggle the use of multicast, or sending the same value to multiple nodes simultaneously. Requires additional Z-Wave JS configuration. Also configurable by setting msg.payload.multicast to a boolean value of true.
 
 
 # Inovelli Scene Manager
@@ -116,8 +128,12 @@ You are able to choose between Z-Wave JS or OpenZWave as your integration.
 
 ### Node ID
 
-The Node ID of the switch being used for scene control
+The Node ID of the switch being used for scene control.
 
 ### Switch Type
 
 This option lets you specify your switch model (LZW30-SN, LZW31-SN, LZW36, and LZW45).
+
+### Node ID Passthrough
+
+Enable to process all scene messages used by your Z-Wave integration. Recommended ONLY for those with a Z-Wave network made of the same type of switch.

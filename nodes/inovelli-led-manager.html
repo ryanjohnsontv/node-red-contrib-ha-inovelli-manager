@@ -8,12 +8,19 @@
       nodeid: { value: "" },
       entityid: { value: "" },
       switchtype: { value: 5 },
-      lightColor: { value: 180 },
-      lightBrightness: { value: 5 },
-      lightBrightnessOff: { value: 1 },
+      color: { value: 180 },
+      brightness: { value: 5 },
+      brightnessOff: { value: 1 },
       fanColor: { value: 180 },
       fanBrightness: { value: 5 },
       fanBrightnessOff: { value: 1 },
+      toggleColor: { value: true },
+      toggleBrightness: { value: true },
+      toggleBrightnessOff: { value: true },
+      toggleFanColor: { value: false },
+      toggleFanBrightness: { value: false },
+      toggleFanBrightnessOff: { value: false },
+      multicast: { value: false },
     },
     inputs: 1,
     outputs: 1,
@@ -30,10 +37,12 @@
           case "zwave_js":
             $(".nodeid-input").hide();
             $(".entityid-input").show();
+            $(".multicast-input").show();
             break;
           default:
             $(".nodeid-input").show();
             $(".entityid-input").hide();
+            $(".multicast-input").hide();
             break;
         }
       });
@@ -41,34 +50,132 @@
         let switchInput = $("#node-input-switchtype").val();
         switch (switchInput) {
           case "38":
-            $(".light-color-input").show();
-            $(".light-brightness-input").show();
-            $(".light-brightness-off-input").show();
-            $(".fan-color-input").show();
-            $(".fan-brightness-input").show();
-            $(".fan-brightness-off-input").show();
+            toggleColorCSS();
+            toggleBrightnessCSS();
+            toggleBrightnessOffCSS();
+            toggleFanColorCSS();
+            toggleFanBrightnessCSS();
+            toggleFanBrightnessOffCSS();
             break;
           case "20":
-            $(".light-color-input").hide();
-            $(".light-brightness-input").hide();
-            $(".light-brightness-off-input").hide();
-            $(".fan-color-input").show();
-            $(".fan-brightness-input").show();
-            $(".fan-brightness-off-input").show();
+            $(".color-input").hide();
+            $(".toggle-color").hide();
+            $(".brightness-input").hide();
+            $(".toggle-brightness").hide();
+            $(".brightness-off-input").hide();
+            $(".toggle-brightness-off").hide();
+            toggleFanColorCSS();
+            toggleFanBrightnessCSS();
+            toggleFanBrightnessOffCSS();
             break;
           default:
-            $(".light-color-input").show();
-            $(".light-brightness-input").show();
-            $(".light-brightness-off-input").show();
+            toggleColorCSS();
+            toggleBrightnessCSS();
+            toggleBrightnessOffCSS();
             $(".fan-color-input").hide();
+            $(".toggle-fan-color").hide();
             $(".fan-brightness-input").hide();
+            $(".toggle-fan-brightness").hide();
             $(".fan-brightness-off-input").hide();
+            $(".toggle-fan-brightness-off").hide();
             break;
         }
       });
-      $("#node-input-lightColor").change(function () {
-        let color = document.getElementById("node-input-lightColor");
-        let colorOutput = document.getElementById("lightColorOutput");
+
+      function toggleColorCSS () {
+        $(".toggle-color").show();
+        if ($('#node-input-toggleColor').is(":checked")) {
+          $(".color-input").show();
+        } else {
+          $(".color-input").hide();
+        }
+      };
+      function toggleBrightnessCSS () {
+        $(".toggle-brightness").show();
+        if ($('#node-input-toggleBrightness').is(":checked")) {
+          $(".brightness-input").show();
+        } else {
+          $(".brightness-input").hide();
+        }
+      };
+      function toggleBrightnessOffCSS () {
+        $(".toggle-brightness-off").show();
+        if ($('#node-input-toggleBrightnessOff').is(":checked")) {
+          $(".brightness-off-input").show();
+        } else {
+          $(".brightness-off-input").hide();
+        }
+      };
+      function toggleFanColorCSS () {
+        $(".toggle-fan-color").show();
+        if ($('#node-input-toggleFanColor').is(":checked")) {
+          $(".fan-color-input").show();
+        } else {
+          $(".fan-color-input").hide();
+        }
+      };
+      function toggleFanBrightnessCSS () {
+        $(".toggle-fan-brightness").show();
+        if ($('#node-input-toggleFanBrightness').is(":checked")) {
+          $(".fan-brightness-input").show();
+        } else {
+          $(".fan-brightness-input").hide();
+        }
+      };
+      function toggleFanBrightnessOffCSS () {
+        $(".toggle-fan-brightness-off").show();
+        if ($('#node-input-toggleFanBrightnessOff').is(":checked")) {
+          $(".fan-brightness-off-input").show();
+        } else {
+          $(".fan-brightness-off-input").hide();
+        }
+      };
+
+      $("#node-input-toggleColor").change(function () {
+        if ($('#node-input-toggleColor').is(":checked")) {
+          $(".color-input").show();
+        } else {
+          $(".color-input").hide();
+        }
+      });
+      $("#node-input-toggleBrightness").change(function () {
+        if ($('#node-input-toggleBrightness').is(":checked")) {
+          $(".brightness-input").show();
+        } else {
+          $(".brightness-input").hide();
+        }
+      });
+      $("#node-input-toggleBrightnessOff").change(function () {
+        if ($('#node-input-toggleBrightnessOff').is(":checked")) {
+          $(".brightness-off-input").show();
+        } else {
+          $(".brightness-off-input").hide();
+        }
+      });
+      $("#node-input-toggleFanColor").change(function () {
+        if ($('#node-input-toggleFanColor').is(":checked")) {
+          $(".fan-color-input").show();
+        } else {
+          $(".fan-color-input").hide();
+        }
+      });
+      $("#node-input-toggleFanBrightness").change(function () {
+        if ($('#node-input-toggleFanBrightness').is(":checked")) {
+          $(".fan-brightness-input").show();
+        } else {
+          $(".fan-brightness-input").hide();
+        }
+      });
+      $("#node-input-toggleFanBrightnessOff").change(function () {
+        if ($('#node-input-toggleFanBrightnessOff').is(":checked")) {
+          $(".fan-brightness-off-input").show();
+        } else {
+          $(".fan-brightness-off-input").hide();
+        }
+      });
+      $("#node-input-color").change(function () {
+        let color = document.getElementById("node-input-color");
+        let colorOutput = document.getElementById("colorOutput");
         colorOutput.innerHTML = color.value;
         color.oninput = function () {
           colorOutput.innerHTML = this.value;
@@ -82,9 +189,9 @@
           colorOutput.innerHTML = this.value;
         };
       });
-      $("#node-input-lightBrightness").change(function () {
-        let brightness = document.getElementById("node-input-lightBrightness");
-        let brightnessOutput = document.getElementById("lightBrightnessOutput");
+      $("#node-input-brightness").change(function () {
+        let brightness = document.getElementById("node-input-brightness");
+        let brightnessOutput = document.getElementById("brightnessOutput");
         brightnessOutput.innerHTML = brightness.value;
         brightness.oninput = function () {
           brightnessOutput.innerHTML = this.value;
@@ -98,12 +205,12 @@
           brightnessOutput.innerHTML = this.value;
         };
       });
-      $("#node-input-lightBrightnessOff").change(function () {
+      $("#node-input-brightnessOff").change(function () {
         let brightness = document.getElementById(
-          "node-input-lightBrightnessOff"
+          "node-input-brightnessOff"
         );
         let brightnessOutput = document.getElementById(
-          "lightBrightnessOffOutput"
+          "brightnessOffOutput"
         );
         brightnessOutput.innerHTML = brightness.value;
         brightness.oninput = function () {
@@ -135,10 +242,10 @@
       background: linear-gradient(to right, rgb(255,0,0), rgb(255,125,0), rgb(255,255,0), rgb(125,255,0), rgb(0,255,0), rgb(0,255,125), rgb(0,255,255), rgb(0,125,255), rgb(0,0,255), rgb(125,0,255), rgb(255,0,255), rgb(255,0,125), rgb(255,0,0));
       outline: none;
     }
-    .light-color-input input {
+    .color-input input {
       width: 100% !important;
     }
-    .light-color-picker-input {
+    .color-picker-input {
       display: inline-block;
       width: 70%;
     }
@@ -170,10 +277,10 @@
       background: linear-gradient(to right, rgb(0,0,0), rgb(255,255,255));
       outline: none;
     }
-    .light-brightness-input input {
+    .brightness-input input {
       width: 100% !important;
     }
-    .light-brightness-picker-input {
+    .brightness-picker-input {
       display: inline-block;
       width: 70%;
     }
@@ -184,10 +291,10 @@
       display: inline-block;
       width: 70%;
     }
-    .light-brightness-off-input input {
+    .brightness-off-input input {
       width: 100% !important;
     }
-    .light-brightness-off-picker-input {
+    .brightness-off-picker-input {
       display: inline-block;
       width: 70%;
     }
@@ -241,26 +348,26 @@
         <option value="38">Fan & Light (LZW36)</option>
     </select>
   </div>
-  <div class="form-row light-color-input">
-    <label for="node-input-lightColor"><i class="icon-tag"></i>Color</label>
-    <div class="light-color-picker-input">
-      <input type="range" id="node-input-lightColor" min="0" max="360" class="color-picker" oninput="lightHue.value = this.value">
+  <div class="form-row color-input">
+    <label for="node-input-color"><i class="icon-tag"></i>Color</label>
+    <div class="color-picker-input">
+      <input type="range" id="node-input-color" min="0" max="360" class="color-picker" oninput="Hue.value = this.value">
     </div>
-    <output id="lightColorOutput"></output>
+    <output id="colorOutput"></output>
   </div>
-  <div class="form-row light-brightness-input">
-    <label for="node-input-lightBrightness"><i class="icon-tag"></i>Brightness Level</label>
-    <div class="light-brightness-picker-input">
-      <input type="range" id="node-input-lightBrightness" min="0" max="10" class="brightness-picker" oninput="lightBrightness.value = this.value">
+  <div class="form-row brightness-input">
+    <label for="node-input-brightness"><i class="icon-tag"></i>Brightness Level</label>
+    <div class="brightness-picker-input">
+      <input type="range" id="node-input-brightness" min="0" max="10" class="brightness-picker" oninput="brightness.value = this.value">
     </div>
-    <output id="lightBrightnessOutput"></output>
+    <output id="brightnessOutput"></output>
   </div>
-  <div class="form-row light-brightness-off-input">
-    <label for="node-input-lightBrightnessOff"><i class="icon-tag"></i>Brightness Level (Off)</label>
-    <div class="light-brightness-off-picker-input">
-      <input type="range" id="node-input-lightBrightnessOff" min="0" max="10" class="brightness-picker" oninput="lightBrightnessOff.value = this.value">
+  <div class="form-row brightness-off-input">
+    <label for="node-input-brightnessOff"><i class="icon-tag"></i>Brightness Level (Off)</label>
+    <div class="brightness-off-picker-input">
+      <input type="range" id="node-input-brightnessOff" min="0" max="10" class="brightness-picker" oninput="brightnessOff.value = this.value">
     </div>
-    <output id="lightBrightnessOffOutput"></output>
+    <output id="brightnessOffOutput"></output>
   </div>
   <div class="form-row fan-color-input">
     <label for="node-input-fanColor"><i class="icon-tag"></i>Color (Fan)</label>
@@ -270,18 +377,46 @@
     <output id="fanColorOutput"></output>
   </div>
   <div class="form-row fan-brightness-input">
-    <label for="node-input-lightBrightness"><i class="icon-tag"></i>Brightness Level (Fan)</label>
+    <label for="node-input-fanBrightness"><i class="icon-tag"></i>Brightness Level (Fan)</label>
     <div class="fan-brightness-picker-input">
       <input type="range" id="node-input-fanBrightness" min="0" max="10" class="brightness-picker" oninput="fanBrightness.value = this.value">
     </div>
     <output id="fanBrightnessOutput"></output>
   </div>
   <div class="form-row fan-brightness-off-input">
-    <label for="node-input-lightBrightnessOff"><i class="icon-tag"></i>Brightness Level (Fan) (Off)</label>
+    <label for="node-input-fanBrightnessOff"><i class="icon-tag"></i>Brightness Level (Fan) (Off)</label>
     <div class="fan-brightness-off-picker-input">
       <input type="range" id="node-input-fanBrightnessOff" min="0" max="10" class="brightness-picker" oninput="fanBrightnessOff.value = this.value">
     </div>
     <output id="fanBrightnessOffOutput"></output>
+  </div>
+  <div class="form-row toggle-color">
+    <label for="node-input-toggleColor"><i class="icon-tag"></i>Send Light Color?</label>
+    <input type="checkbox" id="node-input-toggleColor">
+  </div>
+  <div class="form-row toggle-brightness">
+    <label for="node-input-toggleBrightness"><i class="icon-tag"></i>Send Light Brightness?</label>
+    <input type="checkbox" id="node-input-toggleBrightness">
+  </div>
+  <div class="form-row toggle-brightness-off">
+    <label for="node-input-toggleBrightnessOff"><i class="icon-tag"></i>Send Light Brightness (When Off)?</label>
+    <input type="checkbox" id="node-input-toggleBrightnessOff">
+  </div>
+  <div class="form-row toggle-fan-color">
+    <label for="node-input-toggleFanColor"><i class="icon-tag"></i>Send Fan Color?</label>
+    <input type="checkbox" id="node-input-toggleFanColor">
+  </div>
+  <div class="form-row toggle-fan-brightness">
+    <label for="node-input-toggleFanBrightness"><i class="icon-tag"></i>Send Fan Brightness?</label>
+    <input type="checkbox" id="node-input-toggleFanBrightness">
+  </div>
+  <div class="form-row toggle-fan-brightness-off">
+    <label for="node-input-toggleFanBrightnessOff"><i class="icon-tag"></i>Send Fan Brightness (When Off)?</label>
+    <input type="checkbox" id="node-input-toggleFanBrightnessOff">
+  </div>
+  <div class="form-row multicast-input">
+    <label for="node-input-multicast"><i class="icon-tag"></i>Use Multicast</label>
+    <input type="checkbox" id="node-input-multicast">
   </div>
 </script>
 
@@ -318,5 +453,41 @@
       <dt>LZW36: Fan Brightness Level (Off)<span class="property-type">number</span></dt>
       <dd>Brightness level of the LED light (0-10) when off</dd>
 
+      <dt>Send Light Color?<span class="property-type">boolean</span></dt>
+      <dd>Check this box to enable updating the LED color parameter for your switch(es)</dd>
+
+      <dt>Send Light Brightness?<span class="property-type">boolean</span></dt>
+      <dd>Check this box to enable updating the LED brightness parameter for your switch(es) for when the relay/light is on</dd>
+
+      <dt>Send Light Brightness (When Off)?<span class="property-type">boolean</span></dt>
+      <dd>Check this box to enable updating the LED brightness parameter for your switch(es) for when the relay/light is off</dd>
+
+      <dt>Send Fan Color?<span class="property-type">boolean</span></dt>
+      <dd>Check this box to enable updating the fan LED color parameter for your LZW36 switch(es)</dd>
+
+      <dt>Send Fan Brightness?<span class="property-type">boolean</span></dt>
+      <dd>Check this box to enable updating the fan LED brightness parameter for your LZW36 switch(es) for when the relay/fan is on</dd>
+
+      <dt>Send Fan Brightness (When Off)?<span class="property-type">boolean</span></dt>
+      <dd>Check this box to enable updating the fan LED brightness parameter for your LZW36 switch(es) for when the relay/fan is off</dd>
+
+      <dt>Use Multicast<span class="property-type">boolean</span></dt>
+      <dd>Check this box if your devices are set up to support multicasting</dd>
   </dl>
+  <p>
+    It is possible to override values set on this node by passing values in a payload e.g.
+    <pre>
+msg = {
+  payload: {
+    zwave: zwave_js,
+    entity_id: "light.bedroom",
+    fanColor: "Red",
+    fanBrightness: 10,
+    fanBrightnessOff: 1,
+    switchtype: "lzw36_fan",
+    multicast: true
+  }
+}
+    </pre>
+  </p>
 </script>
