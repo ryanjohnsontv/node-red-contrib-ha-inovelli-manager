@@ -246,7 +246,7 @@ module.exports = function (RED) {
             if (multicast) {
               service = "multicast_set_value";
             } else {
-              service = "bulk_set_config_parameter";
+              service = "bulk_set_partial_config_parameters";
             }
             break;
           case "ozw":
