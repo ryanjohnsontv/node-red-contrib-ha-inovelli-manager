@@ -239,7 +239,7 @@
       width: 100%;
       height: 10px;
       border-radius: 5px;
-      background: linear-gradient(to right, rgb(255,0,0), rgb(255,125,0), rgb(255,255,0), rgb(125,255,0), rgb(0,255,0), rgb(0,255,125), rgb(0,255,255), rgb(0,125,255), rgb(0,0,255), rgb(125,0,255), rgb(255,0,255), rgb(255,0,125), rgb(255,0,0));
+      background: linear-gradient(to right, rgb(255,0,0), rgb(255,125,0), rgb(255,255,0), rgb(125,255,0), rgb(0,255,0), rgb(0,255,125), rgb(0,255,255), rgb(0,125,255), rgb(0,0,255), rgb(125,0,255), rgb(255,0,255), rgb(255,0,125), rgb(255,255,255));
       outline: none;
     }
     .color-input input {
@@ -351,7 +351,7 @@
   <div class="form-row color-input">
     <label for="node-input-color"><i class="icon-tag"></i>Color</label>
     <div class="color-picker-input">
-      <input type="range" id="node-input-color" min="0" max="360" class="color-picker" oninput="Hue.value = this.value">
+      <input type="range" id="node-input-color" min="0" max="361" class="color-picker" oninput="Hue.value = this.value">
     </div>
     <output id="colorOutput"></output>
   </div>
@@ -372,7 +372,7 @@
   <div class="form-row fan-color-input">
     <label for="node-input-fanColor"><i class="icon-tag"></i>Color (Fan)</label>
     <div class="fan-color-picker-input">
-      <input type="range" id="node-input-fanColor" min="0" max="360" class="color-picker" oninput="fanHue.value = this.value">
+      <input type="range" id="node-input-fanColor" min="0" max="361" class="color-picker" oninput="fanHue.value = this.value">
     </div>
     <output id="fanColorOutput"></output>
   </div>
@@ -439,13 +439,16 @@
       <dd>Determines which parameters to set. (On/Off, Dimmer, Fan/Light Dimmer)</dd>
 
       <dt>Color<span class="property-type">number|string|array</span></dt>
-      <dd>Color you want to display (accepts color names, RGB arrays, hexadeciaml and 0-360 hue values)</dd>
+      <dd>Color you want to display (accepts color names, RGB arrays, hexadeciaml and 0-360* hue values) *361=white</dd>
 
       <dt>Brightness Level (On)<span class="property-type">number</span></dt>
       <dd>Brightness level of the LED light (0-10) when on</dd>
 
       <dt>Brightness Level (Off)<span class="property-type">number</span></dt>
       <dd>Brightness level of the LED light (0-10) when off</dd>
+
+      <dt>LZW36: Fan Color<span class="property-type">number|string|array</span></dt>
+      <dd>Color you want to display (accepts color names, RGB arrays, hexadeciaml and 0-360* hue values) *361=white</dd>
 
       <dt>LZW36: Fan Brightness Level (On)<span class="property-type">number</span></dt>
       <dd>Brightness level of the LED light (0-10) when on</dd>

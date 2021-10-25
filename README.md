@@ -4,7 +4,7 @@ Nodes for easily managing scenes, parameters, and notifications of Inovelli swit
 If you notice any problems please open an issue or a pull request, I'll respond ASAP. Feature requests are always welcome. Thanks!
 
 These nodes should be used in conjunction with the node-red–contrib-home-assistant-websocket plaette, and the output should
-be connected to an api-call-service node. This node will automatically fill in the appropriate fields for that node. [Example flows are provided in this repo](https://github.com/ryanjohnsontv/node-red-contrib-inovelli-notification-calculator/tree/main/examples).
+be connected to an api-call-service node. This node will automatically fill in the appropriate fields for that node. [Example flows are provided in this repo](https://github.com/ryanjohnsontv/node-red-contrib-ha-inovelli-manager/tree/main/examples).
 
 ## Features:
 -   Multicast Support
@@ -41,7 +41,7 @@ This option lets you specify your switch model, and can also be configured by se
 
 ### Color
 
-Choose a value between 0 and 360 to determine the hue of your notification. This node will automatically convert that value to Inovelli's hue range (0-255), and it also accepts RGB arrays (255,0,0), color names (Red), or hexadecimals (#ff0000) through msg.payload.color. Range: 0-360.
+Choose a value between 0 and 361 to determine the hue of your notification. This node will automatically convert that value to Inovelli's hue range (0-255), and it also accepts RGB arrays (255,0,0), color names (Red), or hexadecimals (#ff0000) through msg.payload.color. Range: 0-361.
 
 ### Brightness Level
 
@@ -86,7 +86,7 @@ This option lets you specify your switch model, and can also be configured by se
 
 ### Color
 
-Choose a value between 0 and 360 to determine the hue of your notification. This node will automatically convert that value to Inovelli's hue range (0-255), and it also accepts RGB arrays (255,0,0), color names (Red), or hexadecimals (#ff0000). Can be set through msg.payload.color. Range: 0-360.
+Choose a value between 0 and 361 to determine the hue of your notification. This node will automatically convert that value to Inovelli's hue range (0-255), and it also accepts RGB arrays (255,0,0), color names (Red), or hexadecimals (#ff0000). Can be set through msg.payload.color. Range: 0-361.
 
 ### Brightness Level (When On)
 
@@ -98,7 +98,7 @@ The brightness of your LED bar when the relay is off. Also configurable through 
 
 ### Fan Color
 
-Choose a value between 0 and 360 to determine the hue of your notification. This node will automatically convert that value to Inovelli's hue range (0-255), and it also accepts RGB arrays (255,0,0), color names (Red), or hexadecimals (#ff0000). Can be set through msg.payload.fanColor. Range: 0-360.
+Choose a value between 0 and 361 to determine the hue of your notification. This node will automatically convert that value to Inovelli's hue range (0-255), and it also accepts RGB arrays (255,0,0), color names (Red), or hexadecimals (#ff0000). Can be set through msg.payload.fanColor. Range: 0-361.
 
 ### Fan Brightness Level (When On)
 

@@ -1,0 +1,128 @@
+[
+  {
+    "id": "019fb0a8175c0390",
+    "type": "inject",
+    "z": "978218e1.644ff8",
+    "name": "",
+    "props": [{ "p": "payload" }, { "p": "topic", "vt": "str" }],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payloadType": "date",
+    "x": 1050,
+    "y": 160,
+    "wires": [["371fecf85c492c36"]]
+  },
+  {
+    "id": "371fecf85c492c36",
+    "type": "function",
+    "z": "978218e1.644ff8",
+    "name": "",
+    "func": "const zwave_nodes = {\n    17:{\n        entity_id:\"lock.garage_door\",\n        product:\"916\",\n        area:\"Garage\",\n    },\n    18:{\n        entity_id:\"lock.front_door\",\n        product:\"916\",\n        area:\"Basement Hallway\",\n    },\n    19:{\n        entity_id:\"lock.patio_door\",\n        product:\"916\",\n        area:\"Living Room\",\n    },\n    20:{\n        entity_id:\"light.living_room_fan_light_dimmer_light_level\",\n        product:\"LZW36\",\n        area:\"Living Room\",\n    },\n    21:{\n        entity_id:\"\",\n        product:\"ZCOMBO\",\n    },\n    22:{\n        entity_id:\"\",\n        product:\"ZCOMBO\",\n    },\n    23:{\n        entity_id:\"light.garage_door_light\",\n        product:\"LZW42\",\n    },\n    24:{\n        entity_id:\"light.patio_light\",\n        product:\"LZW42\",\n        area:\"Patio\",\n    },\n    25:{\n        entity_id:\"light.bedroom_fan_light_dimmer_light_level\",\n        product:\"LZW36\",\n        area:\"Bedroom\",\n    },\n    26:{\n        entity_id:\"light.guest_bedroom_fan_light_dimmer_light_level\",\n        product:\"LZW36\",\n        area:\"Guest Bedroom\",\n    },\n    27:{\n        entity_id:\"light.office_fan_light_dimmer_light_level\",\n        product:\"LZW36\",\n        area:\"Office\",\n    },\n    28:{\n        entity_id:\"light.hallway_light_switch_2\",\n        product:\"LZW31\",\n        area:\"Living Room\",\n    },\n    29:{\n        entity_id:\"light.office_closet_light_switch\",\n        product:\"LZW31\",\n        area:\"Office\",\n    },\n    31:{\n        entity_id:\"light.guest_bedroom_closet_light_switch\",\n        product:\"LZW31\",\n        area:\"Guest Bedroom\",\n    },\n    36:{\n        entity_id:\"light.ryans_office_light\",\n        product:\"LZW31\",\n        area:\"Ryan's Office\",\n    },\n    37:{\n        entity_id:\"light.hallway_light_switch\",\n        product:\"LZW31\",\n        area:\"Hallway\",\n    },\n    38:{\n        entity_id:\"light.garage_door_light_switch\",\n        product:\"LZW31\",\n        area:\"Garage\",\n    },\n    39:{\n        entity_id:\"light.garage_left_lights\",\n        product:\"LZW31\",\n        area:\"Garage\",\n    },\n    40:{\n        entity_id:\"light.front_door_light_switch\",\n        product:\"LZW31\",\n        area:\"Basement Hallway\",\n    },\n    41:{\n        entity_id:\"light.basement_stairway_light_switch\",\n        product:\"LZW31\",\n        area:\"Basement Hallway\",\n    },\n    42:{\n        entity_id:\"light.basement_hallway_light_switch\",\n        product:\"LZW31\",\n        area:\"Basement Hallway\",\n    },\n    43:{\n        entity_id:\"light.upstairs_stairway_light_switch\",\n        product:\"LZW31\",\n        area:\"Living Room\",\n    },\n    44:{\n        entity_id:\"light.pantry_light_switch\",\n        product:\"LZW31\",\n        area:\"Pantry\",\n    },\n    45:{\n        entity_id:\"light.kitchen_light\",\n        product:\"LZW31\",\n        area:\"Pantry\",\n    },\n    46:{\n        entity_id:\"light.patio_light_switch\",\n        product:\"LZW31\",\n        area:\"Living Room\",\n    },\n    47:{\n        entity_id:\"light.hallway_bathroom_light_switch\",\n        product:\"LZW31\",\n        area:\"Hallway Bathroom\",\n    },\n    48:{\n        entity_id:\"light.bedroom_closet_light_switch\",\n        product:\"LZW31\",\n        area:\"Bedroom\",\n        entityIds:[\n            \"light.bedroom_closet_light\"\n            ],\n    },\n    49:{\n        entity_id:\"light.bathroom_light_switch\",\n        product:\"LZW31\",\n        area:\"Bathroom\",\n    }\n};\n\nflow.set(\"zwave_nodes\",zwave_nodes,\"file\");\n\nconst lzw31_array = [];\nfor (var lzw31 in zwave_nodes) {\n    if (zwave_nodes[lzw31].product === \"LZW31\") {\n        lzw31_array.push(zwave_nodes[lzw31].entity_id)\n    }\n}\nconst lzw31_entities = lzw31_array.join(',');\nflow.set(\"lzw31_entities\",lzw31_entities,\"file\");\n\nconst lzw36_array = [];\nfor (var lzw36 in zwave_nodes) {\n    if (zwave_nodes[lzw36].product === \"LZW36\") {\n        lzw36_array.push(zwave_nodes[lzw36].entity_id)\n    }\n}\nconst lzw36_entities = lzw36_array.join(',');\nflow.set(\"lzw36_entities\",lzw36_entities,\"file\");",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1210,
+    "y": 160,
+    "wires": [[]]
+  },
+  {
+    "id": "9df229e883729d37",
+    "type": "server-events",
+    "z": "978218e1.644ff8",
+    "name": "",
+    "server": "7931a4b6.dc7fbc",
+    "version": 1,
+    "event_type": "state_changed",
+    "exposeToHomeAssistant": false,
+    "haConfig": [
+      { "property": "name", "value": "" },
+      { "property": "icon", "value": "" }
+    ],
+    "waitForRunning": true,
+    "outputProperties": [
+      {
+        "property": "payload",
+        "propertyType": "msg",
+        "value": "",
+        "valueType": "eventData"
+      },
+      {
+        "property": "topic",
+        "propertyType": "msg",
+        "value": "$outputData(\"eventData\").event_type",
+        "valueType": "jsonata"
+      }
+    ],
+    "x": 940,
+    "y": 200,
+    "wires": [["449eaab51c7098c0"]]
+  },
+  {
+    "id": "93e005859e8203af",
+    "type": "function",
+    "z": "978218e1.644ff8",
+    "name": "",
+    "func": "const zwave_nodes = flow.get(\"zwave_nodes\",\"file\")\nconst area = msg.payload.area;\nvar value = 1;\nvar entity_id;\nvar lzw31entities = [];\nvar lzw36entities = [];\n\nsearchArea()\nfunction searchArea(){\n    for (var node in zwave_nodes) {\n        if (zwave_nodes[node].area === area) {\n            switch (zwave_nodes[node].product){\n                case \"LZW31\":\n                    lzw31entities.push(zwave_nodes[node].entity_id)\n                    break;\n                case \"LZW36\":\n                    lzw36entities.push(zwave_nodes[node].entity_id)\n                    break;\n            }\n        }\n    }\n    formMsg()\n}\nfunction formMsg(){\n    if (msg.payload.brightness && msg.payload.state === \"on\"){\n        value = Math.ceil(msg.payload.brightness/25.5);\n    }\n    if (lzw31entities.length != 0){\n        entity_id = lzw31entities.join(',');\n        sendMulticast(entity_id,14,value);\n    }\n    if (lzw36entities.length != 0){\n        entity_id = lzw36entities.join(',');\n        sendMulticast(entity_id,19,value);\n        sendMulticast(entity_id,21,value);\n    }\n}\n\nfunction sendMulticast(entity_id,property,value){\n    node.send({\n        payload:{\n            domain:\"zwave_js\",\n            service:\"multicast_set_value\",\n            data:{\n                entity_id,\n                property,\n                command_class:112,\n                value,\n            }\n        }\n    })\n}",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1260,
+    "y": 200,
+    "wires": [["032e3eebf66af90f"]]
+  },
+  {
+    "id": "449eaab51c7098c0",
+    "type": "function",
+    "z": "978218e1.644ff8",
+    "name": "",
+    "func": "const entity_areas = {\n    \"light.bedroom_lights\":\"Bedroom\",\n    \"light.bathroom_lights\":\"Bathroom\",\n    \"light.bedroom_closet_light\":\"Bedroom\",\n    \"light.hallway_bathroom_lights\":\"Hallway Bathroom\",\n    \"light.living_room_lights\":\"Living Room\",\n    \"light.office_lights\":\"Office\",\n    \"light.ryans_office_lights\":\"Ryan's Office\",\n    \"light.hallway_lights\":\"Hallway\",\n    \"light.kitchen_lights\":\"Kitchen\",\n}\nif (entity_areas[msg.payload.event.entity_id]){\n    node.send({payload:{\n        area:entity_areas[msg.payload.event.entity_id],\n        state:msg.payload.event.new_state.state,\n        brightness:msg.payload.event.new_state.attributes.brightness,\n    }\n    })\n}",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1120,
+    "y": 200,
+    "wires": [["93e005859e8203af"]]
+  },
+  {
+    "id": "032e3eebf66af90f",
+    "type": "api-call-service",
+    "z": "978218e1.644ff8",
+    "name": "HA Call Service",
+    "server": "7931a4b6.dc7fbc",
+    "version": 3,
+    "debugenabled": false,
+    "service_domain": "",
+    "service": "",
+    "entityId": "",
+    "data": "",
+    "dataType": "jsonata",
+    "mergecontext": "",
+    "mustacheAltTags": false,
+    "outputProperties": [],
+    "queue": "none",
+    "x": 1420,
+    "y": 200,
+    "wires": [[]]
+  },
+  {
+    "id": "7931a4b6.dc7fbc",
+    "type": "server",
+    "name": "Home Assistant",
+    "version": 1,
+    "legacy": false,
+    "addon": true,
+    "rejectUnauthorizedCerts": true,
+    "ha_boolean": "y|yes|true|on|home|open",
+    "connectionDelay": true,
+    "cacheJson": true
+  }
+]

@@ -159,9 +159,18 @@ module.exports = function (RED) {
         var rgb;
         if (Array.isArray(color) && typeof color === "object") {
           if (color.length === 3) {
-            rgb = color;
+            if (color[0] > 255 || color[1] > 255 || color[2] > 255) {
+              err = `RGB values exceed 255: ${color}`;
+              if (done) {
+                done(err);
+              } else {
+                node.error(err);
+              }
+            } else {
+              rgb = color;
+            }
           } else {
-            err = `Check your RGB values for ${source}: ${color}`;
+            err = `Invalid array format for ${source}: ${color}`;
             if (done) {
               done(err);
             } else {
@@ -176,9 +185,16 @@ module.exports = function (RED) {
             rgb = convert.keyword.rgb(color);
           }
         } else if (typeof color === "number") {
-          if (color >= 0 && color <= 360) {
-            let conv_hsv = [color, 100, 100];
-            rgb = convert.hsv.rgb(conv_hsv);
+          if (color >= 0 && color <= 361) {
+            switch (color){
+              case 361:
+                rgb = [255,255,255];
+                break;
+              default:
+                let conv_hsv = [color, 100, 100];
+                rgb = convert.hsv.rgb(conv_hsv);
+                break;
+            }
           }
         }
         if (rgb) {
@@ -210,11 +226,17 @@ module.exports = function (RED) {
       function LightHandler() {
         if (!err) {
           if (toggleColor || payload.color) {
+            let hsl, keyword, hue;
             color = payload.color || presetColor;
-            color = inputColorConvert(color, "Light", color);
-            let HSL = [convert.rgb.hsl(color)[0], 100, 50];
-            let keyword = convert.rgb.keyword(convert.hsl.rgb(HSL));
-            let hue = parseInt((HSL[0] * (17 / 24)).toFixed(0));
+            color = inputColorConvert(color, "Light");
+            if (color[0] == color[1] && color[1] == color[2]) {
+              keyword = "white";
+              hue = 255;
+            } else {
+              hsl = [convert.rgb.hsl(color)[0], 100, 50];
+              keyword = convert.rgb.keyword(convert.hsl.rgb(hsl));
+              hue = parseInt((hsl[0] * (17 / 24)).toFixed(0));
+            }
             node.status(`Light Color: ${keyword}`);
             constructMsg("color", hue, output.colorParam);
           }
@@ -238,13 +260,19 @@ module.exports = function (RED) {
       function FanHandler() {
         if (!err) {
           if (toggleFanColor || payload.fanColor) {
-            fanColor = payload.fanColor || presetFanColor;
-            fanColor = inputColorConvert(fanColor, "Fan", fanColor);
-            let fanHSL = [convert.rgb.hsl(fanColor)[0], 100, 50];
-            let fanKeyword = convert.rgb.keyword(convert.hsl.rgb(fanHSL));
-            let fanHue = parseInt((fanHSL[0] * (17 / 24)).toFixed(0));
-            node.status(`Fan Color: ${fanKeyword}`);
-            constructMsg("fanColor", fanHue, output.fanColorParam);
+            let hsl, keyword, hue;
+            color = payload.fanColor || presetFanColor;
+            color = inputColorConvert(color, "Fan");
+            if (color[0] == color[1] && color[1] == color[2]) {
+              keyword = "white";
+              hue = 255;
+            } else {
+              hsl = [convert.rgb.hsl(color)[0], 100, 50];
+              keyword = convert.rgb.keyword(convert.hsl.rgb(hsl));
+              hue = parseInt((hsl[0] * (17 / 24)).toFixed(0));
+            }
+            node.status(`Fan Color: ${keyword}`);
+            constructMsg("fanColor", hue, output.fanColorParam);
           }
           if (toggleFanBrightness || payload.fanBrightness) {
             fanBrightness = payload.fanBrightness || presetFanBrightness;

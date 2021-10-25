@@ -84,9 +84,18 @@ module.exports = function (RED) {
         var rgb;
         if (Array.isArray(color) && typeof color === "object") {
           if (color.length === 3) {
-            rgb = color;
+            if (color[0] > 255 || color[1] > 255 || color[2] > 255) {
+              err = `RGB values exceed 255: ${color}`;
+              if (done) {
+                done(err);
+              } else {
+                node.error(err);
+              }
+            } else {
+              rgb = color;
+            }
           } else {
-            err = `Check your RGB values: ${color}`;
+            err = `Invalid array format: ${color}`;
             if (done) {
               done(err);
             } else {
@@ -101,9 +110,16 @@ module.exports = function (RED) {
             rgb = convert.keyword.rgb(color);
           }
         } else if (typeof color === "number") {
-          if (color >= 0 && color <= 360) {
-            let conv_hsv = [color, 100, 100];
-            rgb = convert.hsv.rgb(conv_hsv);
+          if (color >= 0 && color <= 361) {
+            switch (color){
+              case 361:
+                rgb = [255,255,255];
+                break;
+              default:
+                let conv_hsv = [color, 100, 100];
+                rgb = convert.hsv.rgb(conv_hsv);
+                break;
+            }
           } else {
             err = `Incorrect Hue Value: ${color}`;
             if (done) {
@@ -114,10 +130,10 @@ module.exports = function (RED) {
           }
         }
         if (!rgb) {
-          err = `Incorrect Color: ${color}. Using preset color value: ${presetColor}`;
-          node.error(err);
-          let conv_hsv = [presetColor, 100, 100];
-          rgb = convert.hsv.rgb(conv_hsv);
+          if (!err){
+            err = `Incorrect Color: ${color}.`;
+            node.error(err);
+          }
         }
         return rgb;
       }
@@ -278,10 +294,15 @@ module.exports = function (RED) {
           }
           node.status(`Cleared notification!`);
         } else {
-          hsl = [convert.rgb.hsl(color)[0], 100, 50];
-          keyword = convert.rgb.keyword(convert.hsl.rgb(hsl));
-          hue = parseInt((hsl[0] * (17 / 24)).toFixed(0));
-          value = hue + brightness * 256 + duration * 65536 + effect * 16777216;
+          if (color[0] == color[1] && color[1] == color[2]) {
+            keyword = "white";
+            hue = 255;
+          } else {
+            hsl = [convert.rgb.hsl(color)[0], 100, 50];
+            keyword = convert.rgb.keyword(convert.hsl.rgb(hsl));
+            hue = parseInt((hsl[0] * (17 / 24)).toFixed(0));
+          }
+          value = hue + (brightness * 256) + (duration * 65536) + (effect * 16777216);
           node.status(`Sent Color: ${keyword}`);
         }
         return value;
