@@ -1,0 +1,235 @@
+[
+    {
+        "id": "a45ff8172d65305c",
+        "type": "inovelli-scene-manager",
+        "z": "17f0ad73.4a3d43",
+        "name": "",
+        "nodeid": "27",
+        "entityid": "light.bedroom_fan_lights",
+        "zwave": "zwave_js",
+        "switchtype": "LZW36",
+        "outputs": 18,
+        "labels": [
+            "Tap on Light Button 1x",
+            "Tap on Light Button 2x",
+            "Tap on Light Button 3x",
+            "Tap on Light Button 4x",
+            "Tap on Light Button 5x",
+            "Hold on Light Button (3 Seconds)",
+            "Release on Light (After Hold) Button",
+            "Tap on Light Rocker Up",
+            "Tap on Light Rocker Down",
+            "Tap on Fan Button 1x",
+            "Tap on Fan Button 2x",
+            "Tap on Fan Button 3x",
+            "Tap on Fan Button 4x",
+            "Tap on Fan Button 5x",
+            "Hold on Fan Button (3 Seconds)",
+            "Release on Fan (After Hold) Button",
+            "Tap on Fan Rocker Up",
+            "Tap on Fan Rocker Down"
+        ],
+        "passthrough": false,
+        "x": 610,
+        "y": 4420,
+        "wires": [
+            [
+                "4aa2b850f377438b"
+            ],
+            [
+                "05e2cde8b28e7f0c"
+            ],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+        ]
+    },
+    {
+        "id": "4aa2b850f377438b",
+        "type": "api-call-service",
+        "z": "17f0ad73.4a3d43",
+        "name": "",
+        "server": "6da5295d.82f2c8",
+        "version": 3,
+        "debugenabled": false,
+        "service_domain": "light",
+        "service": "toggle",
+        "entityId": "{{entity_id}}",
+        "data": "{\t    \"brightness_pct\":100\t}\t",
+        "dataType": "jsonata",
+        "mergecontext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "queue": "none",
+        "x": 840,
+        "y": 4300,
+        "wires": [
+            [
+                "c9ce8029646f4ae5"
+            ]
+        ]
+    },
+    {
+        "id": "05e2cde8b28e7f0c",
+        "type": "api-call-service",
+        "z": "17f0ad73.4a3d43",
+        "name": "",
+        "server": "6da5295d.82f2c8",
+        "version": 3,
+        "debugenabled": false,
+        "service_domain": "light",
+        "service": "turn_on",
+        "entityId": "{{entity_id}}",
+        "data": "{\"brightness_pct\":50}",
+        "dataType": "jsonata",
+        "mergecontext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "queue": "none",
+        "x": 850,
+        "y": 4340,
+        "wires": [
+            [
+                "c9ce8029646f4ae5"
+            ]
+        ]
+    },
+    {
+        "id": "f83b059995d96b82",
+        "type": "inject",
+        "z": "17f0ad73.4a3d43",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 260,
+        "y": 4400,
+        "wires": [
+            [
+                "6f702aeb1d878f3b"
+            ]
+        ]
+    },
+    {
+        "id": "6f702aeb1d878f3b",
+        "type": "function",
+        "z": "17f0ad73.4a3d43",
+        "name": "",
+        "func": "var event = {\n    \"domain\": \"zwave_js\",\n    \"node_id\": 27,\n    \"home_id\": 4250940134,\n    \"endpoint\": 0,\n    \"device_id\": \"ccca57c1d8cea64a2fed364aaf1da36c\",\n    \"command_class\": 91,\n    \"command_class_name\": \"Central Scene\",\n    \"label\": \"Scene 002\",\n    \"property\": \"scene\",\n    \"property_name\": \"scene\",\n    \"property_key\": \"002\",\n    \"property_key_name\": \"002\",\n    \"value\": \"KeyPressed\",\n    \"value_raw\": 0\n  }\n\nnode.send({payload:{event_type:\"zwave_js_value_notification\",event}})",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 4400,
+        "wires": [
+            [
+                "a45ff8172d65305c"
+            ]
+        ]
+    },
+    {
+        "id": "0ac06e5112f4200a",
+        "type": "inject",
+        "z": "17f0ad73.4a3d43",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 260,
+        "y": 4440,
+        "wires": [
+            [
+                "1aaf5705dacbf7ce"
+            ]
+        ]
+    },
+    {
+        "id": "1aaf5705dacbf7ce",
+        "type": "function",
+        "z": "17f0ad73.4a3d43",
+        "name": "",
+        "func": "var event = {\n    \"domain\": \"zwave_js\",\n    \"node_id\": 27,\n    \"home_id\": 4250940134,\n    \"endpoint\": 0,\n    \"device_id\": \"ccca57c1d8cea64a2fed364aaf1da36c\",\n    \"command_class\": 91,\n    \"command_class_name\": \"Central Scene\",\n    \"label\": \"Scene 002\",\n    \"property\": \"scene\",\n    \"property_name\": \"scene\",\n    \"property_key\": \"002\",\n    \"property_key_name\": \"002\",\n    \"value\": \"KeyPressed\",\n    \"value_raw\": 3\n  }\n\nnode.send({payload:{event_type:\"zwave_js_value_notification\",event}})",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 4440,
+        "wires": [
+            [
+                "a45ff8172d65305c"
+            ]
+        ]
+    },
+    {
+        "id": "c9ce8029646f4ae5",
+        "type": "debug",
+        "z": "17f0ad73.4a3d43",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1060,
+        "y": 4320,
+        "wires": []
+    },
+    {
+        "id": "6da5295d.82f2c8",
+        "type": "server",
+        "name": "Home Assistant",
+        "version": 1,
+        "legacy": false,
+        "addon": false,
+        "rejectUnauthorizedCerts": true,
+        "ha_boolean": "y|yes|true|on|home|open",
+        "connectionDelay": true,
+        "cacheJson": true
+    }
+]
