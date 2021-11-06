@@ -2,9 +2,10 @@ module.exports = function (RED) {
   function InovelliSceneManager(config) {
     RED.nodes.createNode(this, config);
     var node = this;
-    const { zwave, nodeid, switchtype, outputs, passthrough } = config;
+    const { zwave, nodeid, entityid, switchtype, outputs, passthrough } = config;
     this.zwave = zwave;
     this.nodeid = nodeid;
+    this.entityid = entityid;
     this.switchtype = switchtype;
     this.outputs = parseInt(outputs, 10);
     this.passthrough = passthrough;
@@ -13,6 +14,7 @@ module.exports = function (RED) {
       const {
         zwave: presetZwave,
         nodeid,
+        entityid,
         switchtype,
         outputs,
         passthrough,
@@ -343,6 +345,9 @@ module.exports = function (RED) {
               };
               scene = sceneConvert[payload.event.scene_data];
               break;
+          }
+          if (entityid) {
+            msg.entity_id = entityid;
           }
           switch (switchtype) {
             case "LZW30":

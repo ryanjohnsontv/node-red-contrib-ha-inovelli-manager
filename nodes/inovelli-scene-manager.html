@@ -5,6 +5,7 @@
     defaults: {
       name: { value: "" },
       nodeid: { value: "" },
+      entityid: { value: "" },
       zwave: { value: "zwave_js" },
       switchtype: { value: "LZW30" },
       outputs: { value: 1 },
@@ -140,8 +141,12 @@
     </select>
   </div>
   <div class="form-row nodeid-input">
-    <label for="node-input-nodeid"><i class="icon-tag"></i>Node ID</label>
+    <label for="node-input-nodeid"><i class="icon-tag"></i>Node ID(s)</label>
     <input type="text" id="node-input-nodeid">
+  </div>
+  <div class="form-row entityid-input">
+    <label for="node-input-entityid"><i class="icon-tag"></i>Entity ID(s)</label>
+    <input type="text" id="node-input-entityid">
   </div>
   <div class="form-row">
     <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
@@ -166,6 +171,9 @@
 
       <dt>Node ID<span class="property-type">number</span></dt>
       <dd>Node ID (or a comma-delimited list of node IDs) of the Inovelli switch you are trying to configure</dd>
+
+      <dt>Entity ID(s)<span class="property-type">string</span></dt>
+      <dd>Entity ID (or a comma-delimited list of entity IDs) to append to each message (sets msg.entity_id). Useful for controlling dedicated smart bulbs.</dd>
 
       <dt>Switch Type<span class="property-type">number|string</span></dt>
       <dd>Determines which Inovelli switch is being used. (LZW30-SN, LZW31-SN, LZW36, LZW45)</dd>
