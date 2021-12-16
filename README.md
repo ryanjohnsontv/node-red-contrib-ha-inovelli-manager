@@ -19,7 +19,7 @@ be connected to an api-call-service node. This node will automatically fill in t
 
 Forked from the exceptionally wonderful https://github.com/pdong/node-contrib-inovelli-status-manager repo.
 
-This node allows you to easily set the appropriate values to send to your Inovelli Red Series switches.
+This node allows you to set color, brightness, and effect type/duration for notifications on Inovelli Red switches. No manual calculations needed!
 
 
 ![image](https://user-images.githubusercontent.com/43426700/114622017-0f7db200-9c73-11eb-8c48-1fd31c3b8141.png)
@@ -66,7 +66,7 @@ A checkbox to toggle the use of multicast, or sending the same value to multiple
 
 # Inovelli LED Manager
 
-This node allows you to easily set the appropriate color and brightness values for Red & Black series switches when they're on or off.
+This node allows you to set the color and brightness of the LED strip (not for notifications) on Inovelli Black and Red switches without looking up values manually.
 
 ![image](https://user-images.githubusercontent.com/43426700/114769932-78772f80-9d30-11eb-86be-106dc2de4383.png)
 
@@ -115,7 +115,7 @@ A checkbox to toggle the use of multicast, or sending the same value to multiple
 
 # Inovelli Scene Manager
 
-This node interepts scenes sent by multi-clicking on a Red series switch. Connect to a Home Assistant events-all, node adds appropriate number of outputs for triggering scenes.
+This node interepts scene data sent by multi-clicking on a Red series switch. Connect to a Home Assistant events-all node, automatically adds the appropriate number of outputs for triggering scenes.
 
 ![image](https://user-images.githubusercontent.com/43426700/114770466-1965ea80-9d31-11eb-92f7-8fec410095c1.png)
 
