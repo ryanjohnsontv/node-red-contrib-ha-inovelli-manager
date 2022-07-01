@@ -8,7 +8,7 @@ be connected to an api-call-service node. This node will automatically fill in t
 
 ## Features:
 -   Multicast Support
--   Support for OpenZWave, Z-Wave (deprectaed), and Z-Wave JS (Requires Home Assistant 2021.4.0 or newer)
+-   Z-Wave JS (Requires Home Assistant 2021.4.0 or newer)
 -   Allows all fields to be controlled by the payload of an incoming message
 -   Use color-convert library to accept color names, RGB arrays, hexadecimals, or hue value as input
 -   Automatically convert input values to proper format (ie. inputting "2 Hours" converts to 168 for Inovelli math)
@@ -27,11 +27,7 @@ This node allows you to set color, brightness, and effect type/duration for noti
 
 ## How to use:
 
-### Z-Wave Integration
-
-You are able to choose between Z-Wave JS, OpenZWave, or Z-Wave (deprecated) as your integration. This can also be set via msg.payload.zwave (values: zwave_js, ozw, or zwave).
-
-### Entity ID/Node ID
+### Entity ID
 
 Depending on your Z-Wave integration, you'll have the option to add one ID, or a comma delimited list of IDs. For Z-Wave JS you can set this entity ID in the Home Assistant call-service node, in this node, or send a message with your ID(s) in the msg.payload.entity_id field. For OZW you can set the ID(s) in this node or send a messages with your ID(s) in the msg.payload.node_id field.
 
@@ -72,11 +68,7 @@ This node allows you to set the color and brightness of the LED strip (not for n
 
 ## How to use:
 
-### Z-Wave Integration
-
-You are able to choose between Z-Wave JS, OpenZWave, or Z-Wave (deprecated) as your integration. This can also be set via msg.payload.zwave (values: zwave_js, ozw, or zwave).
-
-### Entity ID/Node ID
+### Entity ID
 
 Depending on your Z-Wave integration, you'll have the option to add one ID, or a comma delimited list of IDs. For Z-Wave JS you can set this entity ID in the Home Assistant call-service node, in this node, or send a message with your ID(s) in the msg.payload.entity_id field. For OZW you can set the ID(s) in this node or send a messages with your ID(s) in the msg.payload.node_id field.
 
@@ -121,10 +113,6 @@ This node interepts scene data sent by multi-clicking on a Red series switch. Co
 
 ## How to use:
 
-### Z-Wave Integration
-
-You are able to choose between Z-Wave JS or OpenZWave as your integration.
-
 ### Node ID
 
 The Node ID of the switch being used for scene control.
@@ -132,6 +120,10 @@ The Node ID of the switch being used for scene control.
 ### Switch Type
 
 This option lets you specify your switch model (LZW30-SN, LZW31-SN, LZW36, and LZW45).
+
+### Entity ID
+
+An optional field to append this value to all scene messages that are passed through. For instance, instead of writing "light.bedroom_lights" for each scene output, can can just reference it here as {{ msg.entity_id }}.
 
 ### Node ID Passthrough
 
