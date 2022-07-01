@@ -4,8 +4,6 @@ module.exports = function (RED) {
     RED.nodes.createNode(this, config);
     var node = this;
     const {
-      zwave,
-      nodeid,
       entityid,
       switchtype,
       color,
@@ -23,9 +21,7 @@ module.exports = function (RED) {
       multicast,
     } = config;
 
-    this.zwave = zwave;
     this.entityid = entityid;
-    this.nodeid = nodeid;
     this.switchtype = parseInt(switchtype, 10);
     this.color = parseInt(color, 10);
     this.brightness = parseInt(brightness, 10);
@@ -43,9 +39,7 @@ module.exports = function (RED) {
 
     node.on("input", (msg, send, done) => {
       const {
-        zwave: presetZwave,
         entityid,
-        nodeid,
         switchtype: presetSwitchtype,
         color: presetColor,
         brightness: presetBrightness,
@@ -63,7 +57,6 @@ module.exports = function (RED) {
       } = node;
 
       const payload = msg.payload || {};
-      const domain = payload.zwave || presetZwave;
       var parameter = payload.switchtype || presetSwitchtype;
       var err,
         id,
@@ -76,39 +69,6 @@ module.exports = function (RED) {
       const multicast =
         payload.multicast != undefined ? payload.multicast : presetMulticast;
       const output = {};
-
-      function inputDomainCheck(domain) {
-        let node_id;
-        switch (domain) {
-          case "zwave_js":
-            var entity_id = payload.entity_id || entityid;
-            id = entity_id ? { entity_id } : {};
-            output.domain = "zwave_js";
-            if (multicast) {
-              output.service = "multicast_set_value";
-            } else {
-              output.service = "set_config_parameter";
-            }
-            break;
-          case "ozw":
-            node_id = payload.node_id || nodeid;
-            id = node_id.split(",").map(Number);
-            output.service = "set_config_parameter";
-            break;
-          case "zwave":
-            node_id = payload.node_id || nodeid;
-            id = node_id.split(",").map(Number);
-            output.service = "set_config_parameter";
-            break;
-          default:
-            err = `Invalid Z-Wave domain: ${domain}. Supported domains are zwave, ozw, or zwave_js.`;
-            if (done) {
-              done(err);
-            } else {
-              node.error(err);
-            }
-        }
-      }
 
       function inputSwitchConvert(parameter) {
         if (isNaN(parameter)) {
@@ -220,7 +180,6 @@ module.exports = function (RED) {
         }
       }
 
-      inputDomainCheck(domain);
       inputSwitchConvert(parameter);
 
       function LightHandler() {
@@ -309,46 +268,15 @@ module.exports = function (RED) {
             sendMsg(data);
             break;
           default:
-            switch (domain) {
-              case "zwave_js":
-                data = { ...id, parameter: param, value };
-                sendMsg(data);
-                break;
-              case "ozw":
-                for (let x in id) {
-                  let node_id = id[x];
-                  node_id = node_id ? { node_id } : {};
-                  data = { ...node_id, parameter: param, value };
-                  sendMsg(data);
-                }
-                break;
-              case "zwave":
-                let size;
-                switch (type) {
-                  case "color":
-                    size = 2;
-                    break;
-                  case "fanColor":
-                    size = 2;
-                    break;
-                  default:
-                    size = 1;
-                    break;
-                }
-                for (let x in id) {
-                  let node_id = id[x];
-                  node_id = node_id ? { node_id } : {};
-                  data = { ...node_id, parameter: param, size, value };
-                  sendMsg(data);
-                }
-                break;
-            }
+            data = { ...id, parameter: param, value };
+            sendMsg(data);
+            break;
         }
       }
       function sendMsg(data) {
         node.send({
           payload: {
-            domain,
+            domain: "zwave_js",
             service: output.service,
             data,
           },

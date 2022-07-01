@@ -4,9 +4,7 @@
     color: "#B68181",
     defaults: {
       name: { value: "" },
-      nodeid: { value: "" },
       entityid: { value: "" },
-      zwave: { value: "zwave_js" },
       color: { value: 0 },
       brightness: { value: 5 },
       duration: { value: 10 },
@@ -37,20 +35,6 @@
           <option value="4">Slow Blink</option>
           <option value="5">Pulse</option>`;
 
-      $("#node-input-zwave").change(function () {
-        switch (this.value) {
-          case "zwave_js":
-            $(".nodeid-input").hide();
-            $(".entityid-input").show();
-            $(".multicast-input").show();
-            break;
-          default:
-            $(".nodeid-input").show();
-            $(".entityid-input").hide();
-            $(".multicast-input").hide();
-            break;
-        }
-      });
       $("#node-input-switchtype").change(function () {
         const effectInput = $("#node-input-effect");
         let previous;
@@ -159,18 +143,6 @@
       <label for="node-input-name"><i class="icon-tag"></i>Name</label>
       <input type="text" id="node-input-name" placeholder="Name">
   </div>
-  <div class="form-row">
-    <label for="node-input-zwave"><i class="icon-tag"></i>Z-Wave Integration</label>
-    <select name="node-input-zwave" id="node-input-zwave">
-        <option value="zwave_js">Z-Wave JS</option>
-        <option value="ozw">OpenZWave (1.6)</option>
-        <option value="zwave">Z-Wave (Deprecated)</option>
-    </select>
-  </div>
-  <div class="form-row nodeid-input">
-    <label for="node-input-nodeid"><i class="icon-tag"></i>Node ID(s)</label>
-    <input type="text" id="node-input-nodeid">
-  </div>
   <div class="form-row entityid-input">
     <label for="node-input-entityid"><i class="icon-tag"></i>Entity ID(s)</label>
     <input type="text" id="node-input-entityid">
@@ -254,14 +226,8 @@
 <script type="text/x-red" data-help-name="inovelli-notification-manager">
     <p>This node will help construct the value for controlling LED notifications on an Inovelli Red Series switch. The output should be connected to a Home Assistant call service node.</p>
     <dl class="message-properties">
-        <dt>Z-Wave Integration<span class="property-type">string</span></dt>
-        <dd>Your Z-Wave integration used in Home Assistant (zwave_js, ozw, or zwave)</dd>
-
         <dt>Entity ID(s)<span class="property-type">string</span></dt>
-        <dd>(For Z-Wave JS) Entity (or a comma-delimited list of entity IDs) to set the configuration parameter on</dd>
-
-        <dt>Node ID(s)<span class="property-type">number</span></dt>
-        <dd>(For OpenZWave or Z-Wave) Node ID (or a comma-delimited list of node IDs) of the Inovelli switch you are trying to configure</dd>
+        <dd>Entity (or a comma-delimited list of entity IDs) to set the configuration parameter on</dd>
 
         <dt>Switch Type<span class="property-type">number|string</span></dt>
         <dd>Determines which parameter to set. (LZW30-SN, LZW31-SN, LZW36 (fan and/or light))</dd>
@@ -289,7 +255,6 @@
       <pre>
   msg = {
     payload: {
-      zwave: zwave_js,
       entity_id: "light.bedroom",
       color: "Red",
       duration: "10 Seconds",
@@ -303,8 +268,6 @@
 
   msg = {
     payload: {
-      zwave: ozw,
-      node_id: 13,
       color: [255,0,00],
       duration: 10,
       effect: 3,

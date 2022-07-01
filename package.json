@@ -1,11 +1,11 @@
 {
   "name": "node-red-contrib-ha-inovelli-manager",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/ryanjohnsontv/node-red-contrib-ha-inovelli-manager.git"
   },
-  "description": "Nodes for easily managing scenes, parameters, and notifications of Inovelli switches paired through various Home Assistant integrations",
+  "description": "Nodes for easily managing scenes, parameters, and notifications of Inovelli switches paired through Home Assistant's Z-Wave JS integration",
   "keywords": [
     "inovelli",
     "node-red",

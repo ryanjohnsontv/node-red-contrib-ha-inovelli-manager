@@ -4,7 +4,6 @@
     color: "#B68181",
     defaults: {
       name: { value: "" },
-      zwave: { value: "zwave_js" },
       nodeid: { value: "" },
       entityid: { value: "" },
       switchtype: { value: 5 },
@@ -31,21 +30,6 @@
       return this.name || "inovelli-led-manager";
     },
     oneditprepare: function () {
-      $("#node-input-zwave").change(function () {
-        let zwave = $("#node-input-zwave").val();
-        switch (zwave) {
-          case "zwave_js":
-            $(".nodeid-input").hide();
-            $(".entityid-input").show();
-            $(".multicast-input").show();
-            break;
-          default:
-            $(".nodeid-input").show();
-            $(".entityid-input").hide();
-            $(".multicast-input").hide();
-            break;
-        }
-      });
       $("#node-input-switchtype").change(function () {
         let switchInput = $("#node-input-switchtype").val();
         switch (switchInput) {
@@ -322,18 +306,6 @@
       <label for="node-input-name"><i class="icon-tag"></i>Name</label>
       <input type="text" id="node-input-name" placeholder="Name">
   </div>
-  <div class="form-row">
-    <label for="node-input-zwave"><i class="icon-tag"></i>Z-Wave Integration</label>
-    <select name="node-input-zwave" id="node-input-zwave">
-        <option value="zwave_js">Z-Wave JS</option>
-        <option value="ozw">OpenZWave (1.6)</option>
-        <option value="zwave">Z-Wave (Deprecated)</option>
-    </select>
-  </div>
-  <div class="form-row nodeid-input">
-    <label for="node-input-nodeid"><i class="icon-tag"></i>Node ID(s)</label>
-    <input type="text" id="node-input-nodeid">
-  </div>
   <div class="form-row entityid-input">
     <label for="node-input-entityid"><i class="icon-tag"></i>Entity ID(s)</label>
     <input type="text" id="node-input-entityid">
@@ -427,10 +399,7 @@
       <dd>Your Z-Wave integration used in Home Assistant (zwave_js, ozw, or zwave)</dd>
 
       <dt>Entity ID(s)<span class="property-type">string</span></dt>
-      <dd>(For Z-Wave JS) Entity (or a comma-delimited list of entity IDs) to set the configuration parameter on</dd>
-
-      <dt>Node ID(s)<span class="property-type">number</span></dt>
-      <dd>(For OpenZWave or Z-Wave) Node ID (or a comma-delimited list of Node IDs) of the Inovelli switch you are trying to configure</dd>
+      <dd>Entity (or a comma-delimited list of entity IDs) to set the configuration parameter on</dd>
 
       <dt>Switch Series<span class="property-type">string</span></dt>
       <dd>The series of your Inovelli switch. (Black or Red))</dd>
@@ -482,7 +451,6 @@
     <pre>
 msg = {
   payload: {
-    zwave: zwave_js,
     entity_id: "light.bedroom",
     fanColor: "Red",
     fanBrightness: 10,

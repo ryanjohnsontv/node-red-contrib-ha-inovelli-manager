@@ -4,9 +4,7 @@ module.exports = function (RED) {
     RED.nodes.createNode(this, config);
     var node = this;
     const {
-      zwave,
       entityid,
-      nodeid,
       color,
       brightness,
       duration,
@@ -16,9 +14,7 @@ module.exports = function (RED) {
       multicast,
     } = config;
 
-    this.zwave = zwave;
     this.entityid = entityid;
-    this.nodeid = nodeid;
     this.color = parseInt(color, 10);
     this.brightness = parseInt(brightness, 10);
     this.duration = parseInt(duration, 10);
@@ -29,9 +25,7 @@ module.exports = function (RED) {
 
     node.on("input", (msg, send, done) => {
       const {
-        zwave: presetZwave,
         entityid,
-        nodeid,
         color: presetColor,
         brightness: presetBrightness,
         duration: presetDuration,
@@ -42,7 +36,6 @@ module.exports = function (RED) {
       } = node;
 
       const payload = msg.payload || {};
-      const domain = payload.zwave || presetZwave;
       const brightness = payload.brightness || presetBrightness;
       var color = payload.color || presetColor;
       var duration = payload.duration || presetDuration;
@@ -256,42 +249,10 @@ module.exports = function (RED) {
         return effect;
       }
 
-      function inputDomainCheck(domain) {
-        switch (domain) {
-          case "zwave_js":
-            if (multicast) {
-              service = "multicast_set_value";
-            } else {
-              service = "bulk_set_partial_config_parameters";
-            }
-            break;
-          case "ozw":
-            service = "set_config_parameter";
-            break;
-          case "zwave":
-            service = "set_config_parameter";
-            break;
-          default:
-            err = `Invalid Z-Wave domain: ${domain}. Supported domains are zwave, ozw, or zwave_js.`;
-            if (done) {
-              done(err);
-            } else {
-              node.error(err);
-            }
-        }
-      }
-
       function calculateValue() {
         var value, hsl, keyword, hue;
         if (clear === true || effect === 0 || duration === 0) {
-          switch (domain) {
-            case "zwave_js":
-              value = 65536;
-              break;
-            default:
-              value = 0;
-              break;
-          }
+          value = 65536;
           node.status(`Cleared notification!`);
         } else {
           if (color[0] == color[1] && color[1] == color[2]) {
@@ -309,69 +270,44 @@ module.exports = function (RED) {
       }
 
       function sendNotification(parameter, value, id) {
-        var size = domain === "zwave" ? { size: 4 } : {};
-        switch (service) {
-          case "multicast_set_value":
+        const domain = "zwave_js";
+        if (multicast) {
+          node.send({
+            payload: {
+              domain,
+              service: "multicast_set_value",
+              data: { ...id, property: parameter, command_class: 112, value },
+            },
+          });
+          } else {
             node.send({
               payload: {
                 domain,
-                service,
-                data: { ...id, property: parameter, command_class: 112, value },
+                service: "bulk_set_partial_config_parameters",
+                data: { ...id, parameter, value },
               },
             });
-            break;
-          default:
-            node.send({
-              payload: {
-                domain,
-                service,
-                data: { ...id, parameter, ...size, value },
-              },
-            });
-            break;
+            }
         }
-      }
 
       parameter = inputSwitchConvert(parameter);
       color = inputColorConvert(color);
       inputBrightnessCheck(brightness);
       duration = inputDurationConvert(duration);
       effect = inputEffectConvert(effect, parameter);
-      inputDomainCheck(domain);
 
       if (!err) {
         var id;
         var value = calculateValue();
-        switch (domain) {
-          case "zwave_js":
-            const entity_id = payload.entity_id || entityid;
-            id = entity_id ? { entity_id } : {};
-            switch (parameter) {
-              case 49:
-                sendNotification(24, value, id);
-                sendNotification(25, value, id);
-                break;
-              default:
-                sendNotification(parameter, value, id);
-                break;
-            }
+        const entity_id = payload.entity_id || entityid;
+        id = entity_id ? { entity_id } : {};
+        switch (parameter) {
+          case 49:
+            sendNotification(24, value, id);
+            sendNotification(25, value, id);
             break;
           default:
-            var node_id = payload.node_id || nodeid;
-            const nodes = node_id.split(",").map(Number);
-            for (let x in nodes) {
-              node_id = nodes[x];
-              id = node_id ? { node_id } : {};
-              switch (parameter) {
-                case 49:
-                  sendNotification(24, value, id);
-                  sendNotification(25, value, id);
-                  break;
-                default:
-                  sendNotification(parameter, value, id);
-                  break;
-              }
-            }
+            sendNotification(parameter, value, id);
             break;
         }
       }
