@@ -1,3 +1,4 @@
+<script src="./lib/util.js"></script>
 <script type="text/javascript">
   RED.nodes.registerType("inovelli-scene-manager", {
     category: "inovelli",
@@ -14,7 +15,7 @@
     },
     inputs: 1,
     outputs: 1,
-    inputLabels: "Connect to an 'events: all' node",
+    inputLabels: "Connect to appropriate Home Assistant node",
     outputLabels: function (index) {
       return this.labels[index];
     },
@@ -24,6 +25,24 @@
       return this.name || "inovelli-scene-manager";
     },
     oneditprepare: function () {
+      const zwaveSwitches = `<option value="LZW30">On/Off Switch (LZW30-SN)</option>
+        <option value="LZW31">Dimmer Switch (LZW31-SN)</option>
+        <option value="LZW36">Fan/Light Switch (LZW36)</option>
+        <option value="LZW45">Lightstrip & Controller Kit (LZW45)</option>`;
+
+      const zigbeeSwitches = `<option value="VZM31">Blue 2-1 Switch (VZM31-SN)</option>`;
+
+      $("#node-input-zwave").change(function () {
+        const switchInput = $("#node-input-switchtype");
+        switch (this.value) {
+          case "zwave_js":
+            switchInput.html(zwaveSwitches);
+            break;
+          default:
+            switchInput.html(zigbeeSwitches);
+            break;
+        }
+      });
       $("#node-input-passthrough").change(function () {
         if ($('#node-input-passthrough').is(":checked")) {
           $(".nodeid-input").hide();
@@ -33,91 +52,100 @@
       });
     },
     oneditsave: function () {
+      const OutputLabels = {
+        "LZW30": [
+          "Tap Up on Light Paddle 1x",
+          "Tap Up on Light Paddle 2x",
+          "Tap Up on Light Paddle 3x",
+          "Tap Up on Light Paddle 4x",
+          "Tap Up on Light Paddle 5x",
+          "Hold Up on Light Paddle",
+          "Release Up on Light Paddle",
+          "Tap Down on Light Paddle 1x",
+          "Tap Down on Light Paddle 2x",
+          "Tap Down on Light Paddle 3x",
+          "Tap Down on Light Paddle 4x",
+          "Tap Down on Light Paddle 5x",
+          "Hold Down on Light Paddle",
+          "Release Down on Light Paddle",
+          "Tap Config Button 1x",
+        ],
+        "LZW31": [
+          "Tap Up on Light Paddle 1x",
+          "Tap Up on Light Paddle 2x",
+          "Tap Up on Light Paddle 3x",
+          "Tap Up on Light Paddle 4x",
+          "Tap Up on Light Paddle 5x",
+          "Hold Up on Light Paddle",
+          "Release Up on Light Paddle",
+          "Tap Down on Light Paddle 1x",
+          "Tap Down on Light Paddle 2x",
+          "Tap Down on Light Paddle 3x",
+          "Tap Down on Light Paddle 4x",
+          "Tap Down on Light Paddle 5x",
+          "Hold Down on Light Paddle",
+          "Release Down on Light Paddle",
+          "Tap Config Button 1x",
+        ],
+        "LZW36": [
+          "Tap on Light Button 1x",
+          "Tap on Light Button 2x",
+          "Tap on Light Button 3x",
+          "Tap on Light Button 4x",
+          "Tap on Light Button 5x",
+          "Hold on Light Button (3 Seconds)",
+          "Release on Light (After Hold) Button",
+          "Tap on Light Rocker Up",
+          "Tap on Light Rocker Down",
+          "Tap on Fan Button 1x",
+          "Tap on Fan Button 2x",
+          "Tap on Fan Button 3x",
+          "Tap on Fan Button 4x",
+          "Tap on Fan Button 5x",
+          "Hold on Fan Button (3 Seconds)",
+          "Release on Fan (After Hold) Button",
+          "Tap on Fan Rocker Up",
+          "Tap on Fan Rocker Down",
+        ],
+        "LZW45": [
+          "Tap Up on Light Paddle 1x",
+          "Tap Up on Light Paddle 2x",
+          "Tap Up on Light Paddle 3x",
+          "Tap Up on Light Paddle 4x",
+          "Tap Up on Light Paddle 5x",
+          "Hold Up on Light Paddle",
+          "Release Up on Light Paddle",
+          "Tap Down on Light Paddle 1x",
+          "Tap Down on Light Paddle 2x",
+          "Tap Down on Light Paddle 3x",
+          "Tap Down on Light Paddle 4x",
+          "Tap Down on Light Paddle 5x",
+          "Hold Down on Light Paddle",
+          "Release Down on Light Paddle",
+          "Tap Config Button 1x",
+        ],
+        "VZM31": [
+          "Tap Up on Light Paddle 1x",
+          "Tap Up on Light Paddle 2x",
+          "Tap Up on Light Paddle 3x",
+          "Tap Up on Light Paddle 4x",
+          "Tap Up on Light Paddle 5x",
+          "Hold Up on Light Paddle",
+          "Release Up on Light Paddle",
+          "Tap Down on Light Paddle 1x",
+          "Tap Down on Light Paddle 2x",
+          "Tap Down on Light Paddle 3x",
+          "Tap Down on Light Paddle 4x",
+          "Tap Down on Light Paddle 5x",
+          "Hold Down on Light Paddle",
+          "Release Down on Light Paddle",
+          "Tap Config Button 1x",
+          "Tap Config Button 2x",
+        ],
+      };
       const switchtype = $("#node-input-switchtype").val();
-      let label;
-      switch (switchtype) {
-        case "LZW30":
-          label = [
-            "Tap Up on Light Paddle 1x",
-            "Tap Up on Light Paddle 2x",
-            "Tap Up on Light Paddle 3x",
-            "Tap Up on Light Paddle 4x",
-            "Tap Up on Light Paddle 5x",
-            "Hold Up on Light Paddle",
-            "Release Up on Light Paddle",
-            "Tap Down on Light Paddle 1x",
-            "Tap Down on Light Paddle 2x",
-            "Tap Down on Light Paddle 3x",
-            "Tap Down on Light Paddle 4x",
-            "Tap Down on Light Paddle 5x",
-            "Hold Down on Light Paddle",
-            "Release Down on Light Paddle",
-            "Tap Config Button 1x",
-          ];
-          break;
-        case "LZW31":
-          label = [
-            "Tap Up on Light Paddle 1x",
-            "Tap Up on Light Paddle 2x",
-            "Tap Up on Light Paddle 3x",
-            "Tap Up on Light Paddle 4x",
-            "Tap Up on Light Paddle 5x",
-            "Hold Up on Light Paddle",
-            "Release Up on Light Paddle",
-            "Tap Down on Light Paddle 1x",
-            "Tap Down on Light Paddle 2x",
-            "Tap Down on Light Paddle 3x",
-            "Tap Down on Light Paddle 4x",
-            "Tap Down on Light Paddle 5x",
-            "Hold Down on Light Paddle",
-            "Release Down on Light Paddle",
-            "Tap Config Button",
-          ];
-          break;
-        case "LZW36":
-          label = [
-            "Tap on Light Button 1x",
-            "Tap on Light Button 2x",
-            "Tap on Light Button 3x",
-            "Tap on Light Button 4x",
-            "Tap on Light Button 5x",
-            "Hold on Light Button (3 Seconds)",
-            "Release on Light (After Hold) Button",
-            "Tap on Light Rocker Up",
-            "Tap on Light Rocker Down",
-            "Tap on Fan Button 1x",
-            "Tap on Fan Button 2x",
-            "Tap on Fan Button 3x",
-            "Tap on Fan Button 4x",
-            "Tap on Fan Button 5x",
-            "Hold on Fan Button (3 Seconds)",
-            "Release on Fan (After Hold) Button",
-            "Tap on Fan Rocker Up",
-            "Tap on Fan Rocker Down",
-          ];
-          break;
-        case "LZW45":
-          label = [
-            "Tap Up on Light Paddle 1x",
-            "Tap Up on Light Paddle 2x",
-            "Tap Up on Light Paddle 3x",
-            "Tap Up on Light Paddle 4x",
-            "Tap Up on Light Paddle 5x",
-            "Hold Up on Light Paddle",
-            "Release Up on Light Paddle",
-            "Tap Down on Light Paddle 1x",
-            "Tap Down on Light Paddle 2x",
-            "Tap Down on Light Paddle 3x",
-            "Tap Down on Light Paddle 4x",
-            "Tap Down on Light Paddle 5x",
-            "Hold Down on Light Paddle",
-            "Release Down on Light Paddle",
-            "Tap Config Button 1x",
-          ];
-          break;
-      }
-      this.outputs = label.length;
-      this.labels = label;
+      this.outputs = OutputLabels[switchtype].length;
+      this.labels = OutputLabels[switchtype];
     },
   });
 </script>
@@ -133,15 +161,14 @@
       <input type="text" id="node-input-name" placeholder="Name">
   </div>
   <div class="form-row">
-    <label for="node-input-zwave"><i class="icon-tag"></i>Z-Wave Integration</label>
+    <label for="node-input-zwave"><i class="icon-tag"></i>Home Assistant Integration</label>
     <select name="node-input-zwave" id="node-input-zwave">
         <option value="zwave_js">Z-Wave JS</option>
-        <option value="ozw">Open Z-Wave</option>
-        <option value="zwave">Z-Wave</option>
+        <option value="zha">ZHA</option>
     </select>
   </div>
   <div class="form-row nodeid-input">
-    <label for="node-input-nodeid"><i class="icon-tag"></i>Node ID(s)</label>
+    <label for="node-input-nodeid"><i class="icon-tag"></i>Node/Device ID(s)</label>
     <input type="text" id="node-input-nodeid">
   </div>
   <div class="form-row entityid-input">
@@ -151,14 +178,14 @@
   <div class="form-row">
     <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
     <select name="node-input-switchtype" id="node-input-switchtype">
-        <option value="LZW30">On/Off Switch (LZW30-SN)</option>
-        <option value="LZW31">Dimmer Switch (LZW31-SN)</option>
-        <option value="LZW36">Fan/Light Switch (LZW36)</option>
-        <option value="LZW45">Lightstrip & Controller Kit (LZW45)</option>
+      <option value="0">Placeholder</option>
+      <option value="1">Placeholder</option>
+      <option value="2">Placeholder</option>
+      <option value="3">Placeholder</option>
     </select>
   </div>
   <div class="form-row">
-    <label for="node-input-passthrough"><i class="icon-tag"></i>Node ID Passthrough</label>
+    <label for="node-input-passthrough"><i class="icon-tag"></i>Passthrough</label>
     <input type="checkbox" id="node-input-passthrough">
   </div>
 </script>
@@ -166,11 +193,11 @@
 <script type="text/x-red" data-help-name="inovelli-scene-manager">
   <p>This node will decipher button clicks on an Inovelli Red Series switch allowing for easy scene control in Home Assistant. Just connect this input of this node to the output of a Home Assistant "events: all" node</p>
   <dl class="message-properties">
-      <dt>Z-Wave Integration<span class="property-type">string</span></dt>
-      <dd>Your Z-Wave integration used in Home Assistant (zwave_js, ozw or zwave)</dd>
+      <dt>Home Assistant Integration<span class="property-type">string</span></dt>
+      <dd>Your device integration used in Home Assistant (zwave_js, zha or z2m(COMING SOON))</dd>
 
-      <dt>Node ID<span class="property-type">number</span></dt>
-      <dd>Node ID (or a comma-delimited list of node IDs) of the Inovelli switch you are trying to configure</dd>
+      <dt>Node/Device ID<span class="property-type">number</span></dt>
+      <dd>Node ID or Device ID (or a comma-delimited list of IDs) of the Inovelli switch(es) you are managing</dd>
 
       <dt>Entity ID(s)<span class="property-type">string</span></dt>
       <dd>Entity ID (or a comma-delimited list of entity IDs) to append to each message (sets msg.entity_id). Useful for controlling dedicated smart bulbs.</dd>
@@ -178,7 +205,7 @@
       <dt>Switch Type<span class="property-type">number|string</span></dt>
       <dd>Determines which Inovelli switch is being used. (LZW30-SN, LZW31-SN, LZW36, LZW45)</dd>
 
-      <dt>Node ID Passthrough<span class="property-type">boolean</span></dt>
-      <dd>Disables specifying a node id, node will instead pass through all value/scene notifications (ideal when your Z-Wave network uses ALL of the same switch)</dd>
+      <dt>Passthrough<span class="property-type">boolean</span></dt>
+      <dd>Disables specifying a node or device id, node will instead pass through all value/scene notifications (ideal when your Z-Wave network uses ALL of the same switch)</dd>
   </dl>
 </script>

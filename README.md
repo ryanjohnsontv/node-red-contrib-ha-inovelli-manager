@@ -8,7 +8,7 @@ be connected to an api-call-service node. This node will automatically fill in t
 
 ## Features:
 -   Multicast Support
--   Support for OpenZWave, Z-Wave (deprectaed), and Z-Wave JS (Requires Home Assistant 2021.4.0 or newer)
+-   Support for Z-Wave JS, ZHA, and Zigbee2MQTT
 -   Allows all fields to be controlled by the payload of an incoming message
 -   Use color-convert library to accept color names, RGB arrays, hexadecimals, or hue value as input
 -   Automatically convert input values to proper format (ie. inputting "2 Hours" converts to 168 for Inovelli math)
@@ -121,9 +121,9 @@ This node interepts scene data sent by multi-clicking on a Red series switch. Co
 
 ## How to use:
 
-### Z-Wave Integration
+### Home Assistant Integration
 
-You are able to choose between Z-Wave JS or OpenZWave as your integration.
+You are able to choose between Z-Wave JS, ZHA, or Zigbee2MQTT as your integration.
 
 ### Node ID
 
@@ -133,6 +133,6 @@ The Node ID of the switch being used for scene control.
 
 This option lets you specify your switch model (LZW30-SN, LZW31-SN, LZW36, and LZW45).
 
-### Node ID Passthrough
+### Passthrough
 
-Enable to process all scene messages used by your Z-Wave integration. Recommended ONLY for those with a Z-Wave network made of the same type of switch.
+Enable to process all scene messages used by your Home Assistant integration. Recommended ONLY for those with a Z-Wave network made of the same type of switch.
