@@ -22,84 +22,105 @@ module.exports = function (RED) {
         passthrough,
       } = node;
       const payload = msg.payload;
-      const domain = payload.event.domain;
-      const event_type = payload.event_type;
-      const ids = nodeid.split(',').map(item => item.trim());
-      const event_types = {
-        zwave_js: "zwave_js_value_notification",
-        zha: "zha_event",
-      };
-      var err;
 
-      function validateDomain(preset, incoming) {
-        if (preset !== incoming) {
-          err = `Incorrect Home Assistant Integration. Node is set for ${preset} but recieved an event for ${incoming}`;
-          if (done) {
-            done(err);
-          } else {
-            node.error(err);
-          }
+      validateEvent = (expected) => {
+        if (typeof payload !== 'object' || payload === null) {
+          return done(Error('Payload does not contain event data.'));
         }
-      };
-      function validateEventType() {
-        if (event_types[domain] !== event_type) {
-          let correctType = event_types[domain];
-          err = `Incorrect Event Type Recieved. Node is set for ${domain} which expects an event type of ${correctType}`;
-          if (done) {
-            done(err);
-          } else {
-            node.error(err);
-          }
-        }
+        if (!('event_type' in payload)) {
+          return done(Error('Event Type not provided in payload.'));
+        };
+        if (!('event' in payload)) {
+          return done(Error('Event Data not provided in payload.'));
+        };
+        if (!('domain' in payload.event)) {
+          return done(Error('No domain value provided in msg.event.'));
+        };
+        
+        var domain = payload.event.domain;
+        if (zwave !== domain) {
+          return done(Error(`Incorrect Home Assistant Integration. Node is set for ${zwave} but recieved an event for ${domain}`));
+        };
+
+        var incoming = payload.event_type;
+        if (zwave !== domain) {
+          return done(Error(`Incorrect Home Assistant Integration. Node is set for ${zwave} but recieved an event for ${domain}`));
+        };
+        if (incoming !== expected) {
+          return done(Error(`Incorrect Event Type Recieved: ${incoming}. Node is set for ${zwave} which expects an event type of ${expected}`));
+        };
       };
 
-      function validateMessage() {
+
+      validateMessage = () => {
+        const ids = nodeid.split(',').map(item => item.trim());
         if (passthrough) {
           return true
-        }
+        };
         if (payload.event.node_id && ids.includes((payload.event.node_id.trim()).toString())) {
           return true
-        }
+        };
         if (payload.event.device_id && ids.includes(payload.event.device_id.trime())) {
           return true
-        }
+        };
         return false
       };
 
-      validateDomain(zwave, domain);
-      validateEventType();
+      Z2MMapping = () => {
+        var map = util.Z2MButtonMap
+        var index = map[switchtype].indexOf(payload)
+        if (index === -1) {
+          return done(Error(`Invalid Payload Recieved`));
+        };
+        return index;
+      };
 
-      if (!validateMessage) {
-        return
-      }
-
-      var button, press;
       var output = new Array(outputs);
-      switch (domain) {
+      switch (zwave) {
         case "zwave_js":
-          button = parseInt(payload.event.property_key);
-          press = parseInt(payload.event.value_raw);
+          if (!validateMessage) {
+            return
+          };
+          validateEvent("zwave_js_value_notification")
+          var button = parseInt(payload.event.property_key);
+          var press = parseInt(payload.event.value_raw);
+          var map = util.ZWaveButtonMap[switchtype];
+          if (map[button] === undefined || map[button][press] === undefined) {
+            return done(Error(`Invalid Event for the provided switch`))
+          };
+          output = sendMsg(map[button][press])
           break;
         case "zha":
-          button = parseInt(payload.event.params.button_pressed);
-          press = parseInt(payload.event.params.press_type);
+          if (!validateMessage) {
+            return
+          };
+          validateEvent("zha_event")
+          var button = parseInt(payload.event.params.button_pressed);
+          var press = parseInt(payload.event.params.press_type);
+          var map = util.ZWaveButtonMap[switchtype];
+          if (map[button] === undefined || map[button][press] === undefined) {
+            return done(Error(`Invalid Event for the provided switch`))
+          };
+          output = sendMsg(map[button][press])
           break;
         case "z2m":
-          button = parseInt(payload.event.scene_id);
-          press = parseInt(payload.event.scene_value_id);
+          var map = util.Z2MButtonMap
+          var index = map[switchtype].indexOf(payload)
+          if (index === -1) {
+            return done(Error(`Invalid Payload Recieved`))
+          };
+          output = sendMsg(index)
           break;
-      };
+      }
 
-      const map = util.ButtonMap[switchtype];
-
-      if (map[button] === undefined || map[button][press] === undefined) {
-        return
+      function sendMsg(val) {
+        if (entityid) {
+          msg.entity_id = entityid;
+        };
+        output[val] = msg;
+        node.status(util.OutputLabels[switchtype][val])
+        return output;
       };
-
-      if (entityid) {
-        msg.entity_id = entityid;
-      };
-      output[map[button][press]] = msg;
 
       send(output);
     });

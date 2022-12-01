@@ -289,240 +289,282 @@ effectConvert = (effect, parameter) => {
   return effect;
 };
 
-const ButtonMap = {
+const ZWaveButtonMap = {
   "LZW30": {
-      // Up Button
-      2: {
-          0: 0,
-          3: 1,
-          4: 2,
-          5: 3,
-          6: 4,
-          2: 5,
-          1: 6,
-      },
-      // Down Button
-      1: {
-          0: 7,
-          3: 8,
-          4: 9,
-          5: 10,
-          6: 11,
-          2: 12,
-          1: 13,
-      },
-      // Config Button
-      3: {
-          0: 14,
-      },
+    // Up Button
+    2: {
+      0: 0,
+      3: 1,
+      4: 2,
+      5: 3,
+      6: 4,
+      2: 5,
+      1: 6,
+    },
+    // Down Button
+    1: {
+      0: 7,
+      3: 8,
+      4: 9,
+      5: 10,
+      6: 11,
+      2: 12,
+      1: 13,
+    },
+    // Config Button
+    3: {
+      0: 14,
+    },
   },
   "LZW31": {
-      // Up Button
-      2: {
-          0: 0,
-          3: 1,
-          4: 2,
-          5: 3,
-          6: 4,
-          2: 5,
-          1: 6,
-      },
-      // Down Button
-      1: {
-          0: 7,
-          3: 8,
-          4: 9,
-          5: 10,
-          6: 11,
-          2: 12,
-          1: 13,
-      },
-      // Config Button
-      3: {
-          0: 14,
-      },
+    // Up Button
+    2: {
+      0: 0,
+      3: 1,
+      4: 2,
+      5: 3,
+      6: 4,
+      2: 5,
+      1: 6,
+    },
+    // Down Button
+    1: {
+      0: 7,
+      3: 8,
+      4: 9,
+      5: 10,
+      6: 11,
+      2: 12,
+      1: 13,
+    },
+    // Config Button
+    3: {
+      0: 14,
+    },
   },
   "LZW36": {
-      // Light Button
-      2: {
-          0: 0,
-          3: 1,
-          4: 2,
-          5: 3,
-          6: 4,
-          2: 5,
-          1: 6,
-      },
-      // Light Rocker Up
-      3: {
-          0: 7,
-      },
-      // Light Rocker Down
-      4: {
-          0: 8,
-      },
-      1: {
-          0: 9,
-          3: 10,
-          4: 11,
-          5: 12,
-          6: 13,
-          2: 14,
-          1: 15,
-      },
-      // Fan Rocker Up
-      5: {
-          0: 16,
-      },
-      // Fan Rocker Down
-      6: {
-          0: 17,
-      },
+    // Light Button
+    2: {
+      0: 0,
+      3: 1,
+      4: 2,
+      5: 3,
+      6: 4,
+      2: 5,
+      1: 6,
+    },
+    // Light Rocker Up
+    3: {
+      0: 7,
+    },
+    // Light Rocker Down
+    4: {
+      0: 8,
+    },
+    1: {
+      0: 9,
+      3: 10,
+      4: 11,
+      5: 12,
+      6: 13,
+      2: 14,
+      1: 15,
+    },
+    // Fan Rocker Up
+    5: {
+      0: 16,
+    },
+    // Fan Rocker Down
+    6: {
+      0: 17,
+    },
   },
   "LZW45": {
-      // Up Button
-      2: {
-          1: 0,
-          4: 1,
-          5: 2,
-          6: 3,
-          7: 4,
-          2: 5,
-          3: 6,
-      },
-      // Down Button
-      1: {
-          1: 7,
-          4: 8,
-          5: 9,
-          6: 10,
-          7: 11,
-          2: 12,
-          3: 13,
-      },
-      // Config Button
-      3: {
-          1: 14,
-      },
+    // Up Button
+    2: {
+      1: 0,
+      4: 1,
+      5: 2,
+      6: 3,
+      7: 4,
+      2: 5,
+      3: 6,
+    },
+    // Down Button
+    1: {
+      1: 7,
+      4: 8,
+      5: 9,
+      6: 10,
+      7: 11,
+      2: 12,
+      3: 13,
+    },
+    // Config Button
+    3: {
+      1: 14,
+    },
   },
-  "LZM31": {
-      // Up Button
-      2: {
-          0: 0,
-          3: 1,
-          4: 2,
-          5: 3,
-          6: 4,
-          2: 5,
-          1: 6,
-      },
-      // Down Button
-      1: {
-          0: 7,
-          3: 8,
-          4: 9,
-          5: 10,
-          6: 11,
-          2: 12,
-          1: 13,
-      },
-      // Config Button
-      3: {
-          0: 14,
-          3: 15,
-      },
+  "VZM31": {
+    // Up Button
+    2: {
+      0: 0,
+      3: 1,
+      4: 2,
+      5: 3,
+      6: 4,
+      2: 5,
+      1: 6,
+    },
+    // Down Button
+    1: {
+      0: 7,
+      3: 8,
+      4: 9,
+      5: 10,
+      6: 11,
+      2: 12,
+      1: 13,
+    },
+    // Config Button
+    3: {
+      0: 14,
+      3: 15,
+    },
   },
+};
+
+const ZHAButtonMap = {
+  "VZM31": [
+    "button_2_single",
+    "button_2_double",
+    "button_2_triple",
+    "button_2_quadruple",
+    "button_2_quintuple",
+    "button_2_held",
+    "button_2_release",
+    "button_1_single",
+    "button_1_double",
+    "button_1_triple",
+    "button_1_quadruple",
+    "button_1_quintuple",
+    "button_1_held",
+    "button_1_release",
+    "button_3_single",
+    "button_3_double",
+  ],
+};
+
+const Z2MButtonMap = {
+  "VZM31": [
+    "up_single",
+    "up_double",
+    "up_triple",
+    "up_quadruple",
+    "up_quintuple",
+    "up_held",
+    "up_release",
+    "down_single",
+    "down_double",
+    "down_triple",
+    "down_quadruple",
+    "down_quintuple",
+    "down_held",
+    "down_release",
+    "config_single",
+    "config_double",
+  ],
 };
 
 const OutputLabels = {
   "LZW30": [
-      "Tap Up on Light Paddle 1x",
-      "Tap Up on Light Paddle 2x",
-      "Tap Up on Light Paddle 3x",
-      "Tap Up on Light Paddle 4x",
-      "Tap Up on Light Paddle 5x",
-      "Hold Up on Light Paddle",
-      "Release Up on Light Paddle",
-      "Tap Down on Light Paddle 1x",
-      "Tap Down on Light Paddle 2x",
-      "Tap Down on Light Paddle 3x",
-      "Tap Down on Light Paddle 4x",
-      "Tap Down on Light Paddle 5x",
-      "Hold Down on Light Paddle",
-      "Release Down on Light Paddle",
-      "Tap Config Button 1x",
+    "Tap Up on Light Paddle 1x",
+    "Tap Up on Light Paddle 2x",
+    "Tap Up on Light Paddle 3x",
+    "Tap Up on Light Paddle 4x",
+    "Tap Up on Light Paddle 5x",
+    "Hold Up on Light Paddle",
+    "Release Up on Light Paddle",
+    "Tap Down on Light Paddle 1x",
+    "Tap Down on Light Paddle 2x",
+    "Tap Down on Light Paddle 3x",
+    "Tap Down on Light Paddle 4x",
+    "Tap Down on Light Paddle 5x",
+    "Hold Down on Light Paddle",
+    "Release Down on Light Paddle",
+    "Tap Config Button 1x",
   ],
   "LZW31": [
-      "Tap Up on Light Paddle 1x",
-      "Tap Up on Light Paddle 2x",
-      "Tap Up on Light Paddle 3x",
-      "Tap Up on Light Paddle 4x",
-      "Tap Up on Light Paddle 5x",
-      "Hold Up on Light Paddle",
-      "Release Up on Light Paddle",
-      "Tap Down on Light Paddle 1x",
-      "Tap Down on Light Paddle 2x",
-      "Tap Down on Light Paddle 3x",
-      "Tap Down on Light Paddle 4x",
-      "Tap Down on Light Paddle 5x",
-      "Hold Down on Light Paddle",
-      "Release Down on Light Paddle",
-      "Tap Config Button 1x",
+    "Tap Up on Light Paddle 1x",
+    "Tap Up on Light Paddle 2x",
+    "Tap Up on Light Paddle 3x",
+    "Tap Up on Light Paddle 4x",
+    "Tap Up on Light Paddle 5x",
+    "Hold Up on Light Paddle",
+    "Release Up on Light Paddle",
+    "Tap Down on Light Paddle 1x",
+    "Tap Down on Light Paddle 2x",
+    "Tap Down on Light Paddle 3x",
+    "Tap Down on Light Paddle 4x",
+    "Tap Down on Light Paddle 5x",
+    "Hold Down on Light Paddle",
+    "Release Down on Light Paddle",
+    "Tap Config Button 1x",
   ],
   "LZW36": [
-      "Tap on Light Button 1x",
-      "Tap on Light Button 2x",
-      "Tap on Light Button 3x",
-      "Tap on Light Button 4x",
-      "Tap on Light Button 5x",
-      "Hold on Light Button (3 Seconds)",
-      "Release on Light (After Hold) Button",
-      "Tap on Light Rocker Up",
-      "Tap on Light Rocker Down",
-      "Tap on Fan Button 1x",
-      "Tap on Fan Button 2x",
-      "Tap on Fan Button 3x",
-      "Tap on Fan Button 4x",
-      "Tap on Fan Button 5x",
-      "Hold on Fan Button (3 Seconds)",
-      "Release on Fan (After Hold) Button",
-      "Tap on Fan Rocker Up",
-      "Tap on Fan Rocker Down",
+    "Tap on Light Button 1x",
+    "Tap on Light Button 2x",
+    "Tap on Light Button 3x",
+    "Tap on Light Button 4x",
+    "Tap on Light Button 5x",
+    "Hold on Light Button (3 Seconds)",
+    "Release on Light (After Hold) Button",
+    "Tap on Light Rocker Up",
+    "Tap on Light Rocker Down",
+    "Tap on Fan Button 1x",
+    "Tap on Fan Button 2x",
+    "Tap on Fan Button 3x",
+    "Tap on Fan Button 4x",
+    "Tap on Fan Button 5x",
+    "Hold on Fan Button (3 Seconds)",
+    "Release on Fan (After Hold) Button",
+    "Tap on Fan Rocker Up",
+    "Tap on Fan Rocker Down",
   ],
   "LZW45": [
-      "Tap Up on Light Paddle 1x",
-      "Tap Up on Light Paddle 2x",
-      "Tap Up on Light Paddle 3x",
-      "Tap Up on Light Paddle 4x",
-      "Tap Up on Light Paddle 5x",
-      "Hold Up on Light Paddle",
-      "Release Up on Light Paddle",
-      "Tap Down on Light Paddle 1x",
-      "Tap Down on Light Paddle 2x",
-      "Tap Down on Light Paddle 3x",
-      "Tap Down on Light Paddle 4x",
-      "Tap Down on Light Paddle 5x",
-      "Hold Down on Light Paddle",
-      "Release Down on Light Paddle",
-      "Tap Config Button 1x",
+    "Tap Up on Light Paddle 1x",
+    "Tap Up on Light Paddle 2x",
+    "Tap Up on Light Paddle 3x",
+    "Tap Up on Light Paddle 4x",
+    "Tap Up on Light Paddle 5x",
+    "Hold Up on Light Paddle",
+    "Release Up on Light Paddle",
+    "Tap Down on Light Paddle 1x",
+    "Tap Down on Light Paddle 2x",
+    "Tap Down on Light Paddle 3x",
+    "Tap Down on Light Paddle 4x",
+    "Tap Down on Light Paddle 5x",
+    "Hold Down on Light Paddle",
+    "Release Down on Light Paddle",
+    "Tap Config Button 1x",
   ],
   "VZM31": [
-      "Tap Up on Light Paddle 1x",
-      "Tap Up on Light Paddle 2x",
-      "Tap Up on Light Paddle 3x",
-      "Tap Up on Light Paddle 4x",
-      "Tap Up on Light Paddle 5x",
-      "Hold Up on Light Paddle",
-      "Release Up on Light Paddle",
-      "Tap Down on Light Paddle 1x",
-      "Tap Down on Light Paddle 2x",
-      "Tap Down on Light Paddle 3x",
-      "Tap Down on Light Paddle 4x",
-      "Tap Down on Light Paddle 5x",
-      "Hold Down on Light Paddle",
-      "Release Down on Light Paddle",
-      "Tap Config Button 1x",
-      "Tap Config Button 2x",
+    "Tap Up on Light Paddle 1x",
+    "Tap Up on Light Paddle 2x",
+    "Tap Up on Light Paddle 3x",
+    "Tap Up on Light Paddle 4x",
+    "Tap Up on Light Paddle 5x",
+    "Hold Up on Light Paddle",
+    "Release Up on Light Paddle",
+    "Tap Down on Light Paddle 1x",
+    "Tap Down on Light Paddle 2x",
+    "Tap Down on Light Paddle 3x",
+    "Tap Down on Light Paddle 4x",
+    "Tap Down on Light Paddle 5x",
+    "Hold Down on Light Paddle",
+    "Release Down on Light Paddle",
+    "Tap Config Button 1x",
+    "Tap Config Button 2x",
   ],
 };
 
@@ -534,6 +576,8 @@ module.exports = {
   brightnessCheck,
   durationConvert,
   effectConvert,
-  ButtonMap,
+  ZWaveButtonMap,
+  ZHAButtonMap,
+  Z2MButtonMap,
   OutputLabels,
 }

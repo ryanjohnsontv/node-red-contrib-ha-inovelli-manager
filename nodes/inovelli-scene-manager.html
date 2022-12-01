@@ -165,6 +165,7 @@
     <select name="node-input-zwave" id="node-input-zwave">
         <option value="zwave_js">Z-Wave JS</option>
         <option value="zha">ZHA</option>
+        <option value="z2m">Zigbee2MQTT</option>
     </select>
   </div>
   <div class="form-row nodeid-input">
@@ -194,7 +195,7 @@
   <p>This node will decipher button clicks on an Inovelli Red Series switch allowing for easy scene control in Home Assistant. Just connect this input of this node to the output of a Home Assistant "events: all" node</p>
   <dl class="message-properties">
       <dt>Home Assistant Integration<span class="property-type">string</span></dt>
-      <dd>Your device integration used in Home Assistant (zwave_js, zha or z2m(COMING SOON))</dd>
+      <dd>Your device integration used in Home Assistant (ZWave JS, ZHA, or Zigbee2MQTT)</dd>
 
       <dt>Node/Device ID<span class="property-type">number</span></dt>
       <dd>Node ID or Device ID (or a comma-delimited list of IDs) of the Inovelli switch(es) you are managing</dd>
