@@ -7,6 +7,7 @@ module.exports = function (RED) {
       zwave,
       nodeid,
       entityid,
+      deviceid,
       switchtype,
       color,
       brightness,
@@ -20,11 +21,13 @@ module.exports = function (RED) {
       toggleFanColor,
       toggleFanBrightness,
       toggleFanBrightnessOff,
+      useincomingeventdata,
       multicast,
     } = config;
 
     this.zwave = zwave;
     this.entityid = entityid;
+    this.deviceid = deviceid;
     this.nodeid = nodeid;
     this.switchtype = parseInt(switchtype, 10);
     this.color = parseInt(color, 10);
@@ -39,12 +42,14 @@ module.exports = function (RED) {
     this.toggleFanColor = toggleFanColor;
     this.toggleFanBrightness = toggleFanBrightness;
     this.toggleFanBrightnessOff = toggleFanBrightnessOff;
+    this.useincomingeventdata = useincomingeventdata;
     this.multicast = multicast;
 
     node.on("input", (msg, send, done) => {
       const {
         zwave: presetZwave,
         entityid,
+        deviceid,
         nodeid,
         switchtype: presetSwitchtype,
         color: presetColor,
@@ -59,6 +64,7 @@ module.exports = function (RED) {
         toggleFanColor,
         toggleFanBrightness,
         toggleFanBrightnessOff,
+        useincomingeventdata: presetUseincomingeventdata,
         multicast: presetMulticast,
       } = node;
 
@@ -73,6 +79,7 @@ module.exports = function (RED) {
         fanColor,
         fanBrightness,
         fanBrightnessOff;
+      const useincomingeventdata = payload.useincomingeventdata != undefined ? payload.useincomingeventdata : presetUseincomingeventdata;
       const multicast =
         payload.multicast != undefined ? payload.multicast : presetMulticast;
       const output = {};
@@ -81,8 +88,21 @@ module.exports = function (RED) {
         let node_id;
         switch (domain) {
           case "zwave_js":
-            var entity_id = payload.entity_id || entityid;
+            var entity_id;
+            var device_id;
+
+            if (useincomingeventdata) {
+              device_id = payload.event.device_id || deviceid;
+            }
+            else {
+              entity_id = payload.entity_id || entityid;
+              device_id = payload.device_id || deviceid;
+            }
+
             id = entity_id ? { entity_id } : {};
+            // This makes the device_id, if specified, take priority over the entity_id
+            id = device_id ? { device_id } : id;
+
             output.domain = "zwave_js";
             if (multicast) {
               output.service = "multicast_set_value";
@@ -186,9 +206,9 @@ module.exports = function (RED) {
           }
         } else if (typeof color === "number") {
           if (color >= 0 && color <= 361) {
-            switch (color){
+            switch (color) {
               case 361:
-                rgb = [255,255,255];
+                rgb = [255, 255, 255];
                 break;
               default:
                 let conv_hsv = [color, 100, 100];

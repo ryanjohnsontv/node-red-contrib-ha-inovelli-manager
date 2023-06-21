@@ -6,6 +6,7 @@ module.exports = function (RED) {
     const {
       zwave,
       entityid,
+      deviceid,
       nodeid,
       color,
       brightness,
@@ -13,11 +14,13 @@ module.exports = function (RED) {
       effect,
       switchtype,
       clear,
+      useincomingeventdata,
       multicast,
     } = config;
 
     this.zwave = zwave;
     this.entityid = entityid;
+    this.deviceid = deviceid;
     this.nodeid = nodeid;
     this.color = parseInt(color, 10);
     this.brightness = parseInt(brightness, 10);
@@ -25,6 +28,7 @@ module.exports = function (RED) {
     this.effect = parseInt(effect, 10);
     this.switchtype = parseInt(switchtype, 10);
     this.clear = clear;
+    this.useincomingeventdata = useincomingeventdata;
     this.multicast = multicast;
 
     node.on("input", (msg, send, done) => {
@@ -32,12 +36,14 @@ module.exports = function (RED) {
         zwave: presetZwave,
         entityid,
         nodeid,
+        deviceid,
         color: presetColor,
         brightness: presetBrightness,
         duration: presetDuration,
         effect: presetEffect,
         switchtype: presetSwitchtype,
         clear: presetClear,
+        useincomingeventdata: presetUseincomingeventdata,
         multicast: presetMulticast,
       } = node;
 
@@ -49,6 +55,7 @@ module.exports = function (RED) {
       var effect = payload.effect || presetEffect;
       var parameter = payload.switchtype || presetSwitchtype;
       const clear = payload.clear != undefined ? payload.clear : presetClear;
+      const useincomingeventdata = payload.useincomingeventdata != undefined ? payload.useincomingeventdata : presetUseincomingeventdata;
       const multicast =
         payload.multicast != undefined ? payload.multicast : presetMulticast;
       var parameter, service, err;
@@ -111,9 +118,9 @@ module.exports = function (RED) {
           }
         } else if (typeof color === "number") {
           if (color >= 0 && color <= 361) {
-            switch (color){
+            switch (color) {
               case 361:
-                rgb = [255,255,255];
+                rgb = [255, 255, 255];
                 break;
               default:
                 let conv_hsv = [color, 100, 100];
@@ -130,7 +137,7 @@ module.exports = function (RED) {
           }
         }
         if (!rgb) {
-          if (!err){
+          if (!err) {
             err = `Incorrect Color: ${color}.`;
             node.error(err);
           }
@@ -344,8 +351,21 @@ module.exports = function (RED) {
         var value = calculateValue();
         switch (domain) {
           case "zwave_js":
-            const entity_id = payload.entity_id || entityid;
+            var entity_id;
+            var device_id;
+
+            if (useincomingeventdata) {
+              device_id = payload.event.device_id || deviceid;
+            }
+            else {
+              entity_id = payload.entity_id || entityid;
+              device_id = payload.device_id || deviceid;
+            }
+
             id = entity_id ? { entity_id } : {};
+            // This makes the device_id, if specified, take priority over the entity_id
+            id = device_id ? { device_id } : id;
+
             switch (parameter) {
               case 49:
                 sendNotification(24, value, id);

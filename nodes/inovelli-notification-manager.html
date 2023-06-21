@@ -6,6 +6,7 @@
       name: { value: "" },
       nodeid: { value: "" },
       entityid: { value: "" },
+      deviceid: { value: "" },
       zwave: { value: "zwave_js" },
       color: { value: 0 },
       brightness: { value: 5 },
@@ -13,6 +14,7 @@
       effect: { value: 4 },
       switchtype: { value: 8 },
       clear: { value: false },
+      useincomingeventdata: { value: false},
       multicast: { value: false },
     },
     inputs: 1,
@@ -42,11 +44,13 @@
           case "zwave_js":
             $(".nodeid-input").hide();
             $(".entityid-input").show();
+            $(".deviceid-input").show();
             $(".multicast-input").show();
             break;
           default:
             $(".nodeid-input").show();
             $(".entityid-input").hide();
+            $(".deviceid-input").hide();
             $(".multicast-input").hide();
             break;
         }
@@ -175,6 +179,10 @@
     <label for="node-input-entityid"><i class="icon-tag"></i>Entity ID(s)</label>
     <input type="text" id="node-input-entityid">
   </div>
+  <div class="form-row deviceid-input">
+    <label for="node-input-deviceid"><i class="icon-tag"></i>Device ID</label>
+    <input type="text" id="node-input-deviceid">
+  </div>
   <div class="form-row">
     <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
     <select name="node-input-switchtype" id="node-input-switchtype">
@@ -245,6 +253,10 @@
     <label for="node-input-clear"><i class="icon-tag"></i>Clear Notification</label>
     <input type="checkbox" id="node-input-clear">
   </div>
+  <div class="form-row">
+    <label for="node-input-useincomingeventdata"><i class="icon-tag"></i>Use Device ID From Incoming Event</label>
+    <input type="checkbox" id="node-input-useincomingeventdata">
+  </div>
   <div class="form-row multicast-input">
     <label for="node-input-multicast"><i class="icon-tag"></i>Use Multicast</label>
     <input type="checkbox" id="node-input-multicast">
@@ -259,6 +271,9 @@
 
         <dt>Entity ID(s)<span class="property-type">string</span></dt>
         <dd>(For Z-Wave JS) Entity (or a comma-delimited list of entity IDs) to set the configuration parameter on</dd>
+
+        <dt>Device ID<span class="property-type">string</span></dt>
+        <dd>(For Z-Wave JS) Device to set the configuration parameter on. Takes priority over Entity ID(s) if specified.</dd>
 
         <dt>Node ID(s)<span class="property-type">number</span></dt>
         <dd>(For OpenZWave or Z-Wave) Node ID (or a comma-delimited list of node IDs) of the Inovelli switch you are trying to configure</dd>
@@ -280,6 +295,9 @@
 
         <dt>Clear Notification<span class="property-type">boolean</span></dt>
         <dd>Check this box or set msg.payload.clear to true to clear the current LED notification</dd>
+
+        <dt>Use Device ID From Incoming Event<span class="property-type">boolean</span></dt>
+        <dd>Check this box to use the device_id value from the incoming event data. Use in conjunction with the inovelli_scene_manager node to automatically use the device that triggered the scene event.</dd>
 
         <dt>Use Multicast<span class="property-type">boolean</span></dt>
         <dd>Check this box if your devices are set up to support multicasting</dd>
