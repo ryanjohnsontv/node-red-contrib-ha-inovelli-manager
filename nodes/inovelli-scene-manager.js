@@ -36,7 +36,7 @@ module.exports = function (RED) {
         if (!('domain' in payload.event)) {
           return done(Error('No domain value provided in msg.event.'));
         };
-        
+
         var domain = payload.event.domain;
         if (zwave !== domain) {
           return done(Error(`Incorrect Home Assistant Integration. Node is set for ${zwave} but recieved an event for ${domain}`));
@@ -90,6 +90,19 @@ module.exports = function (RED) {
           };
           output = sendMsg(map[button][press])
           break;
+        case "ozw":
+          if (!validateMessage) {
+            return
+          };
+          validateEvent("ozw.scene_activated")
+          button = parseInt(payload.event.scene_id);
+          press = parseInt(payload.event.scene_value_id);
+          var map = util.ZWaveButtonMap[switchtype];
+          if (map[button] === undefined || map[button][press] === undefined) {
+            return done(Error(`Invalid Event for the provided switch`))
+          };
+          output = sendMsg(map[button][press])
+          break;
         case "zha":
           if (!validateMessage) {
             return
@@ -111,6 +124,8 @@ module.exports = function (RED) {
           };
           output = sendMsg(index)
           break;
+        default:
+          return done(Error("How did you manage to break this?"))
       }
 
       function sendMsg(val) {

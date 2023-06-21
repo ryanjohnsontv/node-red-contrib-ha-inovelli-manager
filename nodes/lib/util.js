@@ -1,66 +1,27 @@
-require('color-convert');
+var convert = require('color-convert');
 
-// domainCheck = (domain) => {
-//   let node_id;
-//   switch (domain) {
-//     case "zwave_js":
-//       var entity_id = payload.entity_id || entityid;
-//       id = entity_id ? { entity_id } : {};
-//       output.domain = "zwave_js";
-//       if (multicast) {
-//         output.service = "multicast_set_value";
-//       } else {
-//         output.service = "set_config_parameter";
-//       }
-//       break;
-//     case "ozw":
-//       node_id = payload.node_id || nodeid;
-//       id = node_id.split(",").map(Number);
-//       output.service = "set_config_parameter";
-//       break;
-//     case "zwave":
-//       node_id = payload.node_id || nodeid;
-//       id = node_id.split(",").map(Number);
-//       output.service = "set_config_parameter";
-//       break;
-//     default:
-//       err = `Invalid Z-Wave domain: ${domain}. Supported domains are zwave, ozw, or zwave_js.`;
-//       if (done) {
-//         done(err);
-//       } else {
-//         node.error(err);
-//       }
-//   }
-// };
+returnError = (err) => {
+  return new Error(err)
+};
 
 colorConvert = (color) => {
   var rgb;
   if (Array.isArray(color) && typeof color === "object") {
     if (color.length === 3) {
       if (color[0] > 255 || color[1] > 255 || color[2] > 255) {
-        err = `RGB values exceed 255: ${color}`;
-        if (done) {
-          done(err);
-        } else {
-          node.error(err);
-        }
+        return returnError(`RGB values exceed 255: ${color}`);
       } else {
         rgb = color;
-      }
+      };
     } else {
-      err = `Invalid array format: ${color}`;
-      if (done) {
-        done(err);
-      } else {
-        node.error(err);
-      }
-    }
+      return returnError(`Invalid array format: ${color}`);
+    };
   } else if (typeof color === "string") {
     if (color.startsWith("#") === true) {
-      rgb = hex.rgb(color);
+      rgb = convert.hex.rgb(color);
     } else {
       color = color.replace(" ", "").toLowerCase();
-      rgb = keyword.rgb(color);
+      rgb = convert.keyword.rgb(color);
     }
   } else if (typeof color === "number") {
     if (color >= 0 && color <= 361) {
@@ -70,24 +31,18 @@ colorConvert = (color) => {
           break;
         default:
           let conv_hsv = [color, 100, 100];
-          rgb = hsv.rgb(conv_hsv);
+          rgb = convert.hsv.rgb(conv_hsv);
           break;
       }
     } else {
-      err = `Incorrect Hue Value: ${color}`;
-      if (done) {
-        done(err);
-      } else {
-        node.error(err);
-      }
-    }
-  }
+      return returnError(`Incorrect Hue Value: ${color}`);
+    };
+  };
   if (!rgb) {
     if (!err) {
-      err = `Incorrect Color: ${color}.`;
-      node.error(err);
-    }
-  }
+      return returnError(`Incorrect Color: ${color}.`);
+    };
+  };
   return rgb;
 };
 
@@ -96,22 +51,12 @@ colorConvertSource = (color, source) => {
   if (Array.isArray(color) && typeof color === "object") {
     if (color.length === 3) {
       if (color[0] > 255 || color[1] > 255 || color[2] > 255) {
-        err = `RGB values exceed 255: ${color}`;
-        if (done) {
-          done(err);
-        } else {
-          node.error(err);
-        }
+        return returnError(`RGB values exceed 255: ${color}`);
       } else {
         rgb = color;
       }
     } else {
-      err = `Invalid array format for ${source}: ${color}`;
-      if (done) {
-        done(err);
-      } else {
-        node.error(err);
-      }
+      return returnError(`Invalid array format for ${source}: ${color}`);
     }
   } else if (typeof color === "string") {
     if (color.startsWith("#") === true) {
@@ -136,16 +81,11 @@ colorConvertSource = (color, source) => {
   if (rgb) {
     return rgb;
   } else {
-    err = `Incorrect Color for ${source}: ${color}.`;
-    if (done) {
-      done(err);
-    } else {
-      node.error(err);
-    }
+    return returnError(`Incorrect Color for ${source}: ${color}.`);
   }
 };
 
-switchConvert = (parameter) => {
+zWaveSwitchConvert = (parameter) => {
   if (isNaN(parameter)) {
     parameter = parameter.toLowerCase();
   }
@@ -157,29 +97,16 @@ switchConvert = (parameter) => {
     parameter = 24;
   } else if (["combo_fan", "lzw36_fan", "fan", 25].includes(parameter)) {
     parameter = 25;
-  } else if (
-    ["lzw36", "fan and light", "light and fan", 49].includes(parameter)
-  ) {
+  } else if (["lzw36", "fan and light", "light and fan", 49].includes(parameter)) {
     parameter = 49;
   } else {
-    err = `Incorrect Switch Type: ${parameter}`;
-    if (done) {
-      done(err);
-    } else {
-      node.error(err);
-    }
-  }
-  return parameter;
+    return returnError(`Incorrect Switch Type: ${parameter}`);
+  };
 };
 
-brightnessCheck = (brightness) => {
-  if (brightness < 0 || brightness > 11) {
-    err = `Invalid brightness value: ${brightness}. Please enter a value between 0 and 10`;
-    if (done) {
-      done(err);
-    } else {
-      node.error(err);
-    }
+brightnessCheck = (brightness, max) => {
+  if (brightness < 0 || brightness > max) {
+    return returnError(`Invalid brightness value: ${brightness}. Please enter a value between 0 and ${max}`);
   }
 };
 
@@ -216,20 +143,15 @@ durationConvert = (duration) => {
     } else if (["off", "disable"].includes(unit)) {
       duration = 0;
     } else {
-      node.error(`Incorrect Duration Format: ${duration}`);
+      return returnError(`Incorrect Duration Format: ${duration}`);
     }
   } else if (duration < 0 || duration > 255) {
-    err = `Incorrect Duration: ${duration}.`;
-    if (done) {
-      done(err);
-    } else {
-      node.error(err);
-    }
+    return returnError(`Incorrect Duration: ${duration}.`);
   }
   return duration;
 };
 
-effectConvert = (effect, parameter) => {
+zwaveEffectConvert = (effect, parameter) => {
   if (isNaN(effect)) {
     effect = effect.toLowerCase();
     const switchOptions = {
@@ -256,37 +178,44 @@ effectConvert = (effect, parameter) => {
       effect = dimmerOptions[effect];
     } else {
       if (parameter === 8) {
-        err = `Incorrect Effect: ${effect}. Valid effects for this switch type are Off, Solid, Fast Blink, Slow Blink, or Pulse`;
-        if (done) {
-          done(err);
-        } else {
-          node.error(err);
-        }
+        return returnError(`Incorrect Effect: ${effect}. Valid effects for this switch type are Off, Solid, Fast Blink, Slow Blink, or Pulse`);
       } else if ([16, 24, 25, 49].includes(parameter)) {
-        err = `Incorrect Effect: ${effect}. Valid effects for this switch type are Off, Solid, Chase, Fast Blink, Slow Blink, or Pulse`;
-        if (done) {
-          done(err);
-        } else {
-          node.error(err);
-        }
+        return returnError(`Incorrect Effect: ${effect}. Valid effects for this switch type are Off, Solid, Chase, Fast Blink, Slow Blink, or Pulse`);
       } else {
-        err = `Incorrect Effect: ${effect}, check switch type`;
-        if (done) {
-          done(err);
-        } else {
-          node.error(err);
-        }
+        return returnError(`Incorrect Effect: ${effect}, check switch type`);
       }
     }
   } else if (![0, 1, 2, 3, 4, 5].includes(effect)) {
-    err = `Incorrect Effect: ${effect}. Valid effect range is 0-5`;
-    if (done) {
-      done(err);
-    } else {
-      node.error(err);
-    }
+    return returnError(`Incorrect Effect: ${effect}. Valid effect range is 0-5`)
   }
   return effect;
+};
+
+calculateValue = (node, domain, color, brightness, effect, duration, clear) => {
+  var value, hsl, keyword, hue;
+  if (clear === true || effect === 0 || duration === 0) {
+    switch (domain) {
+      case "zwave_js":
+        value = 65536;
+        break;
+      default:
+        value = 0;
+        break;
+    }
+    node.status(`Cleared notification!`);
+  } else {
+    if (color[0] == color[1] && color[1] == color[2]) {
+      keyword = "white";
+      hue = 255;
+    } else {
+      hsl = [convert.rgb.hsl(color)[0], 100, 50];
+      keyword = convert.rgb.keyword(convert.hsl.rgb(hsl));
+      hue = parseInt((hsl[0] * (17 / 24)).toFixed(0));
+    }
+    value = hue + (brightness * 256) + (duration * 65536) + (effect * 16777216);
+    node.status(`Sent Color: ${keyword}`);
+  }
+  return value;
 };
 
 const ZWaveButtonMap = {
@@ -569,13 +498,13 @@ const OutputLabels = {
 };
 
 module.exports = {
-  // domainCheck,
   colorConvert,
   colorConvertSource,
-  switchConvert,
+  zWaveSwitchConvert,
   brightnessCheck,
   durationConvert,
-  effectConvert,
+  zwaveEffectConvert,
+  calculateValue,
   ZWaveButtonMap,
   ZHAButtonMap,
   Z2MButtonMap,

@@ -36,6 +36,7 @@
         const switchInput = $("#node-input-switchtype");
         switch (this.value) {
           case "zwave_js":
+          case "ozw":
             switchInput.html(zwaveSwitches);
             break;
           default:
@@ -164,6 +165,7 @@
     <label for="node-input-zwave"><i class="icon-tag"></i>Home Assistant Integration</label>
     <select name="node-input-zwave" id="node-input-zwave">
         <option value="zwave_js">Z-Wave JS</option>
+        <option value="ozw">Open Z-Wave</option>
         <option value="zha">ZHA</option>
         <option value="z2m">Zigbee2MQTT</option>
     </select>
@@ -195,7 +197,7 @@
   <p>This node will decipher button clicks on an Inovelli Red Series switch allowing for easy scene control in Home Assistant. Just connect this input of this node to the output of a Home Assistant "events: all" node</p>
   <dl class="message-properties">
       <dt>Home Assistant Integration<span class="property-type">string</span></dt>
-      <dd>Your device integration used in Home Assistant (ZWave JS, ZHA, or Zigbee2MQTT)</dd>
+      <dd>Your device integration used in Home Assistant (ZWave JS, Open ZWave (deprecated), ZHA, or Zigbee2MQTT)</dd>
 
       <dt>Node/Device ID<span class="property-type">number</span></dt>
       <dd>Node ID or Device ID (or a comma-delimited list of IDs) of the Inovelli switch(es) you are managing</dd>
@@ -204,9 +206,9 @@
       <dd>Entity ID (or a comma-delimited list of entity IDs) to append to each message (sets msg.entity_id). Useful for controlling dedicated smart bulbs.</dd>
 
       <dt>Switch Type<span class="property-type">number|string</span></dt>
-      <dd>Determines which Inovelli switch is being used. (LZW30-SN, LZW31-SN, LZW36, LZW45)</dd>
+      <dd>Determines which Inovelli switch is being used. (LZW30-SN, LZW31-SN, LZW36, LZW45, VZM31)</dd>
 
       <dt>Passthrough<span class="property-type">boolean</span></dt>
-      <dd>Disables specifying a node or device id, node will instead pass through all value/scene notifications (ideal when your Z-Wave network uses ALL of the same switch)</dd>
+      <dd>Disables specifying a node or device id, node will instead pass through all value/scene notifications (ideal when your network uses ALL of the same switch)</dd>
   </dl>
 </script>

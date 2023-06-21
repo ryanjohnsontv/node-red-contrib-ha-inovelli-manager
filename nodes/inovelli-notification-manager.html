@@ -4,7 +4,6 @@
     color: "#B68181",
     defaults: {
       name: { value: "" },
-      nodeid: { value: "" },
       entityid: { value: "" },
       zwave: { value: "zwave_js" },
       color: { value: 0 },
@@ -14,6 +13,7 @@
       switchtype: { value: 8 },
       clear: { value: false },
       multicast: { value: false },
+      group: { value: false },
     },
     inputs: 1,
     outputs: 1,
@@ -24,6 +24,14 @@
       return this.name || "inovelli-notification-manager";
     },
     oneditprepare: function () {
+      const zwaveSwitches = `<option value="LZW30">On/Off Switch (LZW30-SN)</option>
+        <option value="LZW31">Dimmer Switch (LZW31-SN)</option>
+        <option value="LZW36_light">Light Dimmer (LZW36)</option>
+        <option value="LZW36_fan">Fan Dimmer (LZW36)</option>
+        <option value="LZW36">Fan & Light (LZW36)</option>`;
+
+      const zigbeeSwitches = `<option value="VZM31">Blue 2-1 Switch (VZM31-SN)</option>`;
+
       const onOffOptions = `<option value="0">Off</option>
           <option value="1">Solid</option>
           <option value="2">Fast Blink</option>
@@ -37,31 +45,70 @@
           <option value="4">Slow Blink</option>
           <option value="5">Pulse</option>`;
 
+      const blueOptions = `<option value="off">Off</option>
+          <option value="clear">Clear</option>
+          <option value="solid">Solid</option>
+          <option value="aurora">Aurora</option>
+          <option value="chase">Chase</option>
+          <option value="blink">Fast Blink</option>
+          <option value="fast_chase">Fast Chase</option>
+          <option value="fast_falling">Fast Falling</option>
+          <option value="fast_rising">Fast Rising</option>
+          <option value="fast_siren">Fast Siren</option>
+          <option value="medium_blink">Medium Blink</option>
+          <option value="medium_falling">Medium Falling</option>
+          <option value="medium_rising">Medium Rising</option>
+          <option value="open_close">Open/Close</option>
+          <option value="pulse">Pulse</option>
+          <option value="slow_blink">Slow Blink</option>
+          <option value="slow_chase">Slow Chase</option>
+          <option value="slow_falling">Slow Falling</option>
+          <option value="slow_rising">Slow Rising</option>
+          <option value="slow_siren">Slow Siren</option>
+          <option value="small_to_big">Small to Big</option>`;
+
       $("#node-input-zwave").change(function () {
+        const switchInput = $("#node-input-switchtype");
+        const effectInput = $("#node-input-effect");
         switch (this.value) {
           case "zwave_js":
-            $(".nodeid-input").hide();
             $(".entityid-input").show();
+            $("#id-label").text("Entity ID(s)");
             $(".multicast-input").show();
+            $("#multicast-label").text("Use Multicast");
+            effectInput.html(onOffOptions);
+            switchInput.html(zwaveSwitches);
             break;
-          default:
-            $(".nodeid-input").show();
-            $(".entityid-input").hide();
+          case "zha":
+            $(".entityid-input").show();
+            $("#id-label").text("IEEE Address(es)");
+            $(".multicast-input").show();
+            $("#multicast-label").text("Zigbee Group");
+            effectInput.html(blueOptions);
+            switchInput.html(zigbeeSwitches);
+            break;
+          case "z2m":
+            $(".entityid-input").show();
+            $("#id-label").text("MQTT Topic(s)");
             $(".multicast-input").hide();
+            effectInput.html(blueOptions);
+            switchInput.html(zigbeeSwitches);
             break;
         }
       });
       $("#node-input-switchtype").change(function () {
         const effectInput = $("#node-input-effect");
-        let previous;
-        if (previous) previous = "0";
-        if (!previous) previous = effectInput.val();
-        if (this.value === "8") {
-          effectInput.html(onOffOptions);
-        } else {
-          effectInput.html(dimmerOptions);
-        }
-        effectInput.val(previous);
+        switch (this.value) {
+          case "8":
+            effectInput.html(onOffOptions);
+            break;
+          case "VZM31":
+            effectInput.html(blueOptions);
+            break;
+          default:
+            effectInput.html(dimmerOptions);
+            break;
+        };
       });
       $("#node-input-color").change(function () {
         var color = document.getElementById("node-input-color");
@@ -163,26 +210,22 @@
     <label for="node-input-zwave"><i class="icon-tag"></i>Z-Wave Integration</label>
     <select name="node-input-zwave" id="node-input-zwave">
         <option value="zwave_js">Z-Wave JS</option>
-        <option value="ozw">OpenZWave (1.6)</option>
-        <option value="zwave">Z-Wave (Deprecated)</option>
+        <option value="zha">ZHA</option>
+        <option value="z2m">Zigbee2MQTT</option>
     </select>
   </div>
-  <div class="form-row nodeid-input">
-    <label for="node-input-nodeid"><i class="icon-tag"></i>Node ID(s)</label>
-    <input type="text" id="node-input-nodeid">
-  </div>
   <div class="form-row entityid-input">
-    <label for="node-input-entityid"><i class="icon-tag"></i>Entity ID(s)</label>
+    <label id="id-label" for="node-input-entityid">Entity ID(s)</label>
     <input type="text" id="node-input-entityid">
   </div>
   <div class="form-row">
     <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
     <select name="node-input-switchtype" id="node-input-switchtype">
-        <option value="8">On/Off (LZW30-SN)</option>
-        <option value="16">Dimmer (LZW31-SN)</option>
-        <option value="24">Light Dimmer (LZW36)</option>
-        <option value="25">Fan Dimmer (LZW36)</option>
-        <option value="49">Fan & Light (LZW36)</option>
+        <option value="0">Placeholder</option>
+        <option value="1">Placeholder</option>
+        <option value="2">Placeholder</option>
+        <option value="3">Placeholder</option>
+        <option value="4">Placeholder</option>
     </select>
   </div>
   <div class="form-row color-input">
@@ -239,6 +282,20 @@
         <option value="3">Placeholder</option>
         <option value="4">Placeholder</option>
         <option value="5">Placeholder</option>
+        <option value="7">Placeholder</option>
+        <option value="8">Placeholder</option>
+        <option value="9">Placeholder</option>
+        <option value="10">Placeholder</option>
+        <option value="11">Placeholder</option>
+        <option value="12">Placeholder</option>
+        <option value="13">Placeholder</option>
+        <option value="14">Placeholder</option>
+        <option value="15">Placeholder</option>
+        <option value="16">Placeholder</option>
+        <option value="17">Placeholder</option>
+        <option value="18">Placeholder</option>
+        <option value="19">Placeholder</option>
+        <option value="20">Placeholder</option>
     </select>
   </div>
   <div class="form-row">
@@ -246,7 +303,7 @@
     <input type="checkbox" id="node-input-clear">
   </div>
   <div class="form-row multicast-input">
-    <label for="node-input-multicast"><i class="icon-tag"></i>Use Multicast</label>
+    <label id="multicast-label" for="node-input-multicast">Use Multicast</label>
     <input type="checkbox" id="node-input-multicast">
   </div>
 </script>
@@ -254,17 +311,14 @@
 <script type="text/x-red" data-help-name="inovelli-notification-manager">
     <p>This node will help construct the value for controlling LED notifications on an Inovelli Red Series switch. The output should be connected to a Home Assistant call service node.</p>
     <dl class="message-properties">
-        <dt>Z-Wave Integration<span class="property-type">string</span></dt>
-        <dd>Your Z-Wave integration used in Home Assistant (zwave_js, ozw, or zwave)</dd>
+        <dt>Home Assistant Integration<span class="property-type">string</span></dt>
+        <dd>Your device integration used in Home Assistant (ZWave JS, ZHA, or Zigbee2MQTT)</dd>
 
-        <dt>Entity ID(s)<span class="property-type">string</span></dt>
-        <dd>(For Z-Wave JS) Entity (or a comma-delimited list of entity IDs) to set the configuration parameter on</dd>
-
-        <dt>Node ID(s)<span class="property-type">number</span></dt>
-        <dd>(For OpenZWave or Z-Wave) Node ID (or a comma-delimited list of node IDs) of the Inovelli switch you are trying to configure</dd>
+        <dt>ID(s)<span class="property-type">string</span></dt>
+        <dd>Entity/Device ID for ZWave JS, ieee for ZHA, MQTT Topic for Zigbee2MQTT (or command-delimited list)</dd>
 
         <dt>Switch Type<span class="property-type">number|string</span></dt>
-        <dd>Determines which parameter to set. (LZW30-SN, LZW31-SN, LZW36 (fan and/or light))</dd>
+        <dd>Determines which parameter to set. (LZW30-SN, LZW31-SN, LZW36 (fan and/or light), VZM31)</dd>
 
         <dt>Color<span class="property-type">number|string|array</span></dt>
         <dd>Color you want to display (accepts color names, RGB arrays, hexadeciaml and 0-360* hue values) *361=white</dd>
@@ -283,6 +337,9 @@
 
         <dt>Use Multicast<span class="property-type">boolean</span></dt>
         <dd>Check this box if your devices are set up to support multicasting</dd>
+
+        <dt>Zigbee Group<span class="property-type">boolean</span></dt>
+        <dd>Check this box if your entity is a zigbee group.</dd>
     </dl>
     <p>
       It is possible to override values set on this node by passing values in a payload e.g.

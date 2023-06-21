@@ -123,7 +123,7 @@ This node interepts scene data sent by multi-clicking on a Red series switch. Co
 
 ### Home Assistant Integration
 
-You are able to choose between Z-Wave JS, ZHA, or Zigbee2MQTT as your integration.
+You are able to choose between Z-Wave JS, Open ZWave (deprecated), ZHA, or Zigbee2MQTT as your integration.
 
 ### Node ID
 
