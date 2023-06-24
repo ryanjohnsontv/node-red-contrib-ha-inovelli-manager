@@ -5,7 +5,7 @@
     color: "#B68181",
     defaults: {
       name: { value: "" },
-      nodeid: { value: "" },
+      nodeid: { value: [] },
       entityid: { value: "" },
       zwave: { value: "zwave_js" },
       switchtype: { value: "LZW30" },
@@ -44,13 +44,33 @@
             break;
         }
       });
-      $("#node-input-passthrough").change(function () {
-        if ($('#node-input-passthrough').is(":checked")) {
-          $(".nodeid-input").hide();
-        } else {
-          $(".nodeid-input").show();
-        }
-      });
+
+      // $("#node-input-entityid").autocomplete({
+      //   source: function (request, response) {
+      //     var haEntities = RED.settings.functionGlobalContext.get('homeassistant').homeAssistant.states;
+      //     var filteredEntities = $.ui.autocomplete.filter(entities, request.term);
+      //     response(filteredEntities);
+      //   },
+      //   minLength: 0,
+      //   autoFocus: true,
+      //   select: function (event, ui) {
+      //     // If node.entityId already contains values, append with comma.
+      //     if (node.entityid) {
+      //       this.entityid += "," + ui.item.value;
+      //     } else {
+      //       this.entityid = ui.item.value;
+      //     }
+
+      //     // Update the input field with the new list.
+      //     $("#node-input-entityid").val(this.entityid);
+
+      //     // Prevent the default behavior of replacing the input field with the selected value.
+      //     return false;
+      //   }
+      // }).focus(function () {
+      //   // Show dropdown on focus.
+      //   $(this).autocomplete("search", "");
+      // });
     },
     oneditsave: function () {
       const OutputLabels = {
@@ -170,11 +190,11 @@
         <option value="z2m">Zigbee2MQTT</option>
     </select>
   </div>
-  <div class="form-row nodeid-input">
+  <div class="form-row">
     <label for="node-input-nodeid"><i class="icon-tag"></i>Node/Device ID(s)</label>
     <input type="text" id="node-input-nodeid">
   </div>
-  <div class="form-row entityid-input">
+  <div class="form-row">
     <label for="node-input-entityid"><i class="icon-tag"></i>Entity ID(s)</label>
     <input type="text" id="node-input-entityid">
   </div>
@@ -187,10 +207,6 @@
       <option value="3">Placeholder</option>
     </select>
   </div>
-  <div class="form-row">
-    <label for="node-input-passthrough"><i class="icon-tag"></i>Passthrough</label>
-    <input type="checkbox" id="node-input-passthrough">
-  </div>
 </script>
 
 <script type="text/x-red" data-help-name="inovelli-scene-manager">
@@ -199,16 +215,13 @@
       <dt>Home Assistant Integration<span class="property-type">string</span></dt>
       <dd>Your device integration used in Home Assistant (ZWave JS, Open ZWave (deprecated), ZHA, or Zigbee2MQTT)</dd>
 
-      <dt>Node/Device ID<span class="property-type">number</span></dt>
-      <dd>Node ID or Device ID (or a comma-delimited list of IDs) of the Inovelli switch(es) you are managing</dd>
+      <dt>Node/Device ID(s)<span class="property-type">number</span></dt>
+      <dd>Node ID or Device ID (or a comma-delimited list of IDs) of the Inovelli switch(es) you are managing. Leaving empty will pass through ALL event messages.</dd>
 
       <dt>Entity ID(s)<span class="property-type">string</span></dt>
       <dd>Entity ID (or a comma-delimited list of entity IDs) to append to each message (sets msg.entity_id). Useful for controlling dedicated smart bulbs.</dd>
 
       <dt>Switch Type<span class="property-type">number|string</span></dt>
       <dd>Determines which Inovelli switch is being used. (LZW30-SN, LZW31-SN, LZW36, LZW45, VZM31)</dd>
-
-      <dt>Passthrough<span class="property-type">boolean</span></dt>
-      <dd>Disables specifying a node or device id, node will instead pass through all value/scene notifications (ideal when your network uses ALL of the same switch)</dd>
   </dl>
 </script>

@@ -4,13 +4,12 @@ module.exports = function (RED) {
 
     RED.nodes.createNode(this, config);
     var node = this;
-    const { zwave, nodeid, entityid, switchtype, outputs, passthrough } = config;
+    const { zwave, nodeid, entityid, switchtype, outputs } = config;
     this.zwave = zwave;
     this.nodeid = nodeid;
     this.entityid = entityid;
     this.switchtype = switchtype;
     this.outputs = outputs;
-    this.passthrough = passthrough;
 
     node.on("input", (msg, send, done) => {
       const {
@@ -19,7 +18,6 @@ module.exports = function (RED) {
         entityid,
         switchtype,
         outputs,
-        passthrough,
       } = node;
       const payload = msg.payload;
 
@@ -53,14 +51,14 @@ module.exports = function (RED) {
 
 
       validateMessage = () => {
-        const ids = nodeid.split(',').map(item => item.trim());
-        if (passthrough) {
+        if (length(nodeid) == 0) {
           return true
-        };
+        }
+        const ids = nodeid.split(',').map(item => item.trim());
         if (payload.event.node_id && ids.includes((payload.event.node_id.trim()).toString())) {
           return true
         };
-        if (payload.event.device_id && ids.includes(payload.event.device_id.trime())) {
+        if (payload.event.device_id && ids.includes(payload.event.device_id.trim())) {
           return true
         };
         return false
