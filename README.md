@@ -125,14 +125,10 @@ This node interepts scene data sent by multi-clicking on a Red series switch. Co
 
 You are able to choose between Z-Wave JS, Open ZWave (deprecated), ZHA, or Zigbee2MQTT as your integration.
 
-### Node ID
+### Node/Device ID(s)
 
-The Node ID of the switch being used for scene control.
+Node ID or Device ID (or a comma-delimited list of IDs) of the Inovelli switch(es) you are managing. Leaving empty will pass through ALL event messages.
 
 ### Switch Type
 
 This option lets you specify your switch model (LZW30-SN, LZW31-SN, LZW36, and LZW45).
-
-### Passthrough
-
-Enable to process all scene messages used by your Home Assistant integration. Recommended ONLY for those with a Z-Wave network made of the same type of switch.

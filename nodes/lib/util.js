@@ -334,6 +334,32 @@ const ZWaveButtonMap = {
       1: 14,
     },
   },
+  "VZW31": {
+    // Up Button
+    2: {
+      0: 0,
+      3: 1,
+      4: 2,
+      5: 3,
+      6: 4,
+      2: 5,
+      1: 6,
+    },
+    // Down Button
+    1: {
+      0: 7,
+      3: 8,
+      4: 9,
+      5: 10,
+      6: 11,
+      2: 12,
+      1: 13,
+    },
+    // Config Button
+    3: {
+      0: 14,
+    },
+  },
   "VZM31": {
     // Up Button
     2: {
@@ -461,6 +487,23 @@ const OutputLabels = {
     "Tap on Fan Rocker Down",
   ],
   "LZW45": [
+    "Tap Up on Light Paddle 1x",
+    "Tap Up on Light Paddle 2x",
+    "Tap Up on Light Paddle 3x",
+    "Tap Up on Light Paddle 4x",
+    "Tap Up on Light Paddle 5x",
+    "Hold Up on Light Paddle",
+    "Release Up on Light Paddle",
+    "Tap Down on Light Paddle 1x",
+    "Tap Down on Light Paddle 2x",
+    "Tap Down on Light Paddle 3x",
+    "Tap Down on Light Paddle 4x",
+    "Tap Down on Light Paddle 5x",
+    "Hold Down on Light Paddle",
+    "Release Down on Light Paddle",
+    "Tap Config Button 1x",
+  ],
+  "VZW31":[
     "Tap Up on Light Paddle 1x",
     "Tap Up on Light Paddle 2x",
     "Tap Up on Light Paddle 3x",

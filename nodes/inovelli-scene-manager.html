@@ -11,7 +11,6 @@
       switchtype: { value: "LZW30" },
       outputs: { value: 1 },
       labels: { value: ["Please select a Switch Type"] },
-      passthrough: { default: false },
     },
     inputs: 1,
     outputs: 1,
@@ -28,7 +27,8 @@
       const zwaveSwitches = `<option value="LZW30">On/Off Switch (LZW30-SN)</option>
         <option value="LZW31">Dimmer Switch (LZW31-SN)</option>
         <option value="LZW36">Fan/Light Switch (LZW36)</option>
-        <option value="LZW45">Lightstrip & Controller Kit (LZW45)</option>`;
+        <option value="LZW45">Lightstrip & Controller Kit (LZW45)</option>
+        <option value="VZW31">2-1 Dimmer(VZW31-SN)</option>`;
 
       const zigbeeSwitches = `<option value="VZM31">Blue 2-1 Switch (VZM31-SN)</option>`;
 
@@ -129,6 +129,23 @@
           "Tap on Fan Rocker Down",
         ],
         "LZW45": [
+          "Tap Up on Light Paddle 1x",
+          "Tap Up on Light Paddle 2x",
+          "Tap Up on Light Paddle 3x",
+          "Tap Up on Light Paddle 4x",
+          "Tap Up on Light Paddle 5x",
+          "Hold Up on Light Paddle",
+          "Release Up on Light Paddle",
+          "Tap Down on Light Paddle 1x",
+          "Tap Down on Light Paddle 2x",
+          "Tap Down on Light Paddle 3x",
+          "Tap Down on Light Paddle 4x",
+          "Tap Down on Light Paddle 5x",
+          "Hold Down on Light Paddle",
+          "Release Down on Light Paddle",
+          "Tap Config Button 1x",
+        ],
+        "VZW31":[
           "Tap Up on Light Paddle 1x",
           "Tap Up on Light Paddle 2x",
           "Tap Up on Light Paddle 3x",
