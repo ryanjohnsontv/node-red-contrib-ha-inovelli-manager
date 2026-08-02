@@ -4,9 +4,7 @@
     color: "#B68181",
     defaults: {
       name: { value: "" },
-      nodeid: { value: "" },
       entityid: { value: "" },
-      zwave: { value: "zwave_js" },
       color: { value: 0 },
       brightness: { value: 5 },
       duration: { value: 10 },
@@ -37,41 +35,79 @@
           <option value="4">Slow Blink</option>
           <option value="5">Pulse</option>`;
 
-      $("#node-input-zwave").change(function () {
-        switch (this.value) {
-          case "zwave_js":
-            $(".nodeid-input").hide();
-            $(".entityid-input").show();
-            $(".multicast-input").show();
-            break;
-          default:
-            $(".nodeid-input").show();
-            $(".entityid-input").hide();
-            $(".multicast-input").hide();
-            break;
-        }
-      });
-      $("#node-input-switchtype").change(function () {
+      const lzw45Options = `<option value="0">Off</option>
+          <option value="1">Solid</option>
+          <option value="2">Chase</option>
+          <option value="3">Fast Blink</option>
+          <option value="4">Slow Blink</option>
+          <option value="5">Fast Fade</option>
+          <option value="6">Slow Fade</option>`;
+
+      // LZW45 parameter 31 "Pixel Effect" - 45 built-in animations, numbered
+      // 1-45 (no "Off" - this parameter has no notification/clear concept).
+      // Kept in the same order/numbering as PIXEL_EFFECTS in
+      // nodes/shared/switches.ts (transcribed from zwave-js's device config).
+      const PIXEL_EFFECT_NAMES = [
+        "Static", "Blink", "Breath", "Color Wipe", "Color Wipe Reverse Inverse",
+        "Color Wipe Random", "Random Color", "Single Dynamic", "Multi Dynamic",
+        "Rainbow", "Rainbow Cycle", "Scan", "Dual Scan", "Fade", "Running Lights",
+        "Twinkle", "Twinkle Random", "Twinkle Fade", "Twinkle Fade Random",
+        "Sparkle", "Flash Sparkle", "Hyper Sparkle", "Strobe", "Blink Rainbow",
+        "Chase White", "Chase Color", "Chase Random", "Chase Rainbow",
+        "Chase Flash", "Chase Flash Random", "Chase Rainbow White",
+        "Chase Blackout", "Chase Blackout Rainbow", "Color Sweep Random",
+        "Running Color", "Running Red Blue", "Running Random", "Larson Scanner",
+        "Comet", "Fireworks", "Fireworks Random", "Merry Christmas",
+        "Circus Combustus", "Halloween", "Aurora",
+      ];
+      const pixelEffectOptions = PIXEL_EFFECT_NAMES.map(
+        (name, i) => `<option value="${i + 1}">${name}</option>`
+      ).join("");
+
+      function isPixelEffectMode(switchtype) {
+        return String(switchtype) === "31";
+      }
+
+      $("#node-input-switchtype").on("change", function () {
         const effectInput = $("#node-input-effect");
-        let previous;
-        if (previous) previous = "0";
-        if (!previous) previous = effectInput.val();
-        if (this.value === "8") {
+        const previous = effectInput.val();
+        if (isPixelEffectMode(this.value)) {
+          effectInput.html(pixelEffectOptions);
+        } else if (this.value === "8") {
           effectInput.html(onOffOptions);
+        } else if (this.value === "21") {
+          effectInput.html(lzw45Options);
         } else {
           effectInput.html(dimmerOptions);
         }
-        effectInput.val(previous);
+        effectInput.val(previous || "1");
+        $("#node-input-effect-label").text(isPixelEffectMode(this.value) ? "Pixel Effect" : "Effect Type");
+        $("#node-input-brightness-label").text(isPixelEffectMode(this.value) ? "Intensity" : "Brightness Level");
+        refreshFieldVisibility();
       });
-      $("#node-input-color").change(function () {
-        var color = document.getElementById("node-input-color");
-        var colorOutput = document.getElementById("colorOutput");
-        colorOutput.innerHTML = color.value;
-        color.oninput = function () {
-          colorOutput.innerHTML = this.value;
-        };
-      });
-      $("#node-input-brightness").change(function () {
+      $("#node-input-switchtype").trigger("change");
+
+      // Rough 12-band approximation of the closest named color for a 0-360
+      // hue (361 is the reserved "white" sentinel) - just a friendly label
+      // next to the slider, the raw hue is still what gets sent.
+      const HUE_NAMES = [
+        "Red", "Orange", "Yellow", "Chartreuse", "Green", "Spring Green",
+        "Cyan", "Azure", "Blue", "Violet", "Magenta", "Rose",
+      ];
+      function closestColorName(hue) {
+        if (hue >= 361) {
+          return "White";
+        }
+        return HUE_NAMES[Math.round(hue / 30) % 12];
+      }
+      function refreshColorPreview() {
+        const hue = Number($("#node-input-color").val());
+        $("#colorSwatch").css("background", hue >= 361 ? "#fff" : `hsl(${hue}, 100%, 50%)`);
+        $("#colorOutput").text(`${closestColorName(hue)} (${hue})`);
+      }
+      $("#node-input-color").on("input change", refreshColorPreview);
+      refreshColorPreview();
+      $("#node-input-brightness").on("change", function () {
         var brightness = document.getElementById("node-input-brightness");
         var brightnessOutput = document.getElementById("brightnessOutput");
         brightnessOutput.innerHTML = brightness.value;
@@ -79,19 +115,20 @@
           brightnessOutput.innerHTML = this.value;
         };
       });
-      $("#node-input-clear").change(function () {
-        if ($('#node-input-clear').is(":checked")) {
-          $(".color-input").hide();
-          $(".brightness-input").hide();
-          $(".duration-input").hide();
-          $(".effect-input").hide();
-        } else {
-          $(".color-input").show();
-          $(".brightness-input").show();
-          $(".duration-input").show();
-          $(".effect-input").show();
-        }
-      });
+      function refreshFieldVisibility() {
+        const pixelEffect = isPixelEffectMode($("#node-input-switchtype").val());
+        const cleared = $("#node-input-clear").is(":checked");
+        // Pixel Effect has no color/duration/clear concept at all, so those
+        // stay hidden regardless of the Clear checkbox; otherwise Clear
+        // behaves as before, hiding everything but itself.
+        $(".color-input").toggle(!pixelEffect && !cleared);
+        $(".duration-input").toggle(!pixelEffect && !cleared);
+        $(".brightness-input").toggle(!cleared);
+        $(".effect-input").toggle(!cleared);
+        $(".clear-input").toggle(!pixelEffect);
+      }
+      $("#node-input-clear").on("change", refreshFieldVisibility);
+      refreshFieldVisibility();
     },
   });
 </script>
@@ -113,6 +150,15 @@
     .color-picker-input {
       display: inline-block;
       width: 70%;
+    }
+    .color-swatch {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      margin-left: 8px;
+      border-radius: 3px;
+      border: 1px solid #999;
+      vertical-align: middle;
     }
     .color-picker::-webkit-slider-thumb {
       -webkit-appearance: none;
@@ -160,18 +206,6 @@
       <input type="text" id="node-input-name" placeholder="Name">
   </div>
   <div class="form-row">
-    <label for="node-input-zwave"><i class="icon-tag"></i>Z-Wave Integration</label>
-    <select name="node-input-zwave" id="node-input-zwave">
-        <option value="zwave_js">Z-Wave JS</option>
-        <option value="ozw">OpenZWave (1.6)</option>
-        <option value="zwave">Z-Wave (Deprecated)</option>
-    </select>
-  </div>
-  <div class="form-row nodeid-input">
-    <label for="node-input-nodeid"><i class="icon-tag"></i>Node ID(s)</label>
-    <input type="text" id="node-input-nodeid">
-  </div>
-  <div class="form-row entityid-input">
     <label for="node-input-entityid"><i class="icon-tag"></i>Entity ID(s)</label>
     <input type="text" id="node-input-entityid">
   </div>
@@ -183,19 +217,22 @@
         <option value="24">Light Dimmer (LZW36)</option>
         <option value="25">Fan Dimmer (LZW36)</option>
         <option value="49">Fan & Light (LZW36)</option>
+        <option value="21">Light Strip - Quick Effect (LZW45)</option>
+        <option value="31">Light Strip - Pixel Effect (LZW45)</option>
     </select>
   </div>
   <div class="form-row color-input">
     <label for="node-input-color"><i class="icon-tag"></i>Color</label>
     <div class="color-picker-input">
-      <input type="range" id="node-input-color" min="0" max="361" class="color-picker" oninput="hue.value = this.value">
+      <input type="range" id="node-input-color" min="0" max="361" class="color-picker">
     </div>
+    <span id="colorSwatch" class="color-swatch"></span>
     <output id="colorOutput"></output>
   </div>
   <div class="form-row brightness-input">
-    <label for="node-input-brightness"><i class="icon-tag"></i>Brightness Level</label>
+    <label for="node-input-brightness"><i class="icon-tag"></i><span id="node-input-brightness-label">Brightness Level</span></label>
     <div class="brightness-picker-input">
-      <input type="range" id="node-input-brightness" min="0" max="10" class="brightness-picker" oninput="brightness.value = this.value">
+      <input type="range" id="node-input-brightness" min="0" max="10" class="brightness-picker">
     </div>
     <output id="brightnessOutput"></output>
   </div>
@@ -231,7 +268,7 @@
     </select>
   </div>
   <div class="form-row effect-input">
-    <label for="node-input-effect"><i class="icon-tag"></i>Effect Type</label>
+    <label for="node-input-effect"><i class="icon-tag"></i><span id="node-input-effect-label">Effect Type</span></label>
     <select name="node-input-effect" id="node-input-effect">
         <option value="0">Placeholder</option>
         <option value="1">Placeholder</option>
@@ -241,12 +278,12 @@
         <option value="5">Placeholder</option>
     </select>
   </div>
-  <div class="form-row">
+  <div class="form-row clear-input">
     <label for="node-input-clear"><i class="icon-tag"></i>Clear Notification</label>
     <input type="checkbox" id="node-input-clear">
   </div>
   <div class="form-row multicast-input">
-    <label for="node-input-multicast"><i class="icon-tag"></i>Use Multicast</label>
+    <label for="node-input-multicast"><i class="icon-tag"></i>Multicast</label>
     <input type="checkbox" id="node-input-multicast">
   </div>
 </script>
@@ -254,34 +291,28 @@
 <script type="text/x-red" data-help-name="inovelli-notification-manager">
     <p>This node will help construct the value for controlling LED notifications on an Inovelli Red Series switch. The output should be connected to a Home Assistant call service node.</p>
     <dl class="message-properties">
-        <dt>Z-Wave Integration<span class="property-type">string</span></dt>
-        <dd>Your Z-Wave integration used in Home Assistant (zwave_js, ozw, or zwave)</dd>
-
         <dt>Entity ID(s)<span class="property-type">string</span></dt>
-        <dd>(For Z-Wave JS) Entity (or a comma-delimited list of entity IDs) to set the configuration parameter on</dd>
-
-        <dt>Node ID(s)<span class="property-type">number</span></dt>
-        <dd>(For OpenZWave or Z-Wave) Node ID (or a comma-delimited list of node IDs) of the Inovelli switch you are trying to configure</dd>
+        <dd>Entity (or a comma-delimited list of entity IDs) to set the configuration parameter on. Also configurable via <code>msg.payload.entity_id</code>.</dd>
 
         <dt>Switch Type<span class="property-type">number|string</span></dt>
-        <dd>Determines which parameter to set. (LZW30-SN, LZW31-SN, LZW36 (fan and/or light))</dd>
+        <dd>Determines which parameter to set. (LZW30-SN, LZW31-SN, LZW36 (fan and/or light), LZW45 Quick Effect, LZW45 Pixel Effect)</dd>
 
         <dt>Color<span class="property-type">number|string|array</span></dt>
-        <dd>Color you want to display (accepts color names, RGB arrays, hexadeciaml and 0-360* hue values) *361=white</dd>
+        <dd>Color you want to display (accepts color names, RGB arrays, hexadeciaml and 0-360* hue values) *361=white. Not used for LZW45 Pixel Effect.</dd>
 
-        <dt>Brightness Level<span class="property-type">number</span></dt>
-        <dd>Brightness level of the LED light (0-10) for the notification</dd>
+        <dt>Brightness Level / Intensity<span class="property-type">number</span></dt>
+        <dd>Brightness/intensity of the LED light (0-10) for the notification. For LZW45 (both Quick Effect and Pixel Effect) this is scaled to its native 0-99 intensity range.</dd>
 
         <dt>Duration<span class="property-type">number|string</span></dt>
-        <dd>Duration to display the notification</dd>
+        <dd>Duration to display the notification. Not used for LZW45 Pixel Effect.</dd>
 
         <dt>Effect<span class="property-type">number|string</span></dt>
-        <dd>Effect for the notifications. (Off, Solid, Chase, Fast Blink, Slow Blink, Pulse)</dd>
+        <dd>Effect for the notification. Options depend on switch type: Off/Solid/Chase/Fast Blink/Slow Blink/Pulse for switches and dimmers, plus Fast Fade/Slow Fade for LZW45 Quick Effect, or one of 45 built-in animations (Rainbow, Fireworks, Aurora, etc.) for LZW45 Pixel Effect.</dd>
 
         <dt>Clear Notification<span class="property-type">boolean</span></dt>
-        <dd>Check this box or set msg.payload.clear to true to clear the current LED notification</dd>
+        <dd>Check this box or set msg.payload.clear to true to clear the current LED notification. Not available for LZW45 Pixel Effect, which has no notification/clear concept of its own.</dd>
 
-        <dt>Use Multicast<span class="property-type">boolean</span></dt>
+        <dt>Multicast<span class="property-type">boolean</span></dt>
         <dd>Check this box if your devices are set up to support multicasting</dd>
     </dl>
     <p>
@@ -289,7 +320,6 @@
       <pre>
   msg = {
     payload: {
-      zwave: zwave_js,
       entity_id: "light.bedroom",
       color: "Red",
       duration: "10 Seconds",
@@ -299,18 +329,14 @@
     }
   }
 
-  or
+  or, for an LZW45 Pixel Effect
 
   msg = {
     payload: {
-      zwave: ozw,
-      node_id: 13,
-      color: [255,0,00],
-      duration: 10,
-      effect: 3,
-      brightness: 10,
-      switchtype: 25,
-      clear: false
+      entity_id: "light.bedroom",
+      effect: "Rainbow",
+      brightness: 5,
+      switchtype: "pixel effect"
     }
   }
       </pre>

@@ -1,0 +1,488 @@
+<script type="text/javascript">
+  RED.nodes.registerType("inovelli-config-manager", {
+    category: "inovelli",
+    color: "#B68181",
+    defaults: {
+      name: { value: "" },
+      entityid: { value: "" },
+      switchtype: { value: "LZW30-SN" },
+      properties: { value: [] },
+      multicast: { value: false },
+    },
+    inputs: 1,
+    outputs: 1,
+    outputLabels: "Connect to a call-service node",
+    icon: "light.svg",
+    align: "right",
+    label: function () {
+      return this.name || "inovelli-config-manager";
+    },
+    oneditprepare: function () {
+      // Kept in sync by hand with nodes/shared/config-params.ts - a small,
+      // deliberately limited set of properties that are each a single whole
+      // Z-Wave parameter (no bitmask sub-fields, no firmware-version-
+      // dependent meaning). Label/min/max are per-switch-type because the
+      // same property can mean subtly different things on different models
+      // (e.g. the LZW36's "Auto-Off Timer" needs to say "(Light)" since it
+      // has a separate Fan one; LZW31-SN's Dimming Speed tops out at a
+      // different value than the LZW36's).
+      const PROPERTY_META = {
+        autoOffTimer: {
+          type: "duration",
+          bySwitchtype: {
+            "LZW30-SN": { label: "Auto-Off Timer", max: 32767 },
+            "LZW31-SN": { label: "Auto-Off Timer", max: 32767 },
+            LZW36: { label: "Auto-Off Timer (Light)", max: 32767 },
+            LZW45: { label: "Auto-Off Timer", max: 32767 },
+          },
+        },
+        autoOffFanTimer: {
+          type: "duration",
+          bySwitchtype: { LZW36: { label: "Auto-Off Timer (Fan)", max: 32767 } },
+        },
+        powerOnState: {
+          type: "enum",
+          options: { "Prior State": 0, On: 1, Off: 2 },
+          bySwitchtype: { "LZW30-SN": { label: "Power On State" } },
+        },
+        localProtection: {
+          type: "enum",
+          options: { None: 0, Light: 1, Fan: 2, Both: 3 },
+          bySwitchtype: { LZW36: { label: "Local Protection" } },
+        },
+        invertSwitch: {
+          type: "enum",
+          options: { Disabled: 0, Enabled: 1 },
+          bySwitchtype: {
+            "LZW30-SN": { label: "Invert Switch" },
+            "LZW31-SN": { label: "Invert Switch" },
+          },
+        },
+        ledStripTimeout: {
+          type: "duration",
+          bySwitchtype: {
+            "LZW30-SN": { label: "LED Strip Timeout", max: 10 },
+            "LZW31-SN": { label: "LED Indicator Timeout", max: 10 },
+            LZW36: { label: "LED Strip Timeout (Light)", max: 10 },
+          },
+        },
+        ledStripTimeoutFan: {
+          type: "duration",
+          bySwitchtype: { LZW36: { label: "LED Strip Timeout (Fan)", max: 10 } },
+        },
+        activePowerReports: {
+          type: "number",
+          min: 0,
+          max: 100,
+          bySwitchtype: {
+            "LZW30-SN": { label: "Active Power Reports (%)" },
+            "LZW31-SN": { label: "Power Report Threshold (%)" },
+            LZW36: { label: "Active Power Reports (%)" },
+            LZW45: { label: "Active Power Reports (%)" },
+          },
+        },
+        periodicPowerEnergyReports: {
+          type: "duration",
+          max: 32767,
+          bySwitchtype: {
+            "LZW30-SN": { label: "Periodic Power & Energy Reports" },
+            "LZW31-SN": { label: "Power & Energy Report Interval" },
+            LZW36: { label: "Periodic Power & Energy Reports" },
+            LZW45: { label: "Periodic Power & Energy Reports" },
+          },
+        },
+        energyReports: {
+          type: "number",
+          min: 0,
+          max: 100,
+          bySwitchtype: {
+            "LZW30-SN": { label: "Energy Reports (%)" },
+            LZW36: { label: "Energy Reports (%)" },
+          },
+        },
+        loadType: {
+          type: "enum",
+          options: { "Automatically Detect Load Type": 0, "Manually Set For Special Load Type": 1 },
+          bySwitchtype: { "LZW30-SN": { label: "Load Type" } },
+        },
+        instantOn: {
+          type: "enum",
+          options: { Enabled: 0, Disabled: 1 },
+          bySwitchtype: {
+            "LZW30-SN": { label: "Instant On" },
+            LZW36: { label: "Instant On" },
+          },
+        },
+        stateAfterPowerFailure: {
+          type: "enum",
+          options: { Off: 0, "Default Color/Level": 1, "Previous State": 2 },
+          bySwitchtype: { LZW45: { label: "State After Power Failure" } },
+        },
+        minLevel: {
+          type: "number",
+          bySwitchtype: {
+            "LZW31-SN": { label: "Minimum Dim Level (%)", min: 1, max: 45 },
+            LZW36: { label: "Minimum Light Level (%)", min: 1, max: 45 },
+          },
+        },
+        maxLevel: {
+          type: "number",
+          bySwitchtype: {
+            "LZW31-SN": { label: "Maximum Dim Level (%)", min: 55, max: 99 },
+            LZW36: { label: "Maximum Light Level (%)", min: 55, max: 99 },
+          },
+        },
+        minFanLevel: {
+          type: "number",
+          bySwitchtype: { LZW36: { label: "Minimum Fan Level (%)", min: 1, max: 45 } },
+        },
+        maxFanLevel: {
+          type: "number",
+          bySwitchtype: { LZW36: { label: "Maximum Fan Level (%)", min: 55, max: 99 } },
+        },
+        brightnessAfterPowerRestored: {
+          type: "number",
+          min: 0,
+          max: 100,
+          bySwitchtype: { LZW36: { label: "Light Brightness After Power Restored" } },
+        },
+        fanSpeedAfterPowerRestored: {
+          type: "number",
+          min: 0,
+          max: 100,
+          bySwitchtype: { LZW36: { label: "Fan Speed After Power Restored" } },
+        },
+        // Dimming Speed/Ramp Rate's max is also their "synced with the
+        // Z-Wave parameter"/"immediate" sentinel value - see each device's manual.
+        dimmingSpeedZwave: {
+          type: "duration",
+          bySwitchtype: {
+            "LZW31-SN": { label: "Dimming Speed (Z-Wave)", max: 100 },
+            LZW36: { label: "Light Dimming Speed (Z-Wave)", max: 98 },
+          },
+        },
+        dimmingSpeedManual: {
+          type: "duration",
+          bySwitchtype: {
+            "LZW31-SN": { label: "Dimming Speed (Manual)", max: 101 },
+            LZW36: { label: "Light Dimming Speed", max: 99 },
+          },
+        },
+        rampRateZwave: {
+          type: "duration",
+          bySwitchtype: {
+            "LZW31-SN": { label: "Ramp Rate (Z-Wave)", max: 101 },
+            LZW36: { label: "Light Ramp Rate (Z-Wave)", max: 99 },
+          },
+        },
+        rampRateManual: {
+          type: "duration",
+          bySwitchtype: {
+            "LZW31-SN": { label: "Ramp Rate (Manual)", max: 101 },
+            LZW36: { label: "Light Ramp Rate", max: 99 },
+          },
+        },
+      };
+
+      // Merges a property's shared type/options with whatever's overridden
+      // for the given switch type (label, and min/max where they vary).
+      function metaFor(property, switchtype) {
+        const base = PROPERTY_META[property];
+        const override = (base.bySwitchtype && base.bySwitchtype[switchtype]) || {};
+        return Object.assign({ type: base.type, min: base.min, max: base.max, options: base.options }, override);
+      }
+
+      function propertiesForSwitchType(switchtype) {
+        switch (switchtype) {
+          case "LZW30-SN":
+            return [
+              "powerOnState",
+              "autoOffTimer",
+              "invertSwitch",
+              "ledStripTimeout",
+              "activePowerReports",
+              "periodicPowerEnergyReports",
+              "energyReports",
+              "loadType",
+              "instantOn",
+            ];
+          case "LZW31-SN":
+            return [
+              "autoOffTimer",
+              "invertSwitch",
+              "ledStripTimeout",
+              "activePowerReports",
+              "periodicPowerEnergyReports",
+              "minLevel",
+              "maxLevel",
+              "dimmingSpeedZwave",
+              "dimmingSpeedManual",
+              "rampRateZwave",
+              "rampRateManual",
+            ];
+          case "LZW36":
+            return [
+              "autoOffTimer",
+              "autoOffFanTimer",
+              "localProtection",
+              "ledStripTimeout",
+              "ledStripTimeoutFan",
+              "activePowerReports",
+              "periodicPowerEnergyReports",
+              "energyReports",
+              "instantOn",
+              "minLevel",
+              "maxLevel",
+              "minFanLevel",
+              "maxFanLevel",
+              "brightnessAfterPowerRestored",
+              "fanSpeedAfterPowerRestored",
+              "dimmingSpeedZwave",
+              "dimmingSpeedManual",
+              "rampRateZwave",
+              "rampRateManual",
+            ];
+          case "LZW45":
+            return ["autoOffTimer", "activePowerReports", "periodicPowerEnergyReports", "stateAfterPowerFailure"];
+          default:
+            return [];
+        }
+      }
+
+      function buildValueInput(valueContainer, property, value) {
+        valueContainer.empty();
+        if (!property) {
+          return; // no properties left to add for this switch type
+        }
+        const meta = metaFor(property, $("#node-input-switchtype").val());
+        if (meta.type === "enum") {
+          const select = $("<select/>").css({ width: "70%" }).appendTo(valueContainer);
+          Object.keys(meta.options).forEach(function (label) {
+            select.append($("<option/>", { value: meta.options[label], text: label }));
+          });
+          const defaultValue = Object.values(meta.options)[0];
+          select.val(value !== undefined ? value : defaultValue);
+        } else if (meta.type === "number") {
+          // step="1" since these are all integer Z-Wave config parameters;
+          // the actual enforcement happens server-side regardless.
+          $("<input/>", { type: "number", min: meta.min, max: meta.max, step: 1 })
+            .css({ width: "70%" })
+            .val(value !== undefined ? value : meta.min)
+            .appendTo(valueContainer);
+        } else {
+          $("<input/>", { type: "text", placeholder: 'e.g. 600 or "10 minutes"' })
+            .css({ width: "70%" })
+            .val(value !== undefined ? value : 0)
+            .appendTo(valueContainer);
+        }
+      }
+
+      // Every OTHER row's currently-selected property, so a given row's
+      // dropdown can exclude whatever's already spoken for.
+      function usedPropertiesExcluding(excludeSelect) {
+        const used = [];
+        $("#node-input-properties-container")
+          .editableList("items")
+          .each(function () {
+            const rowSelect = $(this).find("select.property-select");
+            if (rowSelect[0] !== excludeSelect[0] && rowSelect.val()) {
+              used.push(rowSelect.val());
+            }
+          });
+        return used;
+      }
+
+      function refreshPropertyOptions(select) {
+        const switchtype = $("#node-input-switchtype").val();
+        const allowed = propertiesForSwitchType(switchtype);
+        const used = usedPropertiesExcluding(select);
+        const current = select.val();
+        const available = allowed.filter((property) => property === current || !used.includes(property));
+        select.empty();
+        if (available.length === 0) {
+          select.append($("<option/>", { value: "", text: "(all properties already added)" }));
+          select.prop("disabled", true);
+          return;
+        }
+        select.prop("disabled", false);
+        available.forEach(function (property) {
+          select.append($("<option/>", { value: property, text: metaFor(property, switchtype).label }));
+        });
+        select.val(available.includes(current) ? current : available[0]);
+      }
+
+      // Disables the "+add" button once every property valid for the
+      // current switch type is already in the list, instead of letting it
+      // add another row that can only show the disabled
+      // "(all properties already added)" placeholder.
+      function refreshAddButtonState() {
+        const switchtype = $("#node-input-switchtype").val();
+        const allowed = propertiesForSwitchType(switchtype);
+        const used = usedPropertiesExcluding($());
+        const anyAvailable = allowed.some((property) => !used.includes(property));
+        $("#node-input-properties-container")
+          .closest(".red-ui-editableList")
+          .find(".red-ui-editableList-addButton")
+          .prop("disabled", !anyAvailable)
+          .toggleClass("disabled", !anyAvailable);
+      }
+
+      function refreshAllPropertyOptions() {
+        $("#node-input-properties-container")
+          .editableList("items")
+          .each(function () {
+            $(this).data("refreshOptions")();
+          });
+        refreshAddButtonState();
+      }
+
+      $("#node-input-properties-container").css("min-width", "450px").editableList({
+        addItem: (container, _index, data) => {
+          container.css({ overflow: "hidden", whiteSpace: "nowrap", display: "flex", alignItems: "center" });
+          const select = $("<select/>")
+            .addClass("property-select")
+            .css({ width: "45%", marginRight: "10px" })
+            .appendTo(container);
+          const valueContainer = $("<span/>").css({ display: "inline-block", width: "50%" }).appendTo(container);
+
+          refreshPropertyOptions(select);
+          if (data.property) {
+            select.val(data.property);
+          }
+          buildValueInput(valueContainer, select.val(), data.value);
+
+          select.on("change", function () {
+            buildValueInput(valueContainer, this.value, undefined);
+            refreshAllPropertyOptions();
+          });
+
+          container.data("getData", function () {
+            const property = select.val();
+            const meta = PROPERTY_META[property];
+            const rawValue = valueContainer.find("input,select").val();
+            return {
+              property,
+              value: meta && (meta.type === "enum" || meta.type === "number") ? Number(rawValue) : rawValue,
+            };
+          });
+          container.data("refreshOptions", function () {
+            refreshPropertyOptions(select);
+          });
+
+          refreshAddButtonState(); // this row just claimed a property - the add button may need to disable now
+        },
+        removeItem: () => {
+          refreshAllPropertyOptions();
+        },
+        removable: true,
+        sortable: true,
+      });
+
+      const initialProperties = this.properties || [];
+      initialProperties.forEach((property) => {
+        $("#node-input-properties-container").editableList("addItem", property);
+      });
+      refreshAddButtonState();
+
+      $("#node-input-switchtype").on("change", refreshAllPropertyOptions);
+    },
+    oneditsave: function () {
+      const properties = [];
+      $("#node-input-properties-container")
+        .editableList("items")
+        .each(function () {
+          const data = $(this).data("getData")();
+          if (data.property) {
+            properties.push(data);
+          }
+        });
+      this.properties = properties;
+    },
+    // Same technique as LED Manager: measure every other row in the dialog
+    // and give the properties list whatever's left, instead of a small
+    // fixed height that scrolls internally.
+    oneditresize: function (size) {
+      const rows = $("#dialog-form > div:not(.node-input-properties-container-row)");
+      let height = size.height;
+      for (let i = 0; i < rows.length; i++) {
+        height -= $(rows[i]).outerHeight(true);
+      }
+      const editorRow = $("#dialog-form > div.node-input-properties-container-row");
+      height -= parseInt(editorRow.css("marginTop")) + parseInt(editorRow.css("marginBottom"));
+      height += 16;
+      $("#node-input-properties-container").editableList("height", height);
+    },
+  });
+</script>
+
+<script type="text/x-red" data-template-name="inovelli-config-manager">
+  <div class="form-row">
+      <label for="node-input-name"><i class="icon-tag"></i>Name</label>
+      <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+  <div class="form-row">
+    <label for="node-input-entityid"><i class="icon-tag"></i>Entity ID(s)</label>
+    <input type="text" id="node-input-entityid">
+  </div>
+  <div class="form-row">
+    <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
+    <select name="node-input-switchtype" id="node-input-switchtype">
+        <option value="LZW30-SN">On/Off (LZW30-SN)</option>
+        <option value="LZW31-SN">Dimmer (LZW31-SN)</option>
+        <option value="LZW36">Fan/Light (LZW36)</option>
+        <option value="LZW45">Light Strip (LZW45)</option>
+    </select>
+  </div>
+  <div class="form-row node-input-properties-container-row">
+    <label><i class="icon-tag"></i>Properties</label>
+    <ol id="node-input-properties-container"></ol>
+  </div>
+  <div class="form-row">
+    <label for="node-input-multicast"><i class="icon-tag"></i>Multicast</label>
+    <input type="checkbox" id="node-input-multicast" style="display:inline-block; width:auto; vertical-align:top;">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="inovelli-config-manager">
+  <p>This node sets miscellaneous configuration parameters on an Inovelli Red Series switch that aren't LED/notification/scene related. The output should be connected to a Home Assistant call service node.</p>
+  <dl class="message-properties">
+      <dt>Entity ID(s)<span class="property-type">string</span></dt>
+      <dd>Entity (or a comma-delimited list of entity IDs) to set the configuration parameter on. Also configurable via <code>msg.payload.entity_id</code>.</dd>
+
+      <dt>Switch Type<span class="property-type">string</span></dt>
+      <dd>Determines which parameters are available. Also configurable via <code>msg.payload.switchtype</code>.</dd>
+
+      <dt>Properties<span class="property-type">list</span></dt>
+      <dd>
+        Click "add" to add a parameter this node should set every time it runs, the same "+add" pattern as LED Manager. Can't add the same parameter twice, and "add" disables itself once every parameter for the current switch type is already in the list. Currently supported (availability varies by switch type - see the dropdown):
+        <ul>
+          <li><b>Auto-Off Timer</b> (all models; separate <b>Auto-Off Timer (Fan)</b> on the LZW36) - how long before the switch automatically turns off. Accepts a number of seconds or a friendly string like "10 minutes" or "2 hours".</li>
+          <li><b>Power On State</b> (LZW30-SN only) - what the switch does after a power failure: Prior State, On, or Off.</li>
+          <li><b>State After Power Failure</b> (LZW45 only) - Off, Default Color/Level, or Previous State.</li>
+          <li><b>Local Protection</b> (LZW36 only) - disables local (physical) control of the light, fan, both, or neither.</li>
+          <li><b>Invert Switch</b> (LZW30-SN, LZW31-SN) - inverts the physical paddle/switch orientation.</li>
+          <li><b>LED Strip Timeout</b> (and <b>LED Strip Timeout (Fan)</b> on the LZW36) - how long the LED bar stays lit while being adjusted, in seconds.</li>
+          <li><b>Active Power Reports</b> / <b>Energy Reports</b> - the percentage change that triggers a new power/energy report.</li>
+          <li><b>Periodic Power & Energy Reports</b> - how often a power/energy report is sent regardless of change, in seconds or a friendly duration string.</li>
+          <li><b>Load Type</b> (LZW30-SN only) - automatic or manual load type detection.</li>
+          <li><b>Instant On</b> (LZW30-SN, LZW36) - disables the 700ms button delay and multi-tap scenes when enabled.</li>
+        </ul>
+        Association Behavior and Smart Bulb Mode aren't supported yet - see the README for why.
+      </dd>
+
+      <dt>Multicast<span class="property-type">boolean</span></dt>
+      <dd>Check this box if your devices are set up to support multicasting. Also configurable via <code>msg.payload.multicast</code>.</dd>
+  </dl>
+  <p>
+    Any property can also be sent ad-hoc via the payload even if it isn't in this node's configured list, e.g.
+    <pre>
+msg = {
+  payload: {
+    entity_id: "switch.hallway",
+    autoOffTimer: "10 minutes",
+    switchtype: "lzw30-sn"
+  }
+}
+    </pre>
+  </p>
+</script>

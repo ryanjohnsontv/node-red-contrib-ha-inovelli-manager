@@ -6,7 +6,6 @@
         "name": "",
         "nodeid": "27",
         "entityid": "light.bedroom_fan_lights",
-        "zwave": "zwave_js",
         "switchtype": "LZW36",
         "outputs": 18,
         "labels": [

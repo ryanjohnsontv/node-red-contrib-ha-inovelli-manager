@@ -9,7 +9,6 @@
       { "p": "payload.entity_id", "v": "light.hey", "vt": "str" },
       { "p": "payload.effect", "v": "Pulse", "vt": "str" },
       { "p": "payload.switchtype", "v": "24", "vt": "num" },
-      { "p": "payload.zwave", "v": "zwave_js", "vt": "str" },
       { "p": "payload.brightness", "v": "4", "vt": "num" },
       { "p": "payload.duration", "v": "10 minutes", "vt": "str" }
     ],
@@ -29,7 +28,6 @@
     "name": "Multicast & Color",
     "props": [
       { "p": "payload.color", "v": "[255,255,10]", "vt": "json" },
-      { "p": "payload.zwave", "v": "zwave_js", "vt": "str" },
       { "p": "payload.multicast", "v": "true", "vt": "bool" }
     ],
     "repeat": "",
@@ -46,9 +44,7 @@
     "type": "inovelli-notification-manager",
     "z": "17f0ad73.4a3d43",
     "name": "",
-    "nodeid": "25,26,27",
     "entityid": "fan.living_room_ceiling_fan",
-    "zwave": "zwave_js",
     "color": "360",
     "brightness": "10",
     "duration": "255",

@@ -1,31 +1,61 @@
 {
   "name": "node-red-contrib-ha-inovelli-manager",
-  "version": "0.3.1",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/ryanjohnsontv/node-red-contrib-ha-inovelli-manager.git"
   },
-  "description": "Nodes for easily managing scenes, parameters, and notifications of Inovelli switches paired through various Home Assistant integrations",
+  "description": "Nodes for easily managing scenes, parameters, and notifications of Inovelli Red Series switches paired through Home Assistant's Z-Wave JS integration",
   "keywords": [
     "inovelli",
     "node-red",
     "home assistant",
+    "zwave-js",
     "notification",
     "scene control"
   ],
+  "files": [
+    "nodes/**/*.js",
+    "nodes/**/*.html",
+    "nodes/**/*.svg",
+    "examples/**",
+    "multicast/**",
+    "CHANGELOG.md"
+  ],
   "node-red": {
     "nodes": {
-      "inovelli-notification-manager": "nodes/inovelli-notification-manager.js",
-      "inovelli-led-manager": "nodes/inovelli-led-manager.js",
-      "inovelli-scene-manager": "nodes/inovelli-scene-manager.js"
+      "inovelli-notification-manager": "nodes/notification-manager.js",
+      "inovelli-led-manager": "nodes/led-manager.js",
+      "inovelli-scene-manager": "nodes/scene-manager.js",
+      "inovelli-config-manager": "nodes/config-manager.js"
     }
   },
   "author": "Ryan Johnson",
   "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "prepare": "npm run build",
+    "pretest": "npm run build",
+    "test": "mocha \"test/**/*.test.js\"",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
   "devDependencies": {
-    "mocha": "^8.3.1",
-    "node-red": "^1.2.9",
-    "node-red-node-test-helper": "^0.2.7"
+    "@types/color-convert": "^2.0.3",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.19.43",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^9.1.2",
+    "globals": "^15.15.0",
+    "mocha": "^10.3.0",
+    "node-red": "^3.1.0",
+    "node-red-node-test-helper": "^0.3.4",
+    "prettier": "^3.9.6",
+    "typescript": "^5.4.0",
+    "typescript-eslint": "^8.65.0"
   },
   "dependencies": {
     "color-convert": "^1.9.0"

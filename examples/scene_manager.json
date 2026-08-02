@@ -43,7 +43,6 @@
     "z": "978218e1.644ff8",
     "name": "LZW36",
     "nodeid": "20,25,26,27",
-    "zwave": "zwave_js",
     "switchtype": "LZW36",
     "outputs": 18,
     "labels": [

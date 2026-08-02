@@ -1,0 +1,23 @@
+node_modules
+
+# Compiled output (source of truth is the .ts files)
+nodes/**/*.js
+test/**/*.js
+
+# Node-RED editor templates mix jQuery with literal Node-RED markup -
+# Prettier's HTML formatter doesn't understand that well enough to trust.
+*.html
+
+# Hand-authored device config data meant to mirror zwave-js's own JSON
+# formatting/indentation - not app source, don't reformat.
+multicast/*.json
+
+# Node-RED flow exports - reformatting shifts whitespace/key order noisily
+# without changing anything that matters (they're data, not app source).
+examples/*.json
+
+# GitHub Actions YAML - leave as-is.
+.github/**
+
+# Prose, not code.
+*.md

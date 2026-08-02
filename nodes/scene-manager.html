@@ -6,11 +6,11 @@
       name: { value: "" },
       nodeid: { value: "" },
       entityid: { value: "" },
-      zwave: { value: "zwave_js" },
       switchtype: { value: "LZW30" },
       outputs: { value: 1 },
       labels: { value: ["Please select a Switch Type"] },
       passthrough: { default: false },
+      singleOutput: { value: false },
     },
     inputs: 1,
     outputs: 1,
@@ -116,8 +116,13 @@
           ];
           break;
       }
-      this.outputs = label.length;
-      this.labels = label;
+      if ($("#node-input-singleOutput").is(":checked")) {
+        this.outputs = 1;
+        this.labels = ["Matched scene (see msg.topic/msg.button/msg.scene)"];
+      } else {
+        this.outputs = label.length;
+        this.labels = label;
+      }
     },
   });
 </script>
@@ -131,14 +136,6 @@
   <div class="form-row">
       <label for="node-input-name"><i class="icon-tag"></i>Name</label>
       <input type="text" id="node-input-name" placeholder="Name">
-  </div>
-  <div class="form-row">
-    <label for="node-input-zwave"><i class="icon-tag"></i>Z-Wave Integration</label>
-    <select name="node-input-zwave" id="node-input-zwave">
-        <option value="zwave_js">Z-Wave JS</option>
-        <option value="ozw">Open Z-Wave</option>
-        <option value="zwave">Z-Wave</option>
-    </select>
   </div>
   <div class="form-row nodeid-input">
     <label for="node-input-nodeid"><i class="icon-tag"></i>Node ID(s)</label>
@@ -161,14 +158,15 @@
     <label for="node-input-passthrough"><i class="icon-tag"></i>Node ID Passthrough</label>
     <input type="checkbox" id="node-input-passthrough">
   </div>
+  <div class="form-row">
+    <label for="node-input-singleOutput"><i class="icon-tag"></i>Single Output</label>
+    <input type="checkbox" id="node-input-singleOutput">
+  </div>
 </script>
 
 <script type="text/x-red" data-help-name="inovelli-scene-manager">
   <p>This node will decipher button clicks on an Inovelli Red Series switch allowing for easy scene control in Home Assistant. Just connect this input of this node to the output of a Home Assistant "events: all" node</p>
   <dl class="message-properties">
-      <dt>Z-Wave Integration<span class="property-type">string</span></dt>
-      <dd>Your Z-Wave integration used in Home Assistant (zwave_js, ozw or zwave)</dd>
-
       <dt>Node ID<span class="property-type">number</span></dt>
       <dd>Node ID (or a comma-delimited list of node IDs) of the Inovelli switch you are trying to configure</dd>
 
@@ -180,5 +178,8 @@
 
       <dt>Node ID Passthrough<span class="property-type">boolean</span></dt>
       <dd>Disables specifying a node id, node will instead pass through all value/scene notifications (ideal when your Z-Wave network uses ALL of the same switch)</dd>
+
+      <dt>Single Output<span class="property-type">boolean</span></dt>
+      <dd>Instead of one wire per button/scene combination, use a single output and set <code>msg.topic</code> to the matched combination's index (the same index that would have picked a wire), plus <code>msg.button</code> and <code>msg.scene</code> with the raw matched values. Route with a <code>switch</code> node on <code>msg.topic</code> instead of wiring every output. Useful for the LZW36's 18 combinations if you don't want an 18-output node.</dd>
   </dl>
 </script>
