@@ -28,12 +28,6 @@ module.exports = function (RED: any) {
       : config.entityid
         ? [{ name: "entity_id", value: config.entityid }]
         : [];
-    if (!hasCurrentFields && node.fields.length > 0) {
-      node.warn(
-        `Migrated legacy entity ID config to the new "fields" list automatically. ` +
-          `Re-open and save this node in the editor to persist the new format.`
-      );
-    }
     node.on("input", (msg: any, _send: any, done: any) => {
       const payload = msg.payload;
       function fail(message: string): void {

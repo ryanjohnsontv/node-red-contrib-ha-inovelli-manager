@@ -436,7 +436,7 @@ describe("inovelli-config-manager", () => {
       n1.receive({ payload: { activePowerReports: 25.5 } });
     });
   });
-  it("migrates a legacy entityid-only config to a targets list and warns once", (done) => {
+  it("migrates a legacy entityid-only config to a targets list silently, with no warning", (done) => {
     const flow = [
       {
         id: "n1",
@@ -453,15 +453,13 @@ describe("inovelli-config-manager", () => {
       const n2 = helper.getNode("n2");
       const n1 = helper.getNode("n1");
       let warned = false;
-      n1.on("call:warn", (call: any) => {
-        if (/Migrated legacy entity ID/.test(call.args[0])) {
-          warned = true;
-        }
+      n1.on("call:warn", () => {
+        warned = true;
       });
       n2.on("input", (msg: any) => {
         try {
           assert.deepStrictEqual(msg.payload.target, { entity_id: ["switch.a", "switch.b"] });
-          assert.strictEqual(warned, true);
+          assert.strictEqual(warned, false);
           done();
         } catch (err) {
           done(err);

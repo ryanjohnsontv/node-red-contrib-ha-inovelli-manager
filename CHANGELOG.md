@@ -14,8 +14,7 @@ All notable changes to this project are documented here. Format loosely follows
 - **LED Manager config format changed** from six fixed color/brightness fields with toggle
   checkboxes to a single ordered "properties" list (the same "+ add" pattern as the core
   Switch/Change nodes). Existing flows are migrated automatically at runtime and in the editor —
-  no action needed. The node logs a one-time warning the first time it falls back to migrating a
-  legacy config, so you can tell which nodes haven't been re-saved in the new format yet.
+  no action needed, ever; nothing needs to be re-saved for the node to work correctly.
 - **Output format changed** from `{domain, service, data}` to `{action, target, data}`, matching
   node-red-contrib-home-assistant-websocket's modern **Action** node (its input format has moved
   on from the older `api-call-service` shape — see `docs/node/action.md` in that project). If your

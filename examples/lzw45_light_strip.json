@@ -1,91 +1,129 @@
 [
-  {
-    "id": "a1b2c3d4e5f60001",
-    "type": "inject",
-    "z": "978218e1.644ff8",
-    "name": "Quick Effect (temporary overlay)",
-    "props": [{ "p": "payload" }, { "p": "topic", "vt": "str" }],
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "onceDelay": 0.1,
-    "topic": "",
-    "payload": "",
-    "payloadType": "date",
-    "x": 200,
-    "y": 480,
-    "wires": [["a1b2c3d4e5f60002"]]
-  },
-  {
-    "id": "a1b2c3d4e5f60002",
-    "type": "inovelli-notification-manager",
-    "z": "978218e1.644ff8",
-    "name": "LZW45 Quick Effect",
-    "entityid": "light.example_light_strip",
-    "color": 180,
-    "brightness": 5,
-    "duration": 10,
-    "effect": 1,
-    "switchtype": 21,
-    "clear": false,
-    "multicast": false,
-    "x": 480,
-    "y": 480,
-    "wires": [["a1b2c3d4e5f60005"]]
-  },
-  {
-    "id": "a1b2c3d4e5f60003",
-    "type": "inject",
-    "z": "978218e1.644ff8",
-    "name": "Pixel Effect (Rainbow)",
-    "props": [{ "p": "payload" }, { "p": "topic", "vt": "str" }],
-    "repeat": "",
-    "crontab": "",
-    "once": false,
-    "onceDelay": 0.1,
-    "topic": "",
-    "payload": "",
-    "payloadType": "date",
-    "x": 190,
-    "y": 540,
-    "wires": [["a1b2c3d4e5f60004"]]
-  },
-  {
-    "id": "a1b2c3d4e5f60004",
-    "type": "inovelli-notification-manager",
-    "z": "978218e1.644ff8",
-    "name": "LZW45 Pixel Effect",
-    "entityid": "light.example_light_strip",
-    "color": 0,
-    "brightness": 5,
-    "duration": 10,
-    "effect": 10,
-    "switchtype": 31,
-    "clear": false,
-    "multicast": false,
-    "x": 470,
-    "y": 540,
-    "wires": [["a1b2c3d4e5f60005"]]
-  },
-  {
-    "id": "a1b2c3d4e5f60005",
-    "type": "api-call-service",
-    "z": "978218e1.644ff8",
-    "name": "HA Call Service",
-    "server": "7931a4b6.dc7fbc",
-    "version": 3,
-    "debugenabled": false,
-    "service_domain": "",
-    "service": "",
-    "entityId": "",
-    "data": "",
-    "dataType": "jsonata",
-    "mergecontext": "",
-    "mustacheAltTags": false,
-    "outputProperties": [],
-    "queue": "none",
-    "x": 730,
-    "y": 510,
-    "wires": [[]]
-  }
+    {
+        "id": "a1b2c3d4e5f60001",
+        "type": "inject",
+        "z": "978218e1.644ff8",
+        "name": "Quick Effect (temporary overlay)",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 200,
+        "y": 480,
+        "wires": [
+            [
+                "a1b2c3d4e5f60002"
+            ]
+        ]
+    },
+    {
+        "id": "a1b2c3d4e5f60002",
+        "type": "inovelli-notification-manager",
+        "z": "978218e1.644ff8",
+        "name": "LZW45 Quick Effect",
+        "entityid": "light.example_light_strip",
+        "color": 180,
+        "brightness": 5,
+        "duration": 10,
+        "effect": 1,
+        "switchtype": 21,
+        "clear": false,
+        "multicast": false,
+        "x": 480,
+        "y": 480,
+        "wires": [
+            [
+                "a1b2c3d4e5f60005"
+            ]
+        ]
+    },
+    {
+        "id": "a1b2c3d4e5f60003",
+        "type": "inject",
+        "z": "978218e1.644ff8",
+        "name": "Pixel Effect (Rainbow)",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 540,
+        "wires": [
+            [
+                "a1b2c3d4e5f60004"
+            ]
+        ]
+    },
+    {
+        "id": "a1b2c3d4e5f60004",
+        "type": "inovelli-notification-manager",
+        "z": "978218e1.644ff8",
+        "name": "LZW45 Pixel Effect",
+        "entityid": "light.example_light_strip",
+        "color": 0,
+        "brightness": 5,
+        "duration": 10,
+        "effect": 10,
+        "switchtype": 31,
+        "clear": false,
+        "multicast": false,
+        "x": 470,
+        "y": 540,
+        "wires": [
+            [
+                "a1b2c3d4e5f60005"
+            ]
+        ]
+    },
+    {
+        "id": "a1b2c3d4e5f60005",
+        "type": "api-call-service",
+        "z": "978218e1.644ff8",
+        "name": "HA Action",
+        "server": "7931a4b6.dc7fbc",
+        "version": 7,
+        "debugenabled": false,
+        "action": "",
+        "floorId": [],
+        "areaId": [],
+        "deviceId": [],
+        "entityId": [],
+        "labelId": [],
+        "data": "",
+        "dataType": "jsonata",
+        "mergeContext": "",
+        "mustacheAltTags": false,
+        "outputProperties": [],
+        "queue": "none",
+        "blockInputOverrides": true,
+        "x": 730,
+        "y": 510,
+        "wires": [
+            []
+        ]
+    }
 ]

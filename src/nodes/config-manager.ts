@@ -61,13 +61,6 @@ module.exports = function (RED: any) {
     node.properties = Array.isArray(config.properties) ? config.properties : [];
     const hasCurrentTargets = Array.isArray(config.targets) && config.targets.length > 0;
     node.targets = hasCurrentTargets ? config.targets : legacyEntityTargets(config.entityid);
-    if (!hasCurrentTargets && node.targets.length > 0) {
-      node.warn(
-        `Migrated legacy entity ID config to the new "targets" list automatically ` +
-          `(${node.targets.length} target${node.targets.length === 1 ? "" : "s"}). ` +
-          `Re-open and save this node in the editor to persist the new format.`
-      );
-    }
     node.on("input", (msg: any, _send: any, done: any) => {
       const payload = msg.payload || {};
       const targets = resolveTargets(node.targets, payload.entity_id);

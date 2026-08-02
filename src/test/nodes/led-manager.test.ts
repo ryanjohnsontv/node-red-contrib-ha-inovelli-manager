@@ -138,7 +138,7 @@ describe("inovelli-led-manager", () => {
       n1.receive({ payload: {} });
     });
   });
-  it("warns once when falling back to a legacy config so the migration is visible", (done) => {
+  it("migrates a legacy color/brightness config silently, with no warning", (done) => {
     const flow = [
       {
         id: "n1",
@@ -153,12 +153,22 @@ describe("inovelli-led-manager", () => {
       { id: "n2", type: "helper" },
     ];
     helper.load(ledManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
       const n1 = helper.getNode("n1");
-      n1.on("call:warn", (call: any) => {
-        if (/Migrated legacy color\/brightness/.test(call.args[0])) {
+      let warned = false;
+      n1.on("call:warn", () => {
+        warned = true;
+      });
+      n2.on("input", (msg: any) => {
+        try {
+          assert.strictEqual(msg.payload.data.parameter, 13);
+          assert.strictEqual(warned, false);
           done();
+        } catch (err) {
+          done(err);
         }
       });
+      n1.receive({ payload: {} });
     });
   });
   it("does not error on a legacy config with string color/brightness values (matches real flow JSON)", (done) => {
@@ -191,32 +201,6 @@ describe("inovelli-led-manager", () => {
         }
       });
       n1.receive({ payload: {} });
-    });
-  });
-  it("does not warn when the node already has current-format properties and targets lists", (done) => {
-    const flow = [
-      {
-        id: "n1",
-        type: "inovelli-led-manager",
-        entityid: "light.test",
-        targets: [{ type: "entity_id", value: "light.test" }],
-        switchtype: "5",
-        properties: [{ property: "color", value: 0 }],
-        multicast: false,
-        wires: [["n2"]],
-      },
-      { id: "n2", type: "helper" },
-    ];
-    helper.load(ledManagerNode, flow, () => {
-      const n1 = helper.getNode("n1");
-      let warned = false;
-      n1.on("call:warn", () => {
-        warned = true;
-      });
-      setTimeout(() => {
-        assert.strictEqual(warned, false);
-        done();
-      }, 50);
     });
   });
   it("reports every property sent this run in a single combined status, not just the last one", (done) => {
@@ -279,7 +263,7 @@ describe("inovelli-led-manager", () => {
       n1.receive({ payload: { brightness: 7.6 } });
     });
   });
-  it("migrates a legacy entityid-only config to a targets list and warns once", (done) => {
+  it("migrates a legacy entityid-only config to a targets list silently, with no warning", (done) => {
     const flow = [
       {
         id: "n1",
@@ -296,49 +280,19 @@ describe("inovelli-led-manager", () => {
       const n2 = helper.getNode("n2");
       const n1 = helper.getNode("n1");
       let warned = false;
-      n1.on("call:warn", (call: any) => {
-        if (/Migrated legacy entity ID/.test(call.args[0])) {
-          warned = true;
-        }
+      n1.on("call:warn", () => {
+        warned = true;
       });
       n2.on("input", (msg: any) => {
         try {
           assert.deepStrictEqual(msg.payload.target, { entity_id: ["light.a", "light.b"] });
-          assert.strictEqual(warned, true);
+          assert.strictEqual(warned, false);
           done();
         } catch (err) {
           done(err);
         }
       });
       n1.receive({ payload: {} });
-    });
-  });
-  it("does not warn about targets when the node already has a current-format targets list", (done) => {
-    const flow = [
-      {
-        id: "n1",
-        type: "inovelli-led-manager",
-        entityid: "light.stale",
-        targets: [{ type: "entity_id", value: "light.current" }],
-        switchtype: "5",
-        properties: [{ property: "brightness", value: 3 }],
-        multicast: false,
-        wires: [["n2"]],
-      },
-      { id: "n2", type: "helper" },
-    ];
-    helper.load(ledManagerNode, flow, () => {
-      const n1 = helper.getNode("n1");
-      let warnedAboutTargets = false;
-      n1.on("call:warn", (call: any) => {
-        if (/Migrated legacy entity ID/.test(call.args[0])) {
-          warnedAboutTargets = true;
-        }
-      });
-      setTimeout(() => {
-        assert.strictEqual(warnedAboutTargets, false);
-        done();
-      }, 50);
     });
   });
   it("sends every configured target type (entity/device/area/floor/label) together", (done) => {

@@ -273,7 +273,7 @@ describe("inovelli-scene-manager", () => {
       }, 50);
     });
   });
-  it("migrates a legacy entityid-only config to a single msg.entity_id field and warns once", (done) => {
+  it("migrates a legacy entityid-only config to a single msg.entity_id field silently, with no warning", (done) => {
     const flow = [
       {
         id: "n1",
@@ -291,15 +291,13 @@ describe("inovelli-scene-manager", () => {
       const n2 = helper.getNode("n2");
       const n1 = helper.getNode("n1");
       let warned = false;
-      n1.on("call:warn", (call: any) => {
-        if (/Migrated legacy entity ID/.test(call.args[0])) {
-          warned = true;
-        }
+      n1.on("call:warn", () => {
+        warned = true;
       });
       n2.on("input", (msg: any) => {
         try {
           assert.strictEqual(msg.entity_id, "light.a, light.b");
-          assert.strictEqual(warned, true);
+          assert.strictEqual(warned, false);
           done();
         } catch (err) {
           done(err);
