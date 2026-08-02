@@ -31,6 +31,7 @@ describe("inovelli-notification-manager", () => {
           assert.strictEqual(msg.payload.action, "zwave_js.bulk_set_partial_config_parameters");
           assert.strictEqual(msg.payload.data.parameter, 8);
           assert.strictEqual(msg.payload.data.value, 0 + 5 * 256 + 10 * 65536 + 4 * 16777216);
+          assert.deepStrictEqual(msg.entity_id, ["light.test"]);
           done();
         } catch (err) {
           done(err);

@@ -41,3 +41,6 @@ export function resolveTargets(configuredTargets: TargetEntry[], payloadEntityId
   const withoutEntities = configuredTargets.filter((entry) => entry.type !== "entity_id");
   return withoutEntities.concat(legacyEntityTargets(String(payloadEntityId)));
 }
+export function legacyEntityIdField(target: Target | undefined): { entity_id?: string[] } {
+  return target?.entity_id ? { entity_id: target.entity_id } : {};
+}

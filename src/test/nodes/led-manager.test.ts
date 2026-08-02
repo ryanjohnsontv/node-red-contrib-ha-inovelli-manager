@@ -37,6 +37,7 @@ describe("inovelli-led-manager", () => {
             assert.strictEqual(byParam[6], 7);
             assert.strictEqual(received[0].payload.action, "zwave_js.set_config_parameter");
             assert.deepStrictEqual(received[0].payload.target, { entity_id: ["light.test"] });
+            assert.deepStrictEqual(received[0].entity_id, ["light.test"]);
             done();
           } catch (err) {
             done(err);
@@ -371,6 +372,8 @@ describe("inovelli-led-manager", () => {
             floor_id: ["first_floor"],
             label_id: ["outdoor"],
           });
+          assert.deepStrictEqual(msg.entity_id, ["light.kitchen"]);
+          assert.strictEqual(msg.device_id, undefined);
           done();
         } catch (err) {
           done(err);

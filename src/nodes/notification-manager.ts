@@ -1,6 +1,12 @@
 import { parseColor, rgbToHue } from "./shared/color";
 import { parseDuration } from "./shared/duration";
-import { buildTarget, legacyEntityTargets, resolveTargets, TargetEntry } from "./shared/targets";
+import {
+  buildTarget,
+  legacyEntityIdField,
+  legacyEntityTargets,
+  resolveTargets,
+  TargetEntry,
+} from "./shared/targets";
 import { resolveNotificationSwitch } from "./shared/switches";
 interface NotificationManagerConfig {
   name: string;
@@ -105,10 +111,12 @@ module.exports = function (RED: any) {
             `Color: ${keyword}, Brightness: ${brightness}, Effect: ${effectName(effect, switchDef.effects)}, Duration: ${duration}`
           );
         }
+        const { target } = buildTarget(targets);
         function sendNotification(parameter: number): void {
           const data = multicast ? { property: parameter, command_class: 112, value } : { parameter, value };
           node.send({
-            payload: { action: `zwave_js.${service}`, ...buildTarget(targets), data },
+            ...legacyEntityIdField(target),
+            payload: { action: `zwave_js.${service}`, ...(target ? { target } : {}), data },
           });
         }
         if (switchDef.isCombo) {

@@ -1,5 +1,11 @@
 import { parseColor, rgbToHue } from "./shared/color";
-import { buildTarget, legacyEntityTargets, resolveTargets, TargetEntry } from "./shared/targets";
+import {
+  buildTarget,
+  legacyEntityIdField,
+  legacyEntityTargets,
+  resolveTargets,
+  TargetEntry,
+} from "./shared/targets";
 import { resolveLedSwitch, LedPropertyKey } from "./shared/switches";
 import { legacyLedProperties, LedProperty, LegacyLedConfig } from "./led-manager.migrations";
 interface LedManagerConfig extends LegacyLedConfig {
@@ -107,10 +113,12 @@ module.exports = function (RED: any) {
       }
       function send(value: number, parameter: number): void {
         const data = multicast ? { property: parameter, command_class: 112, value } : { parameter, value };
+        const { target } = buildTarget(targets);
         node.send({
+          ...legacyEntityIdField(target),
           payload: {
             action: `zwave_js.${multicast ? "multicast_set_value" : "set_config_parameter"}`,
-            ...buildTarget(targets),
+            ...(target ? { target } : {}),
             data,
           },
         });

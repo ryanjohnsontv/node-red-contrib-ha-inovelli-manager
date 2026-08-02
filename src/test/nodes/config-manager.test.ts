@@ -28,6 +28,7 @@ describe("inovelli-config-manager", () => {
           assert.strictEqual(msg.payload.data.parameter, 3);
           assert.strictEqual(msg.payload.data.value, 600);
           assert.deepStrictEqual(msg.payload.target, { entity_id: ["switch.test"] });
+          assert.deepStrictEqual(msg.entity_id, ["switch.test"]);
           done();
         } catch (err) {
           done(err);

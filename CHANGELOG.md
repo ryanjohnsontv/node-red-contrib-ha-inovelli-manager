@@ -20,7 +20,10 @@ All notable changes to this project are documented here. Format loosely follows
   node-red-contrib-home-assistant-websocket's modern **Action** node (its input format has moved
   on from the older `api-call-service` shape — see `docs/node/action.md` in that project). If your
   flow already uses an Action node downstream, nothing to do. If you're still on the deprecated
-  `api-call-service` node, switch to Action.
+  `api-call-service` node, switch to Action. LED Manager, Notification Manager, and Config Manager
+  also set a top-level `msg.entity_id` alongside `msg.payload.target.entity_id`, so flows where the
+  downstream Action node's own Target field is configured to read directly from `msg.entity_id`
+  (rather than relying on the `target` object) keep working without changes.
 - **"Entity ID(s)" text field replaced with a Targets picker** (Entity/Device/Area/Floor/Label) on
   LED Manager, Notification Manager, and Config Manager — matching the Action node's own Targets
   UI, including live autocomplete suggestions (sourced from node-red-contrib-home-assistant-

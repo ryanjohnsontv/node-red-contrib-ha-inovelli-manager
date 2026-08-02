@@ -1,5 +1,10 @@
 import * as assert from "assert";
-import { buildTarget, legacyEntityTargets, resolveTargets } from "../../nodes/shared/targets";
+import {
+  buildTarget,
+  legacyEntityIdField,
+  legacyEntityTargets,
+  resolveTargets,
+} from "../../nodes/shared/targets";
 describe("shared/targets", () => {
   describe("buildTarget", () => {
     it("returns an empty object for an undefined or empty list", () => {
@@ -84,6 +89,17 @@ describe("shared/targets", () => {
     it("falls back to the configured targets for a falsy payload override, matching the old `||` behavior", () => {
       assert.deepStrictEqual(resolveTargets(configured, ""), configured);
       assert.deepStrictEqual(resolveTargets(configured, null), configured);
+    });
+  });
+  describe("legacyEntityIdField", () => {
+    it("returns entity_id when the target has one", () => {
+      assert.deepStrictEqual(legacyEntityIdField({ entity_id: ["light.kitchen"] }), {
+        entity_id: ["light.kitchen"],
+      });
+    });
+    it("returns an empty object when there's no entity_id", () => {
+      assert.deepStrictEqual(legacyEntityIdField({ area_id: ["kitchen"] }), {});
+      assert.deepStrictEqual(legacyEntityIdField(undefined), {});
     });
   });
 });

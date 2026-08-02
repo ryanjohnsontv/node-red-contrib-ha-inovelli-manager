@@ -35,7 +35,7 @@ This node allows you to set color, brightness, and effect type/duration for noti
 
 ### Targets
 
-Click **add** to add an Entity, Device, Area, Floor, or Label to set the configuration parameter on — the same Targets picker as the Home Assistant Action node. Add as many rows of any type/combination as needed. Entity targets are also configurable ad-hoc via `msg.payload.entity_id` (a single ID or a comma-delimited list), which replaces any Entity targets configured here for that run only — Device/Area/Floor/Label targets are unaffected. Flows saved before this picker existed had a single "Entity ID(s)" text field; those are migrated automatically (see the upgrade note above).
+Click **add** to add an Entity, Device, Area, Floor, or Label to set the configuration parameter on — the same Targets picker as the Home Assistant Action node. Add as many rows of any type/combination as needed. Entity targets are also configurable ad-hoc via `msg.payload.entity_id` (a single ID or a comma-delimited list), which replaces any Entity targets configured here for that run only — Device/Area/Floor/Label targets are unaffected. Flows saved before this picker existed had a single "Entity ID(s)" text field; those are migrated automatically (see the upgrade note above). Any configured Entity targets are also set on a top-level `msg.entity_id` (in addition to `msg.payload.target.entity_id`), for downstream Action nodes whose own Target field is configured to read directly from `msg.entity_id`.
 
 ### Switch Type
 
@@ -80,7 +80,7 @@ This node allows you to set the color and brightness of the LED indicator/strip 
 
 ### Targets
 
-Click **add** to add an Entity, Device, Area, Floor, or Label to set the configuration parameter on — the same Targets picker as the Home Assistant Action node. Add as many rows of any type/combination as needed. Entity targets are also configurable ad-hoc via `msg.payload.entity_id` (a single ID or a comma-delimited list), which replaces any Entity targets configured here for that run only — Device/Area/Floor/Label targets are unaffected. Flows saved before this picker existed had a single "Entity ID(s)" text field; those are migrated automatically (see the upgrade note above).
+Click **add** to add an Entity, Device, Area, Floor, or Label to set the configuration parameter on — the same Targets picker as the Home Assistant Action node. Add as many rows of any type/combination as needed. Entity targets are also configurable ad-hoc via `msg.payload.entity_id` (a single ID or a comma-delimited list), which replaces any Entity targets configured here for that run only — Device/Area/Floor/Label targets are unaffected. Flows saved before this picker existed had a single "Entity ID(s)" text field; those are migrated automatically (see the upgrade note above). Any configured Entity targets are also set on a top-level `msg.entity_id` (in addition to `msg.payload.target.entity_id`), for downstream Action nodes whose own Target field is configured to read directly from `msg.entity_id`.
 
 ### Switch Type
 
@@ -159,7 +159,7 @@ A few parameters are intentionally *not* unified across every model that has som
 
 ### Targets
 
-Click **add** to add an Entity, Device, Area, Floor, or Label to set the configuration parameter on — the same Targets picker as the Home Assistant Action node. Add as many rows of any type/combination as needed. Entity targets are also configurable ad-hoc via `msg.payload.entity_id` (a single ID or a comma-delimited list), which replaces any Entity targets configured here for that run only — Device/Area/Floor/Label targets are unaffected. Flows saved before this picker existed had a single "Entity ID(s)" text field; those are migrated automatically (see the upgrade note above).
+Click **add** to add an Entity, Device, Area, Floor, or Label to set the configuration parameter on — the same Targets picker as the Home Assistant Action node. Add as many rows of any type/combination as needed. Entity targets are also configurable ad-hoc via `msg.payload.entity_id` (a single ID or a comma-delimited list), which replaces any Entity targets configured here for that run only — Device/Area/Floor/Label targets are unaffected. Flows saved before this picker existed had a single "Entity ID(s)" text field; those are migrated automatically (see the upgrade note above). Any configured Entity targets are also set on a top-level `msg.entity_id` (in addition to `msg.payload.target.entity_id`), for downstream Action nodes whose own Target field is configured to read directly from `msg.entity_id`.
 
 ### Switch Type
 
