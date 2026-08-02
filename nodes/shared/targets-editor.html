@@ -17,40 +17,28 @@
       if (an > bn) return 1;
       return 0;
     }
-    const registryCache = { entity_id: {}, device_id: {}, area_id: {}, floor_id: {}, label_id: {} };
+    const INOVELLI_DOMAINS = ["light", "switch", "fan"];
+    const raw = { areas: {}, devices: {}, entities: {}, floors: {}, labels: {}, entityRegistry: {} };
     function serverIdFromTopic(topic) {
       return topic.split("/")[2];
     }
     RED.comms.subscribe("homeassistant/areas/#", function (topic, areas) {
-      registryCache.area_id[serverIdFromTopic(topic)] = (areas || [])
-        .map((a) => ({ value: a.area_id, label: a.name }))
-        .sort(byLabelThenValue);
+      raw.areas[serverIdFromTopic(topic)] = areas || [];
     });
     RED.comms.subscribe("homeassistant/devices/#", function (topic, devices) {
-      registryCache.device_id[serverIdFromTopic(topic)] = (devices || []).map((d) => ({
-        value: d.id,
-        label: d.name_by_user || d.name,
-        areaId: d.area_id || null,
-      }));
+      raw.devices[serverIdFromTopic(topic)] = devices || [];
     });
     RED.comms.subscribe("homeassistant/floors/#", function (topic, floors) {
-      registryCache.floor_id[serverIdFromTopic(topic)] = (floors || [])
-        .map((f) => ({ value: f.floor_id, label: f.name }))
-        .sort(byLabelThenValue);
+      raw.floors[serverIdFromTopic(topic)] = floors || [];
     });
     RED.comms.subscribe("homeassistant/labels/#", function (topic, labels) {
-      registryCache.label_id[serverIdFromTopic(topic)] = (labels || [])
-        .map((l) => ({ value: l.label_id, label: l.name }))
-        .sort(byLabelThenValue);
+      raw.labels[serverIdFromTopic(topic)] = labels || [];
     });
     RED.comms.subscribe("homeassistant/entities/#", function (topic, entities) {
-      const byId = entities || {};
-      registryCache.entity_id[serverIdFromTopic(topic)] = Object.keys(byId)
-        .map((entityId) => ({
-          value: entityId,
-          label: (byId[entityId].attributes && byId[entityId].attributes.friendly_name) || entityId,
-        }))
-        .sort(byLabelThenValue);
+      raw.entities[serverIdFromTopic(topic)] = entities || {};
+    });
+    RED.comms.subscribe("homeassistant/entityRegistry/#", function (topic, entries) {
+      raw.entityRegistry[serverIdFromTopic(topic)] = entries || [];
     });
     function getSoleServerId() {
       try {
@@ -70,17 +58,70 @@
       if (!serverId) {
         return [];
       }
-      const raw = registryCache[type][serverId] || [];
+      const entityRegistry = raw.entityRegistry[serverId];
+      const registryByEntityId =
+        Array.isArray(entityRegistry) && entityRegistry.length > 0
+          ? new Map(entityRegistry.map((e) => [e.entity_id, e]))
+          : null;
+
+      if (type === "entity_id") {
+        const entities = raw.entities[serverId] || {};
+        return Object.keys(entities)
+          .filter((entityId) => {
+            if (!INOVELLI_DOMAINS.includes(entityId.split(".")[0])) {
+              return false;
+            }
+            if (!registryByEntityId) {
+              return true;
+            }
+            const entry = registryByEntityId.get(entityId);
+            return entry ? entry.platform === "zwave_js" : false;
+          })
+          .map((entityId) => ({
+            value: entityId,
+            label: (entities[entityId].attributes && entities[entityId].attributes.friendly_name) || entityId,
+          }))
+          .sort(byLabelThenValue);
+      }
+
       if (type === "device_id") {
-        const areas = registryCache.area_id[serverId] || [];
-        return raw
+        const devices = raw.devices[serverId] || [];
+        const areas = raw.areas[serverId] || [];
+        let zwaveJsDeviceIds = null;
+        if (registryByEntityId) {
+          zwaveJsDeviceIds = new Set();
+          registryByEntityId.forEach((entry) => {
+            if (entry.platform === "zwave_js" && entry.device_id) {
+              zwaveJsDeviceIds.add(entry.device_id);
+            }
+          });
+        }
+        return devices
+          .filter((d) => !zwaveJsDeviceIds || zwaveJsDeviceIds.has(d.id))
           .map((d) => {
-            const area = d.areaId ? areas.find((a) => a.value === d.areaId) : null;
-            return { value: d.value, label: area ? `${d.label} (${area.label})` : d.label };
+            const area = d.area_id ? areas.find((a) => a.area_id === d.area_id) : null;
+            const name = d.name_by_user || d.name;
+            return { value: d.id, label: area ? `${name} (${area.name})` : name };
           })
           .sort(byLabelThenValue);
       }
-      return raw;
+
+      if (type === "area_id") {
+        return (raw.areas[serverId] || [])
+          .map((a) => ({ value: a.area_id, label: a.name }))
+          .sort(byLabelThenValue);
+      }
+      if (type === "floor_id") {
+        return (raw.floors[serverId] || [])
+          .map((f) => ({ value: f.floor_id, label: f.name }))
+          .sort(byLabelThenValue);
+      }
+      if (type === "label_id") {
+        return (raw.labels[serverId] || [])
+          .map((l) => ({ value: l.label_id, label: l.name }))
+          .sort(byLabelThenValue);
+      }
+      return [];
     }
     let $dropdown = null;
     function getDropdown() {
