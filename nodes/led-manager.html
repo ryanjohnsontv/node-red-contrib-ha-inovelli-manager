@@ -1,0 +1,348 @@
+<script type="text/javascript">
+  RED.nodes.registerType("inovelli-led-manager", {
+    category: "inovelli",
+    color: "#B68181",
+    defaults: {
+      name: { value: "" },
+      entityid: { value: "" },
+      targets: { value: [] },
+      switchtype: { value: 5 },
+      properties: {
+        value: [
+          { property: "color", value: 180 },
+          { property: "brightness", value: 5 },
+          { property: "brightnessOff", value: 1 },
+        ],
+      },
+      multicast: { value: false },
+    },
+    inputs: 1,
+    outputs: 1,
+    outputLabels: "Connect to an Action node",
+    icon: "light.svg",
+    align: "right",
+    label: function () {
+      return this.name || "inovelli-led-manager";
+    },
+    oneditprepare: function () {
+      InovelliTargetsEditor.init($("#node-input-targets-container"), this);
+      const PROPERTY_LABELS = {
+        color: "Color",
+        brightness: "Brightness",
+        brightnessOff: "Brightness (Off)",
+        fanColor: "Fan Color",
+        fanBrightness: "Fan Brightness",
+        fanBrightnessOff: "Fan Brightness (Off)",
+      };
+      function propertiesForSwitchType(switchtype) {
+        switch (String(switchtype)) {
+          case "20":
+            return ["fanColor", "fanBrightness", "fanBrightnessOff"];
+          case "38":
+            return ["color", "brightness", "brightnessOff", "fanColor", "fanBrightness", "fanBrightnessOff"];
+          default:
+            return ["color", "brightness", "brightnessOff"];
+        }
+      }
+      function isColorProperty(property) {
+        return property === "color" || property === "fanColor";
+      }
+      const HUE_NAMES = [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Chartreuse",
+        "Green",
+        "Spring Green",
+        "Cyan",
+        "Azure",
+        "Blue",
+        "Violet",
+        "Magenta",
+        "Rose",
+      ];
+      function closestColorName(hue) {
+        if (hue >= 361) {
+          return "White";
+        }
+        return HUE_NAMES[Math.round(hue / 30) % 12];
+      }
+      function buildValueInput(valueContainer, property, value) {
+        valueContainer.empty();
+        if (!property) {
+          return;
+        }
+        if (isColorProperty(property)) {
+          const input = $("<input/>", { type: "range", min: 0, max: 361, class: "led-mgr-color-picker" })
+            .css({ width: "60%", verticalAlign: "middle" })
+            .val(value !== undefined ? value : 180)
+            .appendTo(valueContainer);
+          const swatch = $("<span/>", { class: "led-mgr-color-swatch" }).appendTo(valueContainer);
+          const output = $("<output/>").css({ marginLeft: "6px" }).appendTo(valueContainer);
+          function refreshColorPreview() {
+            const hue = Number(input.val());
+            swatch.css("background", hue >= 361 ? "#fff" : `hsl(${hue}, 100%, 50%)`);
+            output.text(`${closestColorName(hue)} (${hue})`);
+          }
+          refreshColorPreview();
+          input.on("input change", refreshColorPreview);
+        } else {
+          const input = $("<input/>", { type: "range", min: 0, max: 10, class: "led-mgr-brightness-picker" })
+            .css({ width: "70%", verticalAlign: "middle" })
+            .val(value !== undefined ? value : 5)
+            .appendTo(valueContainer);
+          const output = $("<output/>").css({ marginLeft: "8px" }).text(input.val()).appendTo(valueContainer);
+          input.on("input change", function () {
+            output.text(this.value);
+          });
+        }
+      }
+      function usedPropertiesExcluding(excludeSelect) {
+        const used = [];
+        $("#node-input-properties-container")
+          .editableList("items")
+          .each(function () {
+            const rowSelect = $(this).find("select");
+            if (rowSelect[0] !== excludeSelect[0] && rowSelect.val()) {
+              used.push(rowSelect.val());
+            }
+          });
+        return used;
+      }
+      function refreshPropertyOptions(select) {
+        const switchtype = $("#node-input-switchtype").val();
+        const allowed = propertiesForSwitchType(switchtype);
+        const used = usedPropertiesExcluding(select);
+        const current = select.val();
+        const available = allowed.filter((property) => property === current || !used.includes(property));
+        select.empty();
+        if (available.length === 0) {
+          select.append($("<option/>", { value: "", text: "(all properties already added)" }));
+          select.prop("disabled", true);
+          return;
+        }
+        select.prop("disabled", false);
+        available.forEach(function (property) {
+          select.append($("<option/>", { value: property, text: PROPERTY_LABELS[property] }));
+        });
+        select.val(available.includes(current) ? current : available[0]);
+      }
+      function refreshAddButtonState() {
+        const switchtype = $("#node-input-switchtype").val();
+        const allowed = propertiesForSwitchType(switchtype);
+        const used = usedPropertiesExcluding($());
+        const anyAvailable = allowed.some((property) => !used.includes(property));
+        $("#node-input-properties-container")
+          .closest(".red-ui-editableList")
+          .find(".red-ui-editableList-addButton")
+          .prop("disabled", !anyAvailable)
+          .toggleClass("disabled", !anyAvailable);
+      }
+      function refreshAllPropertyOptions() {
+        $("#node-input-properties-container")
+          .editableList("items")
+          .each(function () {
+            $(this).data("refreshOptions")();
+          });
+        refreshAddButtonState();
+      }
+      $("#node-input-properties-container")
+        .css("min-width", "450px")
+        .editableList({
+          addItem: (container, _index, data) => {
+            container.css({ overflow: "hidden", whiteSpace: "nowrap", display: "flex", alignItems: "center" });
+            const select = $("<select/>").css({ width: "45%", marginRight: "10px" }).appendTo(container);
+            const valueContainer = $("<span/>")
+              .css({ display: "inline-block", width: "50%" })
+              .appendTo(container);
+            refreshPropertyOptions(select);
+            if (data.property) {
+              select.val(data.property);
+            }
+            buildValueInput(valueContainer, select.val(), data.value);
+            select.on("change", function () {
+              buildValueInput(valueContainer, this.value, undefined);
+              refreshAllPropertyOptions();
+            });
+            container.data("getData", function () {
+              return {
+                property: select.val(),
+                value: Number(valueContainer.find("input").val()),
+              };
+            });
+            container.data("refreshOptions", function () {
+              refreshPropertyOptions(select);
+            });
+            refreshAddButtonState();
+          },
+          removeItem: () => {
+            refreshAllPropertyOptions();
+          },
+          removable: true,
+          sortable: true,
+        });
+      const initialProperties =
+        this.properties && this.properties.length ? this.properties : legacyPropertiesFrom(this);
+      initialProperties.forEach((property) => {
+        $("#node-input-properties-container").editableList("addItem", property);
+      });
+      refreshAddButtonState();
+      $("#node-input-switchtype").on("change", refreshAllPropertyOptions);
+      function legacyPropertiesFrom(node) {
+        const properties = [];
+        const add = (toggle, property, value, fallback) => {
+          if (toggle) {
+            properties.push({ property, value: value !== undefined ? value : fallback });
+          }
+        };
+        add(node.toggleColor, "color", node.color, 180);
+        add(node.toggleBrightness, "brightness", node.brightness, 5);
+        add(node.toggleBrightnessOff, "brightnessOff", node.brightnessOff, 1);
+        add(node.toggleFanColor, "fanColor", node.fanColor, 180);
+        add(node.toggleFanBrightness, "fanBrightness", node.fanBrightness, 5);
+        add(node.toggleFanBrightnessOff, "fanBrightnessOff", node.fanBrightnessOff, 1);
+        return properties;
+      }
+    },
+    oneditsave: function () {
+      const properties = [];
+      $("#node-input-properties-container")
+        .editableList("items")
+        .each(function () {
+          const data = $(this).data("getData")();
+          if (data.property) {
+            properties.push(data);
+          }
+        });
+      this.properties = properties;
+      this.targets = InovelliTargetsEditor.save($("#node-input-targets-container"));
+    },
+    oneditresize: function (size) {
+      const rows = $("#dialog-form > div:not(.node-input-properties-container-row)");
+      let height = size.height;
+      for (let i = 0; i < rows.length; i++) {
+        height -= $(rows[i]).outerHeight(true);
+      }
+      const editorRow = $("#dialog-form > div.node-input-properties-container-row");
+      height -= parseInt(editorRow.css("marginTop")) + parseInt(editorRow.css("marginBottom"));
+      height += 16;
+      $("#node-input-properties-container").editableList("height", height);
+    },
+  });
+</script>
+
+<script type="text/x-red" data-template-name="inovelli-led-manager">
+  <style>
+    .led-mgr-color-picker {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 10px;
+      border-radius: 5px;
+      outline: none;
+      background: linear-gradient(to right, rgb(255,0,0), rgb(255,125,0), rgb(255,255,0), rgb(125,255,0), rgb(0,255,0), rgb(0,255,125), rgb(0,255,255), rgb(0,125,255), rgb(0,0,255), rgb(125,0,255), rgb(255,0,255), rgb(255,0,125), rgb(255,255,255));
+      vertical-align: middle;
+    }
+    .led-mgr-color-picker::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 5px;
+      height: 20px;
+      background: #FFFFFF;
+      border: 1px solid #666;
+    }
+    .led-mgr-color-picker::-moz-range-thumb {
+      width: 5px;
+      height: 20px;
+      background: #FFFFFF;
+      border: 1px solid #666;
+    }
+    .led-mgr-brightness-picker {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 10px;
+      border-radius: 5px;
+      outline: none;
+      background: linear-gradient(to right, rgb(0,0,0), rgb(255,255,255));
+      vertical-align: middle;
+    }
+    .led-mgr-brightness-picker::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 5px;
+      height: 20px;
+      background: #FFFFFF;
+      border: 1px solid #666;
+    }
+    .led-mgr-brightness-picker::-moz-range-thumb {
+      width: 5px;
+      height: 20px;
+      background: #FFFFFF;
+      border: 1px solid #666;
+    }
+    .led-mgr-color-swatch {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      margin-left: 8px;
+      border-radius: 3px;
+      border: 1px solid #999;
+      vertical-align: middle;
+    }
+  </style>
+  <div class="form-row">
+      <label for="node-input-name"><i class="icon-tag"></i>Name</label>
+      <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+  <div class="form-row node-input-targets-container-row">
+    <label><i class="icon-tag"></i>Targets</label>
+    <ol id="node-input-targets-container"></ol>
+  </div>
+  <div class="form-row">
+    <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
+    <select name="node-input-switchtype" id="node-input-switchtype">
+        <option value="5">On/Off (LZW30-SN)</option>
+        <option value="13">Dimmer (LZW31-SN)</option>
+        <option value="18">Light Dimmer (LZW36)</option>
+        <option value="20">Fan Dimmer (LZW36)</option>
+        <option value="38">Fan & Light (LZW36)</option>
+    </select>
+  </div>
+  <div class="form-row node-input-properties-container-row">
+    <label><i class="icon-tag"></i>Properties</label>
+    <ol id="node-input-properties-container"></ol>
+  </div>
+  <div class="form-row">
+    <label for="node-input-multicast"><i class="icon-tag"></i>Multicast</label>
+    <input type="checkbox" id="node-input-multicast" style="display:inline-block; width:auto; vertical-align:top;">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="inovelli-led-manager">
+  <p>This node will help construct the value for controlling the LED indicator/strip on an Inovelli Red Series switch. The output should be connected to a Home Assistant Action node.</p>
+  <dl class="message-properties">
+      <dt>Targets<span class="property-type">list</span></dt>
+      <dd>Click "add" to add an Entity, Device, Area, Floor, or Label to send this node's Z-Wave commands to, matching the Home Assistant Action node's own Targets picker. Add as many rows of any type/combination as needed. Entity ID targets are also configurable ad-hoc via <code>msg.payload.entity_id</code> (a single ID or a comma-delimited list), which replaces any Entity targets configured here for that run only - Device/Area/Floor/Label targets are unaffected. Any configured Entity targets are also set on a top-level <code>msg.entity_id</code> (in addition to <code>msg.payload.target.entity_id</code>), for downstream Action nodes whose own Target field is configured to read directly from <code>msg.entity_id</code>.</dd>
+
+      <dt>Switch Type<span class="property-type">number|string</span></dt>
+      <dd>Determines which parameters to set. (On/Off, Dimmer, Fan/Light Dimmer). Also configurable via <code>msg.payload.switchtype</code>.</dd>
+
+      <dt>Properties<span class="property-type">list</span></dt>
+      <dd>Click "add" to add a property this node should set every time it runs (Color, Brightness, Brightness When Off, and the Fan equivalents for the LZW36). Color accepts color names, RGB arrays, hexadecimal, or 0-360 hue values (361 = white). Brightness is 0-10. Remove/reorder rows the same way as the core Switch/Change nodes.</dd>
+
+      <dt>Multicast<span class="property-type">boolean</span></dt>
+      <dd>Check this box if your devices are set up to support multicasting. Also configurable via <code>msg.payload.multicast</code>.</dd>
+  </dl>
+  <p>
+    Any property can also be sent ad-hoc via the payload even if it isn't in this node's configured list, e.g.
+    <pre>
+msg = {
+  payload: {
+    entity_id: "light.bedroom",
+    fanColor: "Red",
+    fanBrightness: 10,
+    switchtype: "lzw36_fan"
+  }
+}
+    </pre>
+  </p>
+</script>

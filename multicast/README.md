@@ -10,6 +10,8 @@ This requires a bit more setup but replaces the service zwave_js.bulk_set_parame
 2. Copy the corresponding JSON in this folder to the config folder, including master_template.json (store/config/*.json)
 ![image](https://community.inovelli.com/uploads/default/original/2X/d/db4293b422a6744f0b68873280cf99eaeb0681fb.png)
 
-3. Restart zwavejs2mqtt and re-interview the nodes, and if it worked you'll now see a "Bulk set Param _" (8 for on/off, 16 for dimmer, 24 & 25 for fan/light combo)
+3. Restart zwavejs2mqtt and re-interview the nodes, and if it worked you'll now see a "Bulk set Param _" (8 for on/off, 16 for dimmer, 24 & 25 for fan/light combo, 21 for the LZW45 light strip)
 
 4. Update your respective nodes to use the new multicast option
+
+Covers all four Red Series modules: `lzw30-sn.json`, `lzw31-sn.json`, `lzw36.json`, and `lzw45.json`.

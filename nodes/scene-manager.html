@@ -6,11 +6,12 @@
       name: { value: "" },
       nodeid: { value: "" },
       entityid: { value: "" },
-      zwave: { value: "zwave_js" },
+      fields: { value: [] },
       switchtype: { value: "LZW30" },
       outputs: { value: 1 },
       labels: { value: ["Please select a Switch Type"] },
       passthrough: { default: false },
+      singleOutput: { value: false },
     },
     inputs: 1,
     outputs: 1,
@@ -25,11 +26,39 @@
     },
     oneditprepare: function () {
       $("#node-input-passthrough").change(function () {
-        if ($('#node-input-passthrough').is(":checked")) {
+        if ($("#node-input-passthrough").is(":checked")) {
           $(".nodeid-input").hide();
         } else {
           $(".nodeid-input").show();
         }
+      });
+      function legacyFieldsFrom(entityid) {
+        return entityid ? [{ name: "entity_id", value: entityid }] : [];
+      }
+      $("#node-input-fields-container")
+        .css("min-width", "450px")
+        .editableList({
+          addItem: (container, _index, data) => {
+            container.css({ display: "flex", alignItems: "center", gap: "6px" });
+            const nameInput = $("<input/>", { type: "text", placeholder: "msg field name, e.g. entity_id" })
+              .css({ flex: "1" })
+              .val(data.name || "")
+              .appendTo(container);
+            const valueInput = $("<input/>", { type: "text", placeholder: "value" })
+              .css({ flex: "1" })
+              .val(data.value || "")
+              .appendTo(container);
+            container.data("getData", function () {
+              return { name: nameInput.val().trim(), value: valueInput.val().trim() };
+            });
+          },
+          removable: true,
+          sortable: true,
+        });
+      const initialFields =
+        Array.isArray(this.fields) && this.fields.length ? this.fields : legacyFieldsFrom(this.entityid);
+      initialFields.forEach((field) => {
+        $("#node-input-fields-container").editableList("addItem", field);
       });
     },
     oneditsave: function () {
@@ -116,8 +145,23 @@
           ];
           break;
       }
-      this.outputs = label.length;
-      this.labels = label;
+      if ($("#node-input-singleOutput").is(":checked")) {
+        this.outputs = 1;
+        this.labels = ["Matched scene (see msg.topic/msg.button/msg.scene)"];
+      } else {
+        this.outputs = label.length;
+        this.labels = label;
+      }
+      const fields = [];
+      $("#node-input-fields-container")
+        .editableList("items")
+        .each(function () {
+          const data = $(this).data("getData")();
+          if (data.name) {
+            fields.push(data);
+          }
+        });
+      this.fields = fields;
     },
   });
 </script>
@@ -132,21 +176,13 @@
       <label for="node-input-name"><i class="icon-tag"></i>Name</label>
       <input type="text" id="node-input-name" placeholder="Name">
   </div>
-  <div class="form-row">
-    <label for="node-input-zwave"><i class="icon-tag"></i>Z-Wave Integration</label>
-    <select name="node-input-zwave" id="node-input-zwave">
-        <option value="zwave_js">Z-Wave JS</option>
-        <option value="ozw">Open Z-Wave</option>
-        <option value="zwave">Z-Wave</option>
-    </select>
-  </div>
   <div class="form-row nodeid-input">
     <label for="node-input-nodeid"><i class="icon-tag"></i>Node ID(s)</label>
     <input type="text" id="node-input-nodeid">
   </div>
-  <div class="form-row entityid-input">
-    <label for="node-input-entityid"><i class="icon-tag"></i>Entity ID(s)</label>
-    <input type="text" id="node-input-entityid">
+  <div class="form-row node-input-fields-container-row">
+    <label><i class="icon-tag"></i>Message Fields</label>
+    <ol id="node-input-fields-container"></ol>
   </div>
   <div class="form-row">
     <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
@@ -161,24 +197,28 @@
     <label for="node-input-passthrough"><i class="icon-tag"></i>Node ID Passthrough</label>
     <input type="checkbox" id="node-input-passthrough">
   </div>
+  <div class="form-row">
+    <label for="node-input-singleOutput"><i class="icon-tag"></i>Single Output</label>
+    <input type="checkbox" id="node-input-singleOutput">
+  </div>
 </script>
 
 <script type="text/x-red" data-help-name="inovelli-scene-manager">
   <p>This node will decipher button clicks on an Inovelli Red Series switch allowing for easy scene control in Home Assistant. Just connect this input of this node to the output of a Home Assistant "events: all" node</p>
   <dl class="message-properties">
-      <dt>Z-Wave Integration<span class="property-type">string</span></dt>
-      <dd>Your Z-Wave integration used in Home Assistant (zwave_js, ozw or zwave)</dd>
-
       <dt>Node ID<span class="property-type">number</span></dt>
       <dd>Node ID (or a comma-delimited list of node IDs) of the Inovelli switch you are trying to configure</dd>
 
-      <dt>Entity ID(s)<span class="property-type">string</span></dt>
-      <dd>Entity ID (or a comma-delimited list of entity IDs) to append to each message (sets msg.entity_id). Useful for controlling dedicated smart bulbs.</dd>
+      <dt>Message Fields<span class="property-type">list</span></dt>
+      <dd>Click "add" to set an arbitrary field directly on each matching message - give it a field name (e.g. <code>entity_id</code>, or anything else your downstream flow expects) and a value. Adding more than one row with the same field name combines their values into an array (e.g. two <code>entity_id</code> rows sets <code>msg.entity_id</code> to a 2-element array) instead of the last one silently overwriting the others; a name used only once stays a plain value. Useful for controlling dedicated smart bulbs from a scene trigger, or passing along any other context your flow needs. Unlike LED/Notification/Config Manager, this node doesn't call an HA action itself, so it isn't tied to Entity/Device/Area/Floor/Label targeting - it just sets whatever plain <code>msg</code> fields you configure.</dd>
 
       <dt>Switch Type<span class="property-type">number|string</span></dt>
       <dd>Determines which Inovelli switch is being used. (LZW30-SN, LZW31-SN, LZW36, LZW45)</dd>
 
       <dt>Node ID Passthrough<span class="property-type">boolean</span></dt>
       <dd>Disables specifying a node id, node will instead pass through all value/scene notifications (ideal when your Z-Wave network uses ALL of the same switch)</dd>
+
+      <dt>Single Output<span class="property-type">boolean</span></dt>
+      <dd>Instead of one wire per button/scene combination, use a single output and set <code>msg.topic</code> to the matched combination's index (the same index that would have picked a wire), plus <code>msg.button</code> and <code>msg.scene</code> with the raw matched values. Route with a <code>switch</code> node on <code>msg.topic</code> instead of wiring every output. Useful for the LZW36's 18 combinations if you don't want an 18-output node.</dd>
   </dl>
 </script>

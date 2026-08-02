@@ -1,0 +1,379 @@
+<script type="text/javascript">
+  RED.nodes.registerType("inovelli-notification-manager", {
+    category: "inovelli",
+    color: "#B68181",
+    defaults: {
+      name: { value: "" },
+      entityid: { value: "" },
+      targets: { value: [] },
+      color: { value: 0 },
+      brightness: { value: 5 },
+      duration: { value: 10 },
+      effect: { value: 4 },
+      switchtype: { value: 8 },
+      clear: { value: false },
+      multicast: { value: false },
+    },
+    inputs: 1,
+    outputs: 1,
+    outputLabels: "Connect to an Action node",
+    icon: "light.svg",
+    align: "right",
+    label: function () {
+      return this.name || "inovelli-notification-manager";
+    },
+    oneditprepare: function () {
+      InovelliTargetsEditor.init($("#node-input-targets-container"), this);
+      const onOffOptions = `<option value="0">Off</option>
+            <option value="1">Solid</option>
+            <option value="2">Fast Blink</option>
+            <option value="3">Slow Blink</option>
+            <option value="4">Pulse</option>`;
+      const dimmerOptions = `<option value="0">Off</option>
+            <option value="1">Solid</option>
+            <option value="2">Chase</option>
+            <option value="3">Fast Blink</option>
+            <option value="4">Slow Blink</option>
+            <option value="5">Pulse</option>`;
+      const lzw45Options = `<option value="0">Off</option>
+            <option value="1">Solid</option>
+            <option value="2">Chase</option>
+            <option value="3">Fast Blink</option>
+            <option value="4">Slow Blink</option>
+            <option value="5">Fast Fade</option>
+            <option value="6">Slow Fade</option>`;
+      const PIXEL_EFFECT_NAMES = [
+        "Static",
+        "Blink",
+        "Breath",
+        "Color Wipe",
+        "Color Wipe Reverse Inverse",
+        "Color Wipe Random",
+        "Random Color",
+        "Single Dynamic",
+        "Multi Dynamic",
+        "Rainbow",
+        "Rainbow Cycle",
+        "Scan",
+        "Dual Scan",
+        "Fade",
+        "Running Lights",
+        "Twinkle",
+        "Twinkle Random",
+        "Twinkle Fade",
+        "Twinkle Fade Random",
+        "Sparkle",
+        "Flash Sparkle",
+        "Hyper Sparkle",
+        "Strobe",
+        "Blink Rainbow",
+        "Chase White",
+        "Chase Color",
+        "Chase Random",
+        "Chase Rainbow",
+        "Chase Flash",
+        "Chase Flash Random",
+        "Chase Rainbow White",
+        "Chase Blackout",
+        "Chase Blackout Rainbow",
+        "Color Sweep Random",
+        "Running Color",
+        "Running Red Blue",
+        "Running Random",
+        "Larson Scanner",
+        "Comet",
+        "Fireworks",
+        "Fireworks Random",
+        "Merry Christmas",
+        "Circus Combustus",
+        "Halloween",
+        "Aurora",
+      ];
+      const pixelEffectOptions = PIXEL_EFFECT_NAMES.map(
+        (name, i) => `<option value="${i + 1}">${name}</option>`
+      ).join("");
+      function isPixelEffectMode(switchtype) {
+        return String(switchtype) === "31";
+      }
+      $("#node-input-switchtype").on("change", function () {
+        const effectInput = $("#node-input-effect");
+        const previous = effectInput.val();
+        if (isPixelEffectMode(this.value)) {
+          effectInput.html(pixelEffectOptions);
+        } else if (this.value === "8") {
+          effectInput.html(onOffOptions);
+        } else if (this.value === "21") {
+          effectInput.html(lzw45Options);
+        } else {
+          effectInput.html(dimmerOptions);
+        }
+        effectInput.val(previous || "1");
+        $("#node-input-effect-label").text(isPixelEffectMode(this.value) ? "Pixel Effect" : "Effect Type");
+        $("#node-input-brightness-label").text(
+          isPixelEffectMode(this.value) ? "Intensity" : "Brightness Level"
+        );
+        refreshFieldVisibility();
+      });
+      $("#node-input-switchtype").trigger("change");
+      const HUE_NAMES = [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Chartreuse",
+        "Green",
+        "Spring Green",
+        "Cyan",
+        "Azure",
+        "Blue",
+        "Violet",
+        "Magenta",
+        "Rose",
+      ];
+      function closestColorName(hue) {
+        if (hue >= 361) {
+          return "White";
+        }
+        return HUE_NAMES[Math.round(hue / 30) % 12];
+      }
+      function refreshColorPreview() {
+        const hue = Number($("#node-input-color").val());
+        $("#colorSwatch").css("background", hue >= 361 ? "#fff" : `hsl(${hue}, 100%, 50%)`);
+        $("#colorOutput").text(`${closestColorName(hue)} (${hue})`);
+      }
+      $("#node-input-color").on("input change", refreshColorPreview);
+      refreshColorPreview();
+      $("#node-input-brightness").on("change", function () {
+        var brightness = document.getElementById("node-input-brightness");
+        var brightnessOutput = document.getElementById("brightnessOutput");
+        brightnessOutput.innerHTML = brightness.value;
+        brightness.oninput = function () {
+          brightnessOutput.innerHTML = this.value;
+        };
+      });
+      function refreshFieldVisibility() {
+        const pixelEffect = isPixelEffectMode($("#node-input-switchtype").val());
+        const cleared = $("#node-input-clear").is(":checked");
+        $(".color-input").toggle(!pixelEffect && !cleared);
+        $(".duration-input").toggle(!pixelEffect && !cleared);
+        $(".brightness-input").toggle(!cleared);
+        $(".effect-input").toggle(!cleared);
+        $(".clear-input").toggle(!pixelEffect);
+      }
+      $("#node-input-clear").on("change", refreshFieldVisibility);
+      refreshFieldVisibility();
+    },
+    oneditsave: function () {
+      this.targets = InovelliTargetsEditor.save($("#node-input-targets-container"));
+    },
+  });
+</script>
+
+<script type="text/x-red" data-template-name="inovelli-notification-manager">
+  <style>
+    .color-picker {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 10px;
+      border-radius: 5px;
+      background: linear-gradient(to right, rgb(255,0,0), rgb(255,125,0), rgb(255,255,0), rgb(125,255,0), rgb(0,255,0), rgb(0,255,125), rgb(0,255,255), rgb(0,125,255), rgb(0,0,255), rgb(125,0,255), rgb(255,0,255), rgb(255,0,125), rgb(255,255,255));
+      outline: none;
+    }
+    .color-input input {
+      width: 100% !important;
+    }
+    .color-picker-input {
+      display: inline-block;
+      width: 70%;
+    }
+    .color-swatch {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      margin-left: 8px;
+      border-radius: 3px;
+      border: 1px solid #999;
+      vertical-align: middle;
+    }
+    .color-picker::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 5px;
+      height: 20px;
+      background: #FFFFFF;
+    }
+    .color-picker::-moz-range-thumb {
+      width: 5px;
+      height: 20px;
+      background:	#FFFFFF;
+    }
+    .brightness-picker {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 10px;
+      border-radius: 5px;
+      background: linear-gradient(to right, rgb(0,0,0), rgb(255,255,255));
+      outline: none;
+    }
+    .brightness-input input {
+      width: 100% !important;
+    }
+    .brightness-picker-input {
+      display: inline-block;
+      width: 70%;
+    }
+    .brightness-picker::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 5px;
+      height: 20px;
+      background: #FFFFFF;
+    }
+    .brightness-picker::-moz-range-thumb {
+      width: 5px;
+      height: 20px;
+      background:	#FFFFFF;
+    }
+  </style>
+  <div class="form-row">
+      <label for="node-input-name"><i class="icon-tag"></i>Name</label>
+      <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+  <div class="form-row node-input-targets-container-row">
+    <label><i class="icon-tag"></i>Targets</label>
+    <ol id="node-input-targets-container"></ol>
+  </div>
+  <div class="form-row">
+    <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
+    <select name="node-input-switchtype" id="node-input-switchtype">
+        <option value="8">On/Off (LZW30-SN)</option>
+        <option value="16">Dimmer (LZW31-SN)</option>
+        <option value="24">Light Dimmer (LZW36)</option>
+        <option value="25">Fan Dimmer (LZW36)</option>
+        <option value="49">Fan & Light (LZW36)</option>
+        <option value="21">Light Strip - Quick Effect (LZW45)</option>
+        <option value="31">Light Strip - Pixel Effect (LZW45)</option>
+    </select>
+  </div>
+  <div class="form-row color-input">
+    <label for="node-input-color"><i class="icon-tag"></i>Color</label>
+    <div class="color-picker-input">
+      <input type="range" id="node-input-color" min="0" max="361" class="color-picker">
+    </div>
+    <span id="colorSwatch" class="color-swatch"></span>
+    <output id="colorOutput"></output>
+  </div>
+  <div class="form-row brightness-input">
+    <label for="node-input-brightness"><i class="icon-tag"></i><span id="node-input-brightness-label">Brightness Level</span></label>
+    <div class="brightness-picker-input">
+      <input type="range" id="node-input-brightness" min="0" max="10" class="brightness-picker">
+    </div>
+    <output id="brightnessOutput"></output>
+  </div>
+  <div class="form-row duration-input">
+    <label for="node-input-duration"><i class="icon-tag"></i>Duration</label>
+    <select name="node-input-duration" id="node-input-duration">
+        <option value="0">Off</option>
+        <option value="1">1 Second</option>
+        <option value="2">2 Seconds</option>
+        <option value="3">3 Seconds</option>
+        <option value="4">4 Seconds</option>
+        <option value="5">5 Seconds</option>
+        <option value="6">6 Seconds</option>
+        <option value="7">7 Seconds</option>
+        <option value="8">8 Seconds</option>
+        <option value="9">9 Seconds</option>
+        <option value="10">10 Seconds</option>
+        <option value="15">15 Seconds</option>
+        <option value="30">30 Seconds</option>
+        <option value="45">45 Seconds</option>
+        <option value="60">1 Minute</option>
+        <option value="62">2 Minutes</option>
+        <option value="63">3 Minutes</option>
+        <option value="64">4 Minutes</option>
+        <option value="65">5 Minutes</option>
+        <option value="70">10 Minutes</option>
+        <option value="75">15 Minutes</option>
+        <option value="90">30 Minutes</option>
+        <option value="105">45 Minutes</option>
+        <option value="120">1 Hour</option>
+        <option value="122">2 Hours</option>
+        <option value="255">Indefinitely</option>
+    </select>
+  </div>
+  <div class="form-row effect-input">
+    <label for="node-input-effect"><i class="icon-tag"></i><span id="node-input-effect-label">Effect Type</span></label>
+    <select name="node-input-effect" id="node-input-effect">
+        <option value="0">Placeholder</option>
+        <option value="1">Placeholder</option>
+        <option value="2">Placeholder</option>
+        <option value="3">Placeholder</option>
+        <option value="4">Placeholder</option>
+        <option value="5">Placeholder</option>
+    </select>
+  </div>
+  <div class="form-row clear-input">
+    <label for="node-input-clear"><i class="icon-tag"></i>Clear Notification</label>
+    <input type="checkbox" id="node-input-clear">
+  </div>
+  <div class="form-row multicast-input">
+    <label for="node-input-multicast"><i class="icon-tag"></i>Multicast</label>
+    <input type="checkbox" id="node-input-multicast">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="inovelli-notification-manager">
+    <p>This node will help construct the value for controlling LED notifications on an Inovelli Red Series switch. The output should be connected to a Home Assistant Action node.</p>
+    <dl class="message-properties">
+        <dt>Targets<span class="property-type">list</span></dt>
+        <dd>Click "add" to add an Entity, Device, Area, Floor, or Label to send this node's Z-Wave commands to, matching the Home Assistant Action node's own Targets picker. Add as many rows of any type/combination as needed. Entity ID targets are also configurable ad-hoc via <code>msg.payload.entity_id</code> (a single ID or a comma-delimited list), which replaces any Entity targets configured here for that run only - Device/Area/Floor/Label targets are unaffected. Any configured Entity targets are also set on a top-level <code>msg.entity_id</code> (in addition to <code>msg.payload.target.entity_id</code>), for downstream Action nodes whose own Target field is configured to read directly from <code>msg.entity_id</code>.</dd>
+
+        <dt>Switch Type<span class="property-type">number|string</span></dt>
+        <dd>Determines which parameter to set. (LZW30-SN, LZW31-SN, LZW36 (fan and/or light), LZW45 Quick Effect, LZW45 Pixel Effect)</dd>
+
+        <dt>Color<span class="property-type">number|string|array</span></dt>
+        <dd>Color you want to display (accepts color names, RGB arrays, hexadeciaml and 0-360* hue values) *361=white. Not used for LZW45 Pixel Effect.</dd>
+
+        <dt>Brightness Level / Intensity<span class="property-type">number</span></dt>
+        <dd>Brightness/intensity of the LED light (0-10) for the notification. For LZW45 (both Quick Effect and Pixel Effect) this is scaled to its native 0-99 intensity range.</dd>
+
+        <dt>Duration<span class="property-type">number|string</span></dt>
+        <dd>Duration to display the notification. Not used for LZW45 Pixel Effect.</dd>
+
+        <dt>Effect<span class="property-type">number|string</span></dt>
+        <dd>Effect for the notification. Options depend on switch type: Off/Solid/Chase/Fast Blink/Slow Blink/Pulse for switches and dimmers, plus Fast Fade/Slow Fade for LZW45 Quick Effect, or one of 45 built-in animations (Rainbow, Fireworks, Aurora, etc.) for LZW45 Pixel Effect.</dd>
+
+        <dt>Clear Notification<span class="property-type">boolean</span></dt>
+        <dd>Check this box or set msg.payload.clear to true to clear the current LED notification. Not available for LZW45 Pixel Effect, which has no notification/clear concept of its own.</dd>
+
+        <dt>Multicast<span class="property-type">boolean</span></dt>
+        <dd>Check this box if your devices are set up to support multicasting</dd>
+    </dl>
+    <p>
+      It is possible to override values set on this node by passing values in a payload e.g.
+      <pre>
+  msg = {
+    payload: {
+      entity_id: "light.bedroom",
+      color: "Red",
+      duration: "10 Seconds",
+      effect: "Slow Blink",
+      brightness: 10,
+      switchtype: "combo_fan"
+    }
+  }
+
+  or, for an LZW45 Pixel Effect
+
+  msg = {
+    payload: {
+      entity_id: "light.bedroom",
+      effect: "Rainbow",
+      brightness: 5,
+      switchtype: "pixel effect"
+    }
+  }
+      </pre>
+    </p>
+</script>

@@ -1,0 +1,199 @@
+{
+	"manufacturer": "Inovelli",
+	"manufacturerId": "0x031e",
+	"label": "LZW45",
+	"description": "Red Series Light Strip",
+	"devices": [
+		{
+			"productType": "0x000a",
+			"productId": "0x0001"
+		}
+	],
+	"firmwareVersion": {
+		"min": "0.0",
+		"max": "255.255"
+	},
+	"paramInformation": [
+		{
+			"#": "21[0xff]",
+			"label": "Quick Strip Effect: Hue Color/Color Temp",
+			"valueSize": 4,
+			"minValue": 0,
+			"maxValue": 255,
+			"defaultValue": 0,
+			"unsigned": true
+		},
+		{
+			"#": "21[0x7f00]",
+			"label": "Quick Strip Effect: Intensity",
+			"valueSize": 4,
+			"minValue": 0,
+			"maxValue": 99,
+			"defaultValue": 0,
+			"unsigned": true
+		},
+		{
+			"#": "21[0x8000]",
+			"label": "Quick Strip Effect: Intensity Scale",
+			"valueSize": 4,
+			"defaultValue": 0,
+			"allowManualEntry": false,
+			"options": [
+				{
+					"label": "Coarse",
+					"value": 0
+				},
+				{
+					"label": "Fine",
+					"value": 1
+				}
+			]
+		},
+		{
+			"#": "21[0xff0000]",
+			"label": "Quick Strip Effect: Duration",
+			"description": "0 = disabled, 1 to 60 = seconds, 61 to 120 = minutes (minus 60), 121 - 254 = hours (minus 120), 255 = indefinitely",
+			"valueSize": 4,
+			"minValue": 0,
+			"maxValue": 255,
+			"defaultValue": 255,
+			"unsigned": true
+		},
+		{
+			"#": "21[0x3f000000]",
+			"label": "Quick Strip Effect: Effect Type",
+			"valueSize": 4,
+			"defaultValue": 0,
+			"allowManualEntry": false,
+			"options": [
+				{
+					"label": "Off",
+					"value": 0
+				},
+				{
+					"label": "Solid",
+					"value": 1
+				},
+				{
+					"label": "Chase",
+					"value": 2
+				},
+				{
+					"label": "Fast Blink",
+					"value": 3
+				},
+				{
+					"label": "Slow Blink",
+					"value": 4
+				},
+				{
+					"label": "Fast Fade",
+					"value": 5
+				},
+				{
+					"label": "Slow Fade",
+					"value": 6
+				}
+			]
+		},
+		{
+			"#": "21[0x40000000]",
+			"label": "Quick Strip Effect: Color Type",
+			"valueSize": 4,
+			"defaultValue": 0,
+			"allowManualEntry": false,
+			"options": [
+				{
+					"label": "Hue Wheel",
+					"value": 0
+				},
+				{
+					"label": "Color Temperature",
+					"value": 1
+				}
+			]
+		},
+		{
+			"#": "21",
+			"label": "Bulk Set Param 21",
+			"valueSize": 4,
+			"minValue": 0,
+			"maxValue": 4294967295,
+			"defaultValue": 0
+		},
+		{
+			"#": "31[0xff]",
+			"label": "Pixel Effect",
+			"description": "Pixel Effect that utilizes the individually addressable LEDs.",
+			"valueSize": 2,
+			"minValue": 1,
+			"maxValue": 45,
+			"defaultValue": 1,
+			"unsigned": true,
+			"options": [
+				{ "label": "Static", "value": 1 },
+				{ "label": "Blink", "value": 2 },
+				{ "label": "Breath", "value": 3 },
+				{ "label": "Color wipe", "value": 4 },
+				{ "label": "Color wipe reverse inverse", "value": 5 },
+				{ "label": "Color wipe random", "value": 6 },
+				{ "label": "Random color", "value": 7 },
+				{ "label": "Single dynamic", "value": 8 },
+				{ "label": "Multi dynamic", "value": 9 },
+				{ "label": "Rainbow", "value": 10 },
+				{ "label": "Rainbow cycle", "value": 11 },
+				{ "label": "Scan", "value": 12 },
+				{ "label": "Dual scan", "value": 13 },
+				{ "label": "Fade", "value": 14 },
+				{ "label": "Running lights", "value": 15 },
+				{ "label": "Twinkle", "value": 16 },
+				{ "label": "Twinkle random", "value": 17 },
+				{ "label": "Twinkle fade", "value": 18 },
+				{ "label": "Twinkle fade random", "value": 19 },
+				{ "label": "Sparkle", "value": 20 },
+				{ "label": "Flash sparkle", "value": 21 },
+				{ "label": "Hyper sparkle", "value": 22 },
+				{ "label": "Strobe", "value": 23 },
+				{ "label": "Blink rainbow", "value": 24 },
+				{ "label": "Chase white", "value": 25 },
+				{ "label": "Chase color", "value": 26 },
+				{ "label": "Chase random", "value": 27 },
+				{ "label": "Chase rainbow", "value": 28 },
+				{ "label": "Chase flash", "value": 29 },
+				{ "label": "Chase flash random", "value": 30 },
+				{ "label": "Chase rainbow white", "value": 31 },
+				{ "label": "Chase blackout", "value": 32 },
+				{ "label": "Chase blackout rainbow", "value": 33 },
+				{ "label": "Color sweep random", "value": 34 },
+				{ "label": "Running color", "value": 35 },
+				{ "label": "Running red blue", "value": 36 },
+				{ "label": "Running random", "value": 37 },
+				{ "label": "Larson scanner", "value": 38 },
+				{ "label": "Comet", "value": 39 },
+				{ "label": "Fireworks", "value": 40 },
+				{ "label": "Fireworks random", "value": 41 },
+				{ "label": "Merry christmas", "value": 42 },
+				{ "label": "Circus combustus", "value": 43 },
+				{ "label": "Halloween", "value": 44 },
+				{ "label": "Aurora", "value": 45 }
+			]
+		},
+		{
+			"#": "31[0x7f00]",
+			"label": "Pixel Effect Intensity",
+			"valueSize": 2,
+			"minValue": 0,
+			"maxValue": 99,
+			"defaultValue": 0,
+			"unsigned": true
+		},
+		{
+			"#": "31",
+			"label": "Bulk Set Param 31",
+			"valueSize": 2,
+			"minValue": 0,
+			"maxValue": 65535,
+			"defaultValue": 1
+		}
+	]
+}
