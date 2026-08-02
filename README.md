@@ -22,7 +22,7 @@ Forked from the exceptionally wonderful https://github.com/pdong/node-contrib-in
 
 This node allows you to set color, brightness, and effect type/duration for notifications on Inovelli Red Series switches. No manual calculations needed!
 
-![image](https://user-images.githubusercontent.com/43426700/114622017-0f7db200-9c73-11eb-8c48-1fd31c3b8141.png)
+<img width="480" height="687" alt="Screenshot 2026-08-02 at 03 17 05" src="https://github.com/user-attachments/assets/98077acc-6a69-470e-a809-7e397b052a48" />
 
 ## How to use
 
@@ -67,7 +67,7 @@ A checkbox to toggle the use of multicast, sending the same value to multiple no
 
 This node allows you to set the color and brightness of the LED indicator/strip (not notifications) on Inovelli Red Series switches without looking up parameter numbers manually.
 
-![image](https://user-images.githubusercontent.com/43426700/114769932-78772f80-9d30-11eb-86be-106dc2de4383.png)
+<img width="501" height="786" alt="Screenshot 2026-08-02 at 03 19 33" src="https://github.com/user-attachments/assets/fcdb6049-9483-41aa-a45c-e1b35e65d819" />
 
 ## How to use
 
@@ -96,7 +96,7 @@ A checkbox to toggle the use of multicast. Requires additional Z-Wave JS configu
 
 This node interprets scene data sent by multi-clicking a Red Series switch. Connect it to a Home Assistant `events: all` node; it automatically adds the appropriate number of outputs for triggering scenes.
 
-![image](https://user-images.githubusercontent.com/43426700/114770466-1965ea80-9d31-11eb-92f7-8fec410095c1.png)
+<img width="503" height="476" alt="Screenshot 2026-08-02 at 03 20 16" src="https://github.com/user-attachments/assets/a6cc8d41-2f26-4c91-b02e-c27b2a3e1fd3" />
 
 ## How to use
 
@@ -147,6 +147,8 @@ A few parameters are intentionally *not* unified across every model that has som
 - **Association Behavior** and **Smart Bulb Mode** aren't supported at all yet — Association Behavior packs multiple named bits into one parameter on the LZW31-SN but has no documented bit breakdown on the LZW30-SN, and Smart Bulb Mode's value meaning changes across LZW31-SN firmware versions. Both need more careful per-model handling before being added.
 - **Energy Reports** is excluded on the LZW31-SN (its units change with firmware — percentage before 1.43, 0.01 kWh from 1.43 on) and on the LZW45 (its 0-127 range doesn't match the plain 0-100% used everywhere else, a sign its units differ too).
 - **Instant On** is only unified across the LZW30-SN/LZW36, which share identical wording and direction (Enabled=0/Disabled=1). The LZW31-SN's "Button Delay" and LZW45's "Disable Physical On/Off Delay" describe the same underlying feature but in the *opposite* direction (Disabled=0/Enabled=1), so they aren't included under this property yet.
+
+<img width="503" height="786" alt="Screenshot 2026-08-02 at 03 21 24" src="https://github.com/user-attachments/assets/1d75b5fa-55ed-4712-83e9-1036b1c663e3" />
 
 ## How to use
 
