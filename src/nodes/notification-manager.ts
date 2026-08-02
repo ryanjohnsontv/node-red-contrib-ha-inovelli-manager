@@ -118,7 +118,7 @@ module.exports = function (RED: any) {
           const data = multicast
             ? { ...entityIds(entityid), property: parameter, command_class: 112, value }
             : { ...entityIds(entityid), parameter, value };
-          node.send({ payload: { domain: "zwave_js", service, data } });
+          node.send({ payload: { action: `zwave_js.${service}`, data } });
         }
 
         if (switchDef.isCombo) {

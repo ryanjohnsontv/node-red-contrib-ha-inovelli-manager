@@ -1,7 +1,6 @@
 export interface HAServiceMsg {
   payload: {
-    domain: "zwave_js";
-    service: string;
+    action: `zwave_js.${string}`;
     data: Record<string, unknown>;
   };
 }

@@ -11,7 +11,7 @@
     },
     inputs: 1,
     outputs: 1,
-    outputLabels: "Connect to a call-service node",
+    outputLabels: "Connect to an Action node",
     icon: "light.svg",
     align: "right",
     label: function () {
@@ -336,7 +336,7 @@
 </script>
 
 <script type="text/x-red" data-help-name="inovelli-led-manager">
-  <p>This node will help construct the value for controlling the LED indicator/strip on an Inovelli Red Series switch. The output should be connected to a Home Assistant call service node.</p>
+  <p>This node will help construct the value for controlling the LED indicator/strip on an Inovelli Red Series switch. The output should be connected to a Home Assistant Action node with <b>Block Input Overrides</b> disabled.</p>
   <dl class="message-properties">
       <dt>Entity ID(s)<span class="property-type">string</span></dt>
       <dd>Entity (or a comma-delimited list of entity IDs) to set the configuration parameter on. Also configurable via <code>msg.payload.entity_id</code>.</dd>

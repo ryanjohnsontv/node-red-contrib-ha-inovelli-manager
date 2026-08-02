@@ -32,7 +32,7 @@ describe("inovelli-notification-manager", () => {
       const n1 = helper.getNode("n1");
       n2.on("input", (msg: any) => {
         try {
-          assert.strictEqual(msg.payload.service, "bulk_set_partial_config_parameters");
+          assert.strictEqual(msg.payload.action, "zwave_js.bulk_set_partial_config_parameters");
           assert.strictEqual(msg.payload.data.parameter, 8);
           assert.strictEqual(msg.payload.data.value, 0 + 5 * 256 + 10 * 65536 + 4 * 16777216);
           done();

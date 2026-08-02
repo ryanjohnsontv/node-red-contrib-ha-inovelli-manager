@@ -4,7 +4,7 @@ Nodes for easily managing scenes, parameters, and notifications of Inovelli Red 
 
 If you notice any problems please open an issue or a pull request, I'll respond ASAP. Feature requests are always welcome. Thanks!
 
-These nodes should be used in conjunction with the [node-red-contrib-home-assistant-websocket](https://github.com/zachowj/node-red-contrib-home-assistant-websocket) palette, and the output should be connected to an `api-call-service` node. This node will automatically fill in the appropriate fields for that node. [Example flows are provided in this repo](https://github.com/ryanjohnsontv/node-red-contrib-ha-inovelli-manager/tree/main/examples).
+These nodes should be used in conjunction with the [node-red-contrib-home-assistant-websocket](https://github.com/zachowj/node-red-contrib-home-assistant-websocket) palette, and the output should be connected to an **Action** (`api-call-service`) node with **Block Input Overrides** disabled. This node will automatically fill in the appropriate action and data fields. [Example flows are provided in this repo](https://github.com/ryanjohnsontv/node-red-contrib-ha-inovelli-manager/tree/main/examples).
 
 ## Features
 

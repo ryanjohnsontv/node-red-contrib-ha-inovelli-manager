@@ -39,7 +39,7 @@ describe("inovelli-led-manager", () => {
             );
             assert.strictEqual(byParam[5], 0); // color param for LZW30-SN, hue 0 = red
             assert.strictEqual(byParam[6], 7); // brightness param
-            assert.strictEqual(received[0].payload.service, "set_config_parameter");
+            assert.strictEqual(received[0].payload.action, "zwave_js.set_config_parameter");
             assert.strictEqual(received[0].payload.data.entity_id, "light.test");
             done();
           } catch (err) {
@@ -104,7 +104,7 @@ describe("inovelli-led-manager", () => {
       const n1 = helper.getNode("n1");
       n2.on("input", (msg: any) => {
         try {
-          assert.strictEqual(msg.payload.service, "multicast_set_value");
+          assert.strictEqual(msg.payload.action, "zwave_js.multicast_set_value");
           assert.strictEqual(msg.payload.data.property, 6);
           assert.strictEqual(msg.payload.data.command_class, 112);
           done();

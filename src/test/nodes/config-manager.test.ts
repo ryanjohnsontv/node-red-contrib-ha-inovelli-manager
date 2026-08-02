@@ -28,7 +28,7 @@ describe("inovelli-config-manager", () => {
       const n1 = helper.getNode("n1");
       n2.on("input", (msg: any) => {
         try {
-          assert.strictEqual(msg.payload.service, "set_config_parameter");
+          assert.strictEqual(msg.payload.action, "zwave_js.set_config_parameter");
           assert.strictEqual(msg.payload.data.parameter, 3);
           assert.strictEqual(msg.payload.data.value, 600);
           assert.strictEqual(msg.payload.data.entity_id, "switch.test");
@@ -174,7 +174,7 @@ describe("inovelli-config-manager", () => {
       const n1 = helper.getNode("n1");
       n2.on("input", (msg: any) => {
         try {
-          assert.strictEqual(msg.payload.service, "multicast_set_value");
+          assert.strictEqual(msg.payload.action, "zwave_js.multicast_set_value");
           assert.strictEqual(msg.payload.data.property, 3);
           assert.strictEqual(msg.payload.data.command_class, 112);
           done();

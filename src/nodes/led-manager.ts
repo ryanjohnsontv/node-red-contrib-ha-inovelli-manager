@@ -127,8 +127,7 @@ module.exports = function (RED: any) {
           : { ...entityIds(entityid), parameter, value };
         node.send({
           payload: {
-            domain: "zwave_js",
-            service: multicast ? "multicast_set_value" : "set_config_parameter",
+            action: `zwave_js.${multicast ? "multicast_set_value" : "set_config_parameter"}`,
             data,
           },
         });
