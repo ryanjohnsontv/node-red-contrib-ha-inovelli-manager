@@ -1,17 +1,9 @@
-// Single source of truth for Inovelli Red Series switch parameter numbers,
-// effect option lists, and scene button maps. Aliases/parameter numbers here
-// match what has always been accepted so existing flow configs keep working.
-
 export type LedPropertyKey =
   "color" | "brightness" | "brightnessOff" | "fanColor" | "fanBrightness" | "fanBrightnessOff";
-
 export interface LedSwitchDef {
   aliases: (string | number)[];
   params: Partial<Record<LedPropertyKey, number>>;
 }
-
-// LZW45 (Light Strip) has no indicator parameter separate from its primary
-// light output, so it intentionally has no entry here.
 export const LED_SWITCH_TYPES: LedSwitchDef[] = [
   {
     aliases: ["switch", "lzw30", "lzw30-sn", 5],
@@ -41,11 +33,6 @@ export const LED_SWITCH_TYPES: LedSwitchDef[] = [
     },
   },
 ];
-
-// Editor <select> elements (and Node-RED's stored flow JSON) always hold
-// their value as a string, even for numeric-looking options like "5" - so a
-// numeric-looking string must resolve the same as the actual number, or
-// every switch type set via the dropdown fails to match its alias here.
 function normalizeAliasKey(input: string | number): string | number {
   if (typeof input === "string") {
     const trimmed = input.trim();
@@ -53,7 +40,6 @@ function normalizeAliasKey(input: string | number): string | number {
   }
   return input;
 }
-
 export function resolveLedSwitch(input: string | number): LedSwitchDef {
   const key = normalizeAliasKey(input);
   const found = LED_SWITCH_TYPES.find((def) => def.aliases.includes(key));
@@ -62,7 +48,6 @@ export function resolveLedSwitch(input: string | number): LedSwitchDef {
   }
   return found;
 }
-
 export const SWITCH_EFFECTS: Record<string, number> = {
   off: 0,
   solid: 1,
@@ -70,7 +55,6 @@ export const SWITCH_EFFECTS: Record<string, number> = {
   "slow blink": 3,
   pulse: 4,
 };
-
 export const DIMMER_EFFECTS: Record<string, number> = {
   off: 0,
   solid: 1,
@@ -79,7 +63,6 @@ export const DIMMER_EFFECTS: Record<string, number> = {
   "slow blink": 4,
   pulse: 5,
 };
-
 export const LZW45_EFFECTS: Record<string, number> = {
   off: 0,
   solid: 1,
@@ -89,13 +72,6 @@ export const LZW45_EFFECTS: Record<string, number> = {
   "fast fade": 5,
   "slow fade": 6,
 };
-
-// LZW45 parameter 31 "Pixel Effect" - one of 45 built-in animations that use
-// the strip's individually-addressable pixels. Unlike every other
-// notification-style parameter, this one has no color/duration/off concept
-// of its own (effect numbering starts at 1, not 0) - it's just an effect
-// number (0xff) plus an intensity (0x7f00). Values transcribed verbatim from
-// zwave-js's published device config for 0x031e/lzw45.json parameter 31.
 export const PIXEL_EFFECTS: Record<string, number> = {
   static: 1,
   blink: 2,
@@ -143,23 +119,13 @@ export const PIXEL_EFFECTS: Record<string, number> = {
   halloween: 44,
   aurora: 45,
 };
-
 export interface NotificationSwitchDef {
   aliases: (string | number)[];
   param: number;
-  /** Only true for the legacy "49" sentinel (LZW36 fan+light): fans out to params 24 and 25. */
   isCombo?: boolean;
   effects: Record<string, number>;
-  /**
-   * "bitpacked" (default): color + brightness + duration + effect all packed
-   * into one value, with a "clear" concept - every switch/dimmer/LZW36/LZW45
-   * Quick Strip Effect works this way.
-   * "pixelEffect": LZW45 parameter 31 only - just an effect number (1-45) and
-   * an intensity (0-99), no color/duration/clear.
-   */
   format?: "bitpacked" | "pixelEffect";
 }
-
 export const NOTIFICATION_SWITCH_TYPES: NotificationSwitchDef[] = [
   { aliases: ["switch", "lzw30", "lzw30-sn", "on/off", 8], param: 8, effects: SWITCH_EFFECTS },
   { aliases: ["dimmer", "lzw31", "lzw31-sn", 16], param: 16, effects: DIMMER_EFFECTS },
@@ -183,7 +149,6 @@ export const NOTIFICATION_SWITCH_TYPES: NotificationSwitchDef[] = [
     format: "pixelEffect",
   },
 ];
-
 export function resolveNotificationSwitch(input: string | number): NotificationSwitchDef {
   const key = normalizeAliasKey(input);
   const found = NOTIFICATION_SWITCH_TYPES.find((def) => def.aliases.includes(key));
@@ -192,14 +157,11 @@ export function resolveNotificationSwitch(input: string | number): NotificationS
   }
   return found;
 }
-
 export interface SceneButton {
   button: number;
   scene: number;
 }
-
 export type SceneSwitchType = "LZW30" | "LZW31" | "LZW36" | "LZW45";
-
 export const SCENE_BUTTON_MAPS: Record<SceneSwitchType, Record<number, SceneButton>> = {
   LZW30: {
     0: { button: 2, scene: 0 },

@@ -1,0 +1,236 @@
+<script type="text/javascript">
+  (function () {
+    const TARGET_TYPES = [
+      { type: "entity_id", label: "Entity", placeholder: "e.g. light.kitchen" },
+      { type: "device_id", label: "Device", placeholder: "e.g. 8932894082930482903" },
+      { type: "area_id", label: "Area", placeholder: "e.g. kitchen" },
+      { type: "floor_id", label: "Floor", placeholder: "e.g. first_floor" },
+      { type: "label_id", label: "Label", placeholder: "e.g. outdoor_lights" },
+    ];
+    function typeMeta(type) {
+      return TARGET_TYPES.find((t) => t.type === type) || TARGET_TYPES[0];
+    }
+    function byLabelThenValue(a, b) {
+      const an = (a.label || a.value).toLowerCase();
+      const bn = (b.label || b.value).toLowerCase();
+      if (an < bn) return -1;
+      if (an > bn) return 1;
+      return 0;
+    }
+    const registryCache = { entity_id: {}, device_id: {}, area_id: {}, floor_id: {}, label_id: {} };
+    function serverIdFromTopic(topic) {
+      return topic.split("/")[2];
+    }
+    RED.comms.subscribe("homeassistant/areas/#", function (topic, areas) {
+      registryCache.area_id[serverIdFromTopic(topic)] = (areas || [])
+        .map((a) => ({ value: a.area_id, label: a.name }))
+        .sort(byLabelThenValue);
+    });
+    RED.comms.subscribe("homeassistant/devices/#", function (topic, devices) {
+      registryCache.device_id[serverIdFromTopic(topic)] = (devices || []).map((d) => ({
+        value: d.id,
+        label: d.name_by_user || d.name,
+        areaId: d.area_id || null,
+      }));
+    });
+    RED.comms.subscribe("homeassistant/floors/#", function (topic, floors) {
+      registryCache.floor_id[serverIdFromTopic(topic)] = (floors || [])
+        .map((f) => ({ value: f.floor_id, label: f.name }))
+        .sort(byLabelThenValue);
+    });
+    RED.comms.subscribe("homeassistant/labels/#", function (topic, labels) {
+      registryCache.label_id[serverIdFromTopic(topic)] = (labels || [])
+        .map((l) => ({ value: l.label_id, label: l.name }))
+        .sort(byLabelThenValue);
+    });
+    RED.comms.subscribe("homeassistant/entities/#", function (topic, entities) {
+      const byId = entities || {};
+      registryCache.entity_id[serverIdFromTopic(topic)] = Object.keys(byId)
+        .map((entityId) => ({
+          value: entityId,
+          label: (byId[entityId].attributes && byId[entityId].attributes.friendly_name) || entityId,
+        }))
+        .sort(byLabelThenValue);
+    });
+    function getSoleServerId() {
+      try {
+        const servers = [];
+        RED.nodes.eachConfig((n) => {
+          if (n.type === "server") {
+            servers.push(n);
+          }
+        });
+        return servers.length === 1 ? servers[0].id : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    function suggestionsFor(type) {
+      const serverId = getSoleServerId();
+      if (!serverId) {
+        return [];
+      }
+      const raw = registryCache[type][serverId] || [];
+      if (type === "device_id") {
+        const areas = registryCache.area_id[serverId] || [];
+        return raw
+          .map((d) => {
+            const area = d.areaId ? areas.find((a) => a.value === d.areaId) : null;
+            return { value: d.value, label: area ? `${d.label} (${area.label})` : d.label };
+          })
+          .sort(byLabelThenValue);
+      }
+      return raw;
+    }
+    let $dropdown = null;
+    function getDropdown() {
+      if ($dropdown) {
+        return $dropdown;
+      }
+      $dropdown = $("<ul/>").css({
+        position: "absolute",
+        margin: 0,
+        padding: "4px 0",
+        listStyle: "none",
+        background: "#fff",
+        color: "#333",
+        fontFamily: "Arial, Helvetica, sans-serif",
+        fontSize: "13px",
+        border: "1px solid #ccc",
+        borderRadius: "4px",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+        maxHeight: "300px",
+        overflowY: "auto",
+        zIndex: 100000,
+        display: "none",
+      });
+      $("body").append($dropdown);
+      return $dropdown;
+    }
+    function hideDropdown() {
+      if ($dropdown) {
+        $dropdown.hide().empty();
+      }
+    }
+    function showSuggestions(input, suggestions, type) {
+      const term = input.val().trim().toLowerCase();
+      const matches = term
+        ? suggestions.filter(
+            (s) => s.value.toLowerCase().includes(term) || (s.label && s.label.toLowerCase().includes(term))
+          )
+        : suggestions;
+      const dropdown = getDropdown();
+      dropdown.empty();
+      if (matches.length === 0) {
+        dropdown.hide();
+        return;
+      }
+      matches.forEach((s) => {
+        const item = $("<li/>").css({ padding: "6px 10px", cursor: "pointer" }).appendTo(dropdown);
+        $("<div/>")
+          .css({ fontWeight: "bold" })
+          .text(s.label || s.value)
+          .appendTo(item);
+        if (type === "entity_id" && s.label && s.label !== s.value) {
+          $("<div/>").css({ fontSize: "0.85em", color: "#888" }).text(s.value).appendTo(item);
+        }
+        item
+          .on("mouseenter", function () {
+            item.css("background", "#f0f0f0");
+          })
+          .on("mouseleave", function () {
+            item.css("background", "");
+          })
+          .on("mousedown", function (evt) {
+            evt.preventDefault();
+            input.val(s.value).trigger("change");
+            hideDropdown();
+          });
+      });
+      const offset = input.offset();
+      dropdown.css({
+        top: offset.top + input.outerHeight() + "px",
+        left: offset.left + "px",
+        width: input.outerWidth() + "px",
+        display: "block",
+      });
+    }
+    function attachSuggestions(input, type) {
+      const el = input[0];
+      el.addEventListener("focus", function () {
+        showSuggestions(input, suggestionsFor(type), type);
+      });
+      el.addEventListener("input", function () {
+        showSuggestions(input, suggestionsFor(type), type);
+      });
+      el.addEventListener("blur", function () {
+        setTimeout(hideDropdown, 150);
+      });
+    }
+    function legacyEntityTargetsFrom(entityid) {
+      if (!entityid) {
+        return [];
+      }
+      return String(entityid)
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean)
+        .map((value) => ({ type: "entity_id", value }));
+    }
+    function createAddButton(container, type) {
+      const meta = typeMeta(type);
+      return {
+        label: meta.label,
+        icon: "fa fa-plus",
+        title: `Add ${meta.label}`,
+        click: () => {
+          container.editableList("addItem", { type });
+        },
+      };
+    }
+    function init(container, node) {
+      container.editableList({
+        addButton: false,
+        buttons: TARGET_TYPES.map((t) => createAddButton(container, t.type)),
+        addItem: (rowContainer, _index, data) => {
+          const meta = typeMeta(data.type);
+          rowContainer.css({ display: "flex", alignItems: "center" });
+          $("<span/>")
+            .css({ width: "70px", flexShrink: 0, fontWeight: "bold" })
+            .text(meta.label)
+            .appendTo(rowContainer);
+          const valueInput = $("<input/>", { type: "text", placeholder: meta.placeholder })
+            .attr("autocomplete", "off")
+            .css({ flex: "1" })
+            .val(data.value || "")
+            .appendTo(rowContainer);
+          attachSuggestions(valueInput, data.type);
+          rowContainer.data("getData", function () {
+            return { type: data.type, value: valueInput.val().trim() };
+          });
+        },
+        removable: true,
+        sortable: true,
+      });
+      const initialTargets =
+        Array.isArray(node.targets) && node.targets.length
+          ? node.targets
+          : legacyEntityTargetsFrom(node.entityid);
+      initialTargets.forEach((target) => {
+        container.editableList("addItem", target);
+      });
+    }
+    function save(container) {
+      const targets = [];
+      container.editableList("items").each(function () {
+        const data = $(this).data("getData")();
+        if (data.value) {
+          targets.push(data);
+        }
+      });
+      return targets;
+    }
+    window.InovelliTargetsEditor = { init, save };
+    RED.plugins.registerPlugin("inovelli-targets-editor", {});
+  })();
+</script>

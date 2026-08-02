@@ -5,27 +5,21 @@
     defaults: {
       name: { value: "" },
       entityid: { value: "" },
+      targets: { value: [] },
       switchtype: { value: "LZW30-SN" },
       properties: { value: [] },
       multicast: { value: false },
     },
     inputs: 1,
     outputs: 1,
-    outputLabels: "Connect to an Action node",
+    outputLabels: "Connect to a call-service node",
     icon: "light.svg",
     align: "right",
     label: function () {
       return this.name || "inovelli-config-manager";
     },
     oneditprepare: function () {
-      // Kept in sync by hand with nodes/shared/config-params.ts - a small,
-      // deliberately limited set of properties that are each a single whole
-      // Z-Wave parameter (no bitmask sub-fields, no firmware-version-
-      // dependent meaning). Label/min/max are per-switch-type because the
-      // same property can mean subtly different things on different models
-      // (e.g. the LZW36's "Auto-Off Timer" needs to say "(Light)" since it
-      // has a separate Fan one; LZW31-SN's Dimming Speed tops out at a
-      // different value than the LZW36's).
+      InovelliTargetsEditor.init($("#node-input-targets-container"), this);
       const PROPERTY_META = {
         autoOffTimer: {
           type: "duration",
@@ -152,8 +146,6 @@
           max: 100,
           bySwitchtype: { LZW36: { label: "Fan Speed After Power Restored" } },
         },
-        // Dimming Speed/Ramp Rate's max is also their "synced with the
-        // Z-Wave parameter"/"immediate" sentinel value - see each device's manual.
         dimmingSpeedZwave: {
           type: "duration",
           bySwitchtype: {
@@ -183,15 +175,14 @@
           },
         },
       };
-
-      // Merges a property's shared type/options with whatever's overridden
-      // for the given switch type (label, and min/max where they vary).
       function metaFor(property, switchtype) {
         const base = PROPERTY_META[property];
         const override = (base.bySwitchtype && base.bySwitchtype[switchtype]) || {};
-        return Object.assign({ type: base.type, min: base.min, max: base.max, options: base.options }, override);
+        return Object.assign(
+          { type: base.type, min: base.min, max: base.max, options: base.options },
+          override
+        );
       }
-
       function propertiesForSwitchType(switchtype) {
         switch (switchtype) {
           case "LZW30-SN":
@@ -243,16 +234,20 @@
               "rampRateManual",
             ];
           case "LZW45":
-            return ["autoOffTimer", "activePowerReports", "periodicPowerEnergyReports", "stateAfterPowerFailure"];
+            return [
+              "autoOffTimer",
+              "activePowerReports",
+              "periodicPowerEnergyReports",
+              "stateAfterPowerFailure",
+            ];
           default:
             return [];
         }
       }
-
       function buildValueInput(valueContainer, property, value) {
         valueContainer.empty();
         if (!property) {
-          return; // no properties left to add for this switch type
+          return;
         }
         const meta = metaFor(property, $("#node-input-switchtype").val());
         if (meta.type === "enum") {
@@ -263,8 +258,6 @@
           const defaultValue = Object.values(meta.options)[0];
           select.val(value !== undefined ? value : defaultValue);
         } else if (meta.type === "number") {
-          // step="1" since these are all integer Z-Wave config parameters;
-          // the actual enforcement happens server-side regardless.
           $("<input/>", { type: "number", min: meta.min, max: meta.max, step: 1 })
             .css({ width: "70%" })
             .val(value !== undefined ? value : meta.min)
@@ -276,9 +269,6 @@
             .appendTo(valueContainer);
         }
       }
-
-      // Every OTHER row's currently-selected property, so a given row's
-      // dropdown can exclude whatever's already spoken for.
       function usedPropertiesExcluding(excludeSelect) {
         const used = [];
         $("#node-input-properties-container")
@@ -291,7 +281,6 @@
           });
         return used;
       }
-
       function refreshPropertyOptions(select) {
         const switchtype = $("#node-input-switchtype").val();
         const allowed = propertiesForSwitchType(switchtype);
@@ -310,11 +299,6 @@
         });
         select.val(available.includes(current) ? current : available[0]);
       }
-
-      // Disables the "+add" button once every property valid for the
-      // current switch type is already in the list, instead of letting it
-      // add another row that can only show the disabled
-      // "(all properties already added)" placeholder.
       function refreshAddButtonState() {
         const switchtype = $("#node-input-switchtype").val();
         const allowed = propertiesForSwitchType(switchtype);
@@ -326,7 +310,6 @@
           .prop("disabled", !anyAvailable)
           .toggleClass("disabled", !anyAvailable);
       }
-
       function refreshAllPropertyOptions() {
         $("#node-input-properties-container")
           .editableList("items")
@@ -335,55 +318,52 @@
           });
         refreshAddButtonState();
       }
-
-      $("#node-input-properties-container").css("min-width", "450px").editableList({
-        addItem: (container, _index, data) => {
-          container.css({ overflow: "hidden", whiteSpace: "nowrap", display: "flex", alignItems: "center" });
-          const select = $("<select/>")
-            .addClass("property-select")
-            .css({ width: "45%", marginRight: "10px" })
-            .appendTo(container);
-          const valueContainer = $("<span/>").css({ display: "inline-block", width: "50%" }).appendTo(container);
-
-          refreshPropertyOptions(select);
-          if (data.property) {
-            select.val(data.property);
-          }
-          buildValueInput(valueContainer, select.val(), data.value);
-
-          select.on("change", function () {
-            buildValueInput(valueContainer, this.value, undefined);
-            refreshAllPropertyOptions();
-          });
-
-          container.data("getData", function () {
-            const property = select.val();
-            const meta = PROPERTY_META[property];
-            const rawValue = valueContainer.find("input,select").val();
-            return {
-              property,
-              value: meta && (meta.type === "enum" || meta.type === "number") ? Number(rawValue) : rawValue,
-            };
-          });
-          container.data("refreshOptions", function () {
+      $("#node-input-properties-container")
+        .css("min-width", "450px")
+        .editableList({
+          addItem: (container, _index, data) => {
+            container.css({ overflow: "hidden", whiteSpace: "nowrap", display: "flex", alignItems: "center" });
+            const select = $("<select/>")
+              .addClass("property-select")
+              .css({ width: "45%", marginRight: "10px" })
+              .appendTo(container);
+            const valueContainer = $("<span/>")
+              .css({ display: "inline-block", width: "50%" })
+              .appendTo(container);
             refreshPropertyOptions(select);
-          });
-
-          refreshAddButtonState(); // this row just claimed a property - the add button may need to disable now
-        },
-        removeItem: () => {
-          refreshAllPropertyOptions();
-        },
-        removable: true,
-        sortable: true,
-      });
-
+            if (data.property) {
+              select.val(data.property);
+            }
+            buildValueInput(valueContainer, select.val(), data.value);
+            select.on("change", function () {
+              buildValueInput(valueContainer, this.value, undefined);
+              refreshAllPropertyOptions();
+            });
+            container.data("getData", function () {
+              const property = select.val();
+              const meta = PROPERTY_META[property];
+              const rawValue = valueContainer.find("input,select").val();
+              return {
+                property,
+                value: meta && (meta.type === "enum" || meta.type === "number") ? Number(rawValue) : rawValue,
+              };
+            });
+            container.data("refreshOptions", function () {
+              refreshPropertyOptions(select);
+            });
+            refreshAddButtonState();
+          },
+          removeItem: () => {
+            refreshAllPropertyOptions();
+          },
+          removable: true,
+          sortable: true,
+        });
       const initialProperties = this.properties || [];
       initialProperties.forEach((property) => {
         $("#node-input-properties-container").editableList("addItem", property);
       });
       refreshAddButtonState();
-
       $("#node-input-switchtype").on("change", refreshAllPropertyOptions);
     },
     oneditsave: function () {
@@ -397,10 +377,17 @@
           }
         });
       this.properties = properties;
+      const targets = [];
+      $("#node-input-targets-container")
+        .editableList("items")
+        .each(function () {
+          const data = $(this).data("getData")();
+          if (data.value) {
+            targets.push(data);
+          }
+        });
+      this.targets = targets;
     },
-    // Same technique as LED Manager: measure every other row in the dialog
-    // and give the properties list whatever's left, instead of a small
-    // fixed height that scrolls internally.
     oneditresize: function (size) {
       const rows = $("#dialog-form > div:not(.node-input-properties-container-row)");
       let height = size.height;
@@ -420,9 +407,9 @@
       <label for="node-input-name"><i class="icon-tag"></i>Name</label>
       <input type="text" id="node-input-name" placeholder="Name">
   </div>
-  <div class="form-row">
-    <label for="node-input-entityid"><i class="icon-tag"></i>Entity ID(s)</label>
-    <input type="text" id="node-input-entityid">
+  <div class="form-row node-input-targets-container-row">
+    <label><i class="icon-tag"></i>Targets</label>
+    <ol id="node-input-targets-container"></ol>
   </div>
   <div class="form-row">
     <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
@@ -444,10 +431,10 @@
 </script>
 
 <script type="text/x-red" data-help-name="inovelli-config-manager">
-  <p>This node sets miscellaneous configuration parameters on an Inovelli Red Series switch that aren't LED/notification/scene related. The output should be connected to a Home Assistant Action node with <b>Block Input Overrides</b> disabled.</p>
+  <p>This node sets miscellaneous configuration parameters on an Inovelli Red Series switch that aren't LED/notification/scene related. The output should be connected to a Home Assistant call service node.</p>
   <dl class="message-properties">
-      <dt>Entity ID(s)<span class="property-type">string</span></dt>
-      <dd>Entity (or a comma-delimited list of entity IDs) to set the configuration parameter on. Also configurable via <code>msg.payload.entity_id</code>.</dd>
+      <dt>Targets<span class="property-type">list</span></dt>
+      <dd>Click "add" to add an Entity, Device, Area, Floor, or Label to send this node's Z-Wave commands to, matching the Home Assistant Action node's own Targets picker. Add as many rows of any type/combination as needed. Entity ID targets are also configurable ad-hoc via <code>msg.payload.entity_id</code> (a single ID or a comma-delimited list), which replaces any Entity targets configured here for that run only - Device/Area/Floor/Label targets are unaffected. Flows saved before this picker existed had a single "Entity ID(s)" text field; those are migrated automatically the first time this node runs, and permanently once you re-open and save it in the editor.</dd>
 
       <dt>Switch Type<span class="property-type">string</span></dt>
       <dd>Determines which parameters are available. Also configurable via <code>msg.payload.switchtype</code>.</dd>

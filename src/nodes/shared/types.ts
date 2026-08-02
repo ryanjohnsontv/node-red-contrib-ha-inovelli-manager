@@ -1,10 +1,8 @@
-export interface HAServiceMsg {
+import { Target } from "./targets";
+export interface HAActionMsg {
   payload: {
-    action: `zwave_js.${string}`;
+    action: string;
+    target?: Target;
     data: Record<string, unknown>;
   };
-}
-
-export function entityIds(input: string | undefined): { entity_id?: string } {
-  return input ? { entity_id: input } : {};
 }

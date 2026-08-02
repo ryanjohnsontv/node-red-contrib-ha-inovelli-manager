@@ -16,6 +16,23 @@ All notable changes to this project are documented here. Format loosely follows
   Switch/Change nodes). Existing flows are migrated automatically at runtime and in the editor —
   no action needed. The node logs a one-time warning the first time it falls back to migrating a
   legacy config, so you can tell which nodes haven't been re-saved in the new format yet.
+- **Output format changed** from `{domain, service, data}` to `{action, target, data}`, matching
+  node-red-contrib-home-assistant-websocket's modern **Action** node (its input format has moved
+  on from the older `api-call-service` shape — see `docs/node/action.md` in that project). If your
+  flow already uses an Action node downstream, nothing to do. If you're still on the deprecated
+  `api-call-service` node, switch to Action.
+- **"Entity ID(s)" text field replaced with a Targets picker** (Entity/Device/Area/Floor/Label) on
+  LED Manager, Notification Manager, and Config Manager — matching the Action node's own Targets
+  UI, including live autocomplete suggestions (sourced from node-red-contrib-home-assistant-
+  websocket's public comms topics, when that package is installed and configured — degrades to a
+  plain text field otherwise). Existing `entityid` values are migrated into the new Targets list
+  automatically at runtime and in the editor, with the same one-time `node.warn()` pattern as the
+  LED Manager properties migration above.
+- **Scene Manager: "Entity ID(s)" replaced with a generic Message Fields list** instead of the
+  Targets picker above — this node doesn't call an HA action, so it isn't tied to HA's
+  Entity/Device/Area/Floor/Label targeting at all. Each row is just a field name and a value,
+  set directly on the outgoing message (`msg[name] = value`), for whatever the downstream flow
+  needs. Existing `entityid` values are migrated automatically into a single `entity_id` field.
 
 ### Added
 

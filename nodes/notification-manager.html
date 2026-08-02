@@ -5,6 +5,7 @@
     defaults: {
       name: { value: "" },
       entityid: { value: "" },
+      targets: { value: [] },
       color: { value: 0 },
       brightness: { value: 5 },
       duration: { value: 10 },
@@ -15,59 +16,85 @@
     },
     inputs: 1,
     outputs: 1,
-    outputLabels: "Connect to an Action node",
+    outputLabels: "Connect to a call-service node",
     icon: "light.svg",
     align: "right",
     label: function () {
       return this.name || "inovelli-notification-manager";
     },
     oneditprepare: function () {
+      InovelliTargetsEditor.init($("#node-input-targets-container"), this);
       const onOffOptions = `<option value="0">Off</option>
-          <option value="1">Solid</option>
-          <option value="2">Fast Blink</option>
-          <option value="3">Slow Blink</option>
-          <option value="4">Pulse</option>`;
-
+            <option value="1">Solid</option>
+            <option value="2">Fast Blink</option>
+            <option value="3">Slow Blink</option>
+            <option value="4">Pulse</option>`;
       const dimmerOptions = `<option value="0">Off</option>
-          <option value="1">Solid</option>
-          <option value="2">Chase</option>
-          <option value="3">Fast Blink</option>
-          <option value="4">Slow Blink</option>
-          <option value="5">Pulse</option>`;
-
+            <option value="1">Solid</option>
+            <option value="2">Chase</option>
+            <option value="3">Fast Blink</option>
+            <option value="4">Slow Blink</option>
+            <option value="5">Pulse</option>`;
       const lzw45Options = `<option value="0">Off</option>
-          <option value="1">Solid</option>
-          <option value="2">Chase</option>
-          <option value="3">Fast Blink</option>
-          <option value="4">Slow Blink</option>
-          <option value="5">Fast Fade</option>
-          <option value="6">Slow Fade</option>`;
-
-      // LZW45 parameter 31 "Pixel Effect" - 45 built-in animations, numbered
-      // 1-45 (no "Off" - this parameter has no notification/clear concept).
-      // Kept in the same order/numbering as PIXEL_EFFECTS in
-      // nodes/shared/switches.ts (transcribed from zwave-js's device config).
+            <option value="1">Solid</option>
+            <option value="2">Chase</option>
+            <option value="3">Fast Blink</option>
+            <option value="4">Slow Blink</option>
+            <option value="5">Fast Fade</option>
+            <option value="6">Slow Fade</option>`;
       const PIXEL_EFFECT_NAMES = [
-        "Static", "Blink", "Breath", "Color Wipe", "Color Wipe Reverse Inverse",
-        "Color Wipe Random", "Random Color", "Single Dynamic", "Multi Dynamic",
-        "Rainbow", "Rainbow Cycle", "Scan", "Dual Scan", "Fade", "Running Lights",
-        "Twinkle", "Twinkle Random", "Twinkle Fade", "Twinkle Fade Random",
-        "Sparkle", "Flash Sparkle", "Hyper Sparkle", "Strobe", "Blink Rainbow",
-        "Chase White", "Chase Color", "Chase Random", "Chase Rainbow",
-        "Chase Flash", "Chase Flash Random", "Chase Rainbow White",
-        "Chase Blackout", "Chase Blackout Rainbow", "Color Sweep Random",
-        "Running Color", "Running Red Blue", "Running Random", "Larson Scanner",
-        "Comet", "Fireworks", "Fireworks Random", "Merry Christmas",
-        "Circus Combustus", "Halloween", "Aurora",
+        "Static",
+        "Blink",
+        "Breath",
+        "Color Wipe",
+        "Color Wipe Reverse Inverse",
+        "Color Wipe Random",
+        "Random Color",
+        "Single Dynamic",
+        "Multi Dynamic",
+        "Rainbow",
+        "Rainbow Cycle",
+        "Scan",
+        "Dual Scan",
+        "Fade",
+        "Running Lights",
+        "Twinkle",
+        "Twinkle Random",
+        "Twinkle Fade",
+        "Twinkle Fade Random",
+        "Sparkle",
+        "Flash Sparkle",
+        "Hyper Sparkle",
+        "Strobe",
+        "Blink Rainbow",
+        "Chase White",
+        "Chase Color",
+        "Chase Random",
+        "Chase Rainbow",
+        "Chase Flash",
+        "Chase Flash Random",
+        "Chase Rainbow White",
+        "Chase Blackout",
+        "Chase Blackout Rainbow",
+        "Color Sweep Random",
+        "Running Color",
+        "Running Red Blue",
+        "Running Random",
+        "Larson Scanner",
+        "Comet",
+        "Fireworks",
+        "Fireworks Random",
+        "Merry Christmas",
+        "Circus Combustus",
+        "Halloween",
+        "Aurora",
       ];
       const pixelEffectOptions = PIXEL_EFFECT_NAMES.map(
         (name, i) => `<option value="${i + 1}">${name}</option>`
       ).join("");
-
       function isPixelEffectMode(switchtype) {
         return String(switchtype) === "31";
       }
-
       $("#node-input-switchtype").on("change", function () {
         const effectInput = $("#node-input-effect");
         const previous = effectInput.val();
@@ -82,17 +109,25 @@
         }
         effectInput.val(previous || "1");
         $("#node-input-effect-label").text(isPixelEffectMode(this.value) ? "Pixel Effect" : "Effect Type");
-        $("#node-input-brightness-label").text(isPixelEffectMode(this.value) ? "Intensity" : "Brightness Level");
+        $("#node-input-brightness-label").text(
+          isPixelEffectMode(this.value) ? "Intensity" : "Brightness Level"
+        );
         refreshFieldVisibility();
       });
       $("#node-input-switchtype").trigger("change");
-
-      // Rough 12-band approximation of the closest named color for a 0-360
-      // hue (361 is the reserved "white" sentinel) - just a friendly label
-      // next to the slider, the raw hue is still what gets sent.
       const HUE_NAMES = [
-        "Red", "Orange", "Yellow", "Chartreuse", "Green", "Spring Green",
-        "Cyan", "Azure", "Blue", "Violet", "Magenta", "Rose",
+        "Red",
+        "Orange",
+        "Yellow",
+        "Chartreuse",
+        "Green",
+        "Spring Green",
+        "Cyan",
+        "Azure",
+        "Blue",
+        "Violet",
+        "Magenta",
+        "Rose",
       ];
       function closestColorName(hue) {
         if (hue >= 361) {
@@ -118,9 +153,6 @@
       function refreshFieldVisibility() {
         const pixelEffect = isPixelEffectMode($("#node-input-switchtype").val());
         const cleared = $("#node-input-clear").is(":checked");
-        // Pixel Effect has no color/duration/clear concept at all, so those
-        // stay hidden regardless of the Clear checkbox; otherwise Clear
-        // behaves as before, hiding everything but itself.
         $(".color-input").toggle(!pixelEffect && !cleared);
         $(".duration-input").toggle(!pixelEffect && !cleared);
         $(".brightness-input").toggle(!cleared);
@@ -129,6 +161,9 @@
       }
       $("#node-input-clear").on("change", refreshFieldVisibility);
       refreshFieldVisibility();
+    },
+    oneditsave: function () {
+      this.targets = InovelliTargetsEditor.save($("#node-input-targets-container"));
     },
   });
 </script>
@@ -205,9 +240,9 @@
       <label for="node-input-name"><i class="icon-tag"></i>Name</label>
       <input type="text" id="node-input-name" placeholder="Name">
   </div>
-  <div class="form-row">
-    <label for="node-input-entityid"><i class="icon-tag"></i>Entity ID(s)</label>
-    <input type="text" id="node-input-entityid">
+  <div class="form-row node-input-targets-container-row">
+    <label><i class="icon-tag"></i>Targets</label>
+    <ol id="node-input-targets-container"></ol>
   </div>
   <div class="form-row">
     <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
@@ -289,10 +324,10 @@
 </script>
 
 <script type="text/x-red" data-help-name="inovelli-notification-manager">
-    <p>This node will help construct the value for controlling LED notifications on an Inovelli Red Series switch. The output should be connected to a Home Assistant Action node with <b>Block Input Overrides</b> disabled.</p>
+    <p>This node will help construct the value for controlling LED notifications on an Inovelli Red Series switch. The output should be connected to a Home Assistant call service node.</p>
     <dl class="message-properties">
-        <dt>Entity ID(s)<span class="property-type">string</span></dt>
-        <dd>Entity (or a comma-delimited list of entity IDs) to set the configuration parameter on. Also configurable via <code>msg.payload.entity_id</code>.</dd>
+        <dt>Targets<span class="property-type">list</span></dt>
+        <dd>Click "add" to add an Entity, Device, Area, Floor, or Label to send this node's Z-Wave commands to, matching the Home Assistant Action node's own Targets picker. Add as many rows of any type/combination as needed. Entity ID targets are also configurable ad-hoc via <code>msg.payload.entity_id</code> (a single ID or a comma-delimited list), which replaces any Entity targets configured here for that run only - Device/Area/Floor/Label targets are unaffected. Flows saved before this picker existed had a single "Entity ID(s)" text field; those are migrated automatically the first time this node runs, and permanently once you re-open and save it in the editor.</dd>
 
         <dt>Switch Type<span class="property-type">number|string</span></dt>
         <dd>Determines which parameter to set. (LZW30-SN, LZW31-SN, LZW36 (fan and/or light), LZW45 Quick Effect, LZW45 Pixel Effect)</dd>

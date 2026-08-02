@@ -6,6 +6,7 @@
       name: { value: "" },
       nodeid: { value: "" },
       entityid: { value: "" },
+      fields: { value: [] },
       switchtype: { value: "LZW30" },
       outputs: { value: 1 },
       labels: { value: ["Please select a Switch Type"] },
@@ -25,11 +26,39 @@
     },
     oneditprepare: function () {
       $("#node-input-passthrough").change(function () {
-        if ($('#node-input-passthrough').is(":checked")) {
+        if ($("#node-input-passthrough").is(":checked")) {
           $(".nodeid-input").hide();
         } else {
           $(".nodeid-input").show();
         }
+      });
+      function legacyFieldsFrom(entityid) {
+        return entityid ? [{ name: "entity_id", value: entityid }] : [];
+      }
+      $("#node-input-fields-container")
+        .css("min-width", "450px")
+        .editableList({
+          addItem: (container, _index, data) => {
+            container.css({ display: "flex", alignItems: "center", gap: "6px" });
+            const nameInput = $("<input/>", { type: "text", placeholder: "msg field name, e.g. entity_id" })
+              .css({ flex: "1" })
+              .val(data.name || "")
+              .appendTo(container);
+            const valueInput = $("<input/>", { type: "text", placeholder: "value" })
+              .css({ flex: "1" })
+              .val(data.value || "")
+              .appendTo(container);
+            container.data("getData", function () {
+              return { name: nameInput.val().trim(), value: valueInput.val().trim() };
+            });
+          },
+          removable: true,
+          sortable: true,
+        });
+      const initialFields =
+        Array.isArray(this.fields) && this.fields.length ? this.fields : legacyFieldsFrom(this.entityid);
+      initialFields.forEach((field) => {
+        $("#node-input-fields-container").editableList("addItem", field);
       });
     },
     oneditsave: function () {
@@ -123,6 +152,16 @@
         this.outputs = label.length;
         this.labels = label;
       }
+      const fields = [];
+      $("#node-input-fields-container")
+        .editableList("items")
+        .each(function () {
+          const data = $(this).data("getData")();
+          if (data.name) {
+            fields.push(data);
+          }
+        });
+      this.fields = fields;
     },
   });
 </script>
@@ -141,9 +180,9 @@
     <label for="node-input-nodeid"><i class="icon-tag"></i>Node ID(s)</label>
     <input type="text" id="node-input-nodeid">
   </div>
-  <div class="form-row entityid-input">
-    <label for="node-input-entityid"><i class="icon-tag"></i>Entity ID(s)</label>
-    <input type="text" id="node-input-entityid">
+  <div class="form-row node-input-fields-container-row">
+    <label><i class="icon-tag"></i>Message Fields</label>
+    <ol id="node-input-fields-container"></ol>
   </div>
   <div class="form-row">
     <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
@@ -170,8 +209,8 @@
       <dt>Node ID<span class="property-type">number</span></dt>
       <dd>Node ID (or a comma-delimited list of node IDs) of the Inovelli switch you are trying to configure</dd>
 
-      <dt>Entity ID(s)<span class="property-type">string</span></dt>
-      <dd>Entity ID (or a comma-delimited list of entity IDs) to append to each message (sets msg.entity_id). Useful for controlling dedicated smart bulbs.</dd>
+      <dt>Message Fields<span class="property-type">list</span></dt>
+      <dd>Click "add" to set an arbitrary field directly on each matching message - give it a field name (e.g. <code>entity_id</code>, or anything else your downstream flow expects) and a value. Adding more than one row with the same field name combines their values into an array (e.g. two <code>entity_id</code> rows sets <code>msg.entity_id</code> to a 2-element array) instead of the last one silently overwriting the others; a name used only once stays a plain value. Useful for controlling dedicated smart bulbs from a scene trigger, or passing along any other context your flow needs. Unlike LED/Notification/Config Manager, this node doesn't call an HA action itself, so it isn't tied to Entity/Device/Area/Floor/Label targeting - it just sets whatever plain <code>msg</code> fields you configure. Flows saved before this list existed had a single "Entity ID(s)" text field that just set <code>msg.entity_id</code>; that's migrated automatically into an equivalent field the first time this node runs, and permanently once you re-open and save it in the editor.</dd>
 
       <dt>Switch Type<span class="property-type">number|string</span></dt>
       <dd>Determines which Inovelli switch is being used. (LZW30-SN, LZW31-SN, LZW36, LZW45)</dd>

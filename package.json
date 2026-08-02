@@ -28,6 +28,9 @@
       "inovelli-led-manager": "nodes/led-manager.js",
       "inovelli-scene-manager": "nodes/scene-manager.js",
       "inovelli-config-manager": "nodes/config-manager.js"
+    },
+    "plugins": {
+      "inovelli-targets-editor": "nodes/shared/targets-editor.html"
     }
   },
   "author": "Ryan Johnson",

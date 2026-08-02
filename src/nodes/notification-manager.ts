@@ -1,11 +1,11 @@
 import { parseColor, rgbToHue } from "./shared/color";
 import { parseDuration } from "./shared/duration";
-import { entityIds } from "./shared/types";
+import { buildTarget, legacyEntityTargets, resolveTargets, TargetEntry } from "./shared/targets";
 import { resolveNotificationSwitch } from "./shared/switches";
-
 interface NotificationManagerConfig {
   name: string;
   entityid: string;
+  targets?: TargetEntry[];
   color: number;
   brightness: number;
   duration: number | string;
@@ -14,12 +14,10 @@ interface NotificationManagerConfig {
   clear: boolean;
   multicast: boolean;
 }
-
 function effectName(value: number, effects: Record<string, number>): string {
   const found = Object.entries(effects).find(([, num]) => num === value);
   return found ? found[0] : String(value);
 }
-
 function resolveEffect(effect: number | string, effects: Record<string, number>): number {
   if (isNaN(effect as number)) {
     const key = String(effect).toLowerCase();
@@ -36,13 +34,19 @@ function resolveEffect(effect: number | string, effects: Record<string, number>)
   }
   return value;
 }
-
 module.exports = function (RED: any) {
   function InovelliNotificationManager(this: any, config: NotificationManagerConfig): void {
     RED.nodes.createNode(this, config);
     const node = this;
-
-    node.entityid = config.entityid;
+    const hasCurrentTargets = Array.isArray(config.targets) && config.targets.length > 0;
+    node.targets = hasCurrentTargets ? config.targets : legacyEntityTargets(config.entityid);
+    if (!hasCurrentTargets && node.targets.length > 0) {
+      node.warn(
+        `Migrated legacy entity ID config to the new "targets" list automatically ` +
+          `(${node.targets.length} target${node.targets.length === 1 ? "" : "s"}). ` +
+          `Re-open and save this node in the editor to persist the new format.`
+      );
+    }
     node.color = Number(config.color);
     node.brightness = Number(config.brightness);
     node.duration = config.duration;
@@ -50,13 +54,11 @@ module.exports = function (RED: any) {
     node.switchtype = config.switchtype;
     node.clear = config.clear;
     node.multicast = config.multicast;
-
     node.on("input", (msg: any, _send: any, done: any) => {
       const payload = msg.payload || {};
-      const entityid = payload.entity_id || node.entityid;
+      const targets = resolveTargets(node.targets, payload.entity_id);
       const clear = payload.clear !== undefined ? payload.clear : node.clear;
       const multicast = payload.multicast !== undefined ? payload.multicast : node.multicast;
-
       function fail(message: string): void {
         if (done) {
           done(message);
@@ -64,21 +66,15 @@ module.exports = function (RED: any) {
           node.error(message);
         }
       }
-
       try {
         const switchDef = resolveNotificationSwitch(payload.switchtype ?? node.switchtype);
         const service = multicast ? "multicast_set_value" : "bulk_set_partial_config_parameters";
-
         let value: number;
         if (switchDef.format === "pixelEffect") {
-          // LZW45 parameter 31 has no color/duration/clear concept - just an
-          // effect number (1-45) and an intensity (0-99).
           if (clear) {
             throw new Error("Clear Notification is not supported for Pixel Effect.");
           }
           const effect = resolveEffect(payload.effect ?? node.effect, switchDef.effects);
-          // Z-Wave config parameters are integers - round before
-          // validating/sending.
           const brightness = Math.round(Number(payload.brightness ?? node.brightness));
           if (brightness < 0 || brightness > 10) {
             throw new Error(
@@ -89,23 +85,19 @@ module.exports = function (RED: any) {
           value = effect + intensity * 256;
           node.status(`Pixel Effect: ${effectName(effect, switchDef.effects)}, Intensity: ${brightness}`);
         } else if (clear) {
-          value = 65536; // duration=1, color/brightness/effect=0 - matches every switch type's bit layout.
+          value = 65536;
           node.status("Cleared notification!");
         } else {
           const rgb = parseColor(payload.color ?? node.color, "Notification");
           const { hue, keyword } = rgbToHue(rgb);
           const duration = parseDuration(payload.duration ?? node.duration);
           const effect = resolveEffect(payload.effect ?? node.effect, switchDef.effects);
-          // Z-Wave config parameters are integers - round before
-          // validating/sending.
           const brightness = Math.round(Number(payload.brightness ?? node.brightness));
           if (brightness < 0 || brightness > 10) {
             throw new Error(
               `Invalid brightness value: ${brightness}. Please enter a value between 0 and 10.`
             );
           }
-          // LZW45's Quick Strip Effect parameter uses a native 0-99 intensity
-          // rather than the 0-10 scale every switch uses, so scale it up.
           const scaledBrightness =
             switchDef.param === 21 ? Math.min(Math.round(brightness * 10), 99) : brightness;
           value = hue + scaledBrightness * 256 + duration * 65536 + effect * 16777216;
@@ -113,21 +105,18 @@ module.exports = function (RED: any) {
             `Color: ${keyword}, Brightness: ${brightness}, Effect: ${effectName(effect, switchDef.effects)}, Duration: ${duration}`
           );
         }
-
         function sendNotification(parameter: number): void {
-          const data = multicast
-            ? { ...entityIds(entityid), property: parameter, command_class: 112, value }
-            : { ...entityIds(entityid), parameter, value };
-          node.send({ payload: { action: `zwave_js.${service}`, data } });
+          const data = multicast ? { property: parameter, command_class: 112, value } : { parameter, value };
+          node.send({
+            payload: { action: `zwave_js.${service}`, ...buildTarget(targets), data },
+          });
         }
-
         if (switchDef.isCombo) {
           sendNotification(24);
           sendNotification(25);
         } else {
           sendNotification(switchDef.param);
         }
-
         if (done) {
           done();
         }

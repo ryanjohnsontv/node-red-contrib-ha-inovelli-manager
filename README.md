@@ -4,7 +4,7 @@ Nodes for easily managing scenes, parameters, and notifications of Inovelli Red 
 
 If you notice any problems please open an issue or a pull request, I'll respond ASAP. Feature requests are always welcome. Thanks!
 
-These nodes should be used in conjunction with the [node-red-contrib-home-assistant-websocket](https://github.com/zachowj/node-red-contrib-home-assistant-websocket) palette, and the output should be connected to an **Action** (`api-call-service`) node with **Block Input Overrides** disabled. This node will automatically fill in the appropriate action and data fields. [Example flows are provided in this repo](https://github.com/ryanjohnsontv/node-red-contrib-ha-inovelli-manager/tree/main/examples).
+These nodes should be used in conjunction with the [node-red-contrib-home-assistant-websocket](https://github.com/zachowj/node-red-contrib-home-assistant-websocket) palette, and the output should be connected to an **Action** node. This node will automatically fill in the appropriate `action`/`target`/`data` fields for that node. [Example flows are provided in this repo](https://github.com/ryanjohnsontv/node-red-contrib-ha-inovelli-manager/tree/main/examples).
 
 ## Features
 
@@ -17,6 +17,11 @@ These nodes should be used in conjunction with the [node-red-contrib-home-assist
 - Easily clear notifications
 
 > **Upgrading from a pre-1.0 version?** This package now targets Z-Wave JS exclusively — OpenZWave and the legacy `zwave` integration are no longer supported (both have been gone from Home Assistant for years, and this project assumed everyone had already migrated). Existing flows keep working with no changes required: switch-type values weren't renumbered, and the LED Manager node automatically converts its old fixed color/brightness fields into the new properties list (see below) the first time it runs or the first time you reopen it in the editor.
+>
+> **Upgrading from an older 0.3.1 or earlier version?** Two more changes, both automatic and non-breaking:
+>
+> - Every node's output now sends `{action, target, data}` (the format node-red-contrib-home-assistant-websocket's modern **Action** node expects) instead of the older `{domain, service, data}`. If your flow's next node is an Action node, nothing changes for you. If you're still using the deprecated `api-call-service` node with the old field names, switch that node to Action (or point it at the same fields under the new shape).
+> - The plain "Entity ID(s)" text field on LED/Notification/Config Manager has been replaced by a **Targets** picker supporting Entity, Device, Area, Floor, and Label — matching the Action node's own Targets UI. Scene Manager also has a Targets picker now, though it works a little differently (see its section below). Existing `entityid` values are migrated into the new Targets list automatically the first time each node runs; re-open and save the node in the editor to persist the new format (a one-time `node.warn()` will remind you if this happened).
 
 # Inovelli Notification Manager
 
@@ -28,9 +33,9 @@ This node allows you to set color, brightness, and effect type/duration for noti
 
 ## How to use
 
-### Entity ID(s)
+### Targets
 
-The entity ID (or a comma-delimited list of entity IDs) to set the configuration parameter on. Can also be set in `msg.payload.entity_id`.
+Click **add** to add an Entity, Device, Area, Floor, or Label to set the configuration parameter on — the same Targets picker as the Home Assistant Action node. Add as many rows of any type/combination as needed. Entity targets are also configurable ad-hoc via `msg.payload.entity_id` (a single ID or a comma-delimited list), which replaces any Entity targets configured here for that run only — Device/Area/Floor/Label targets are unaffected. Flows saved before this picker existed had a single "Entity ID(s)" text field; those are migrated automatically (see the upgrade note above).
 
 ### Switch Type
 
@@ -73,9 +78,9 @@ This node allows you to set the color and brightness of the LED indicator/strip 
 
 ## How to use
 
-### Entity ID(s)
+### Targets
 
-The entity ID (or a comma-delimited list of entity IDs) to set the configuration parameter on. Can also be set in `msg.payload.entity_id`.
+Click **add** to add an Entity, Device, Area, Floor, or Label to set the configuration parameter on — the same Targets picker as the Home Assistant Action node. Add as many rows of any type/combination as needed. Entity targets are also configurable ad-hoc via `msg.payload.entity_id` (a single ID or a comma-delimited list), which replaces any Entity targets configured here for that run only — Device/Area/Floor/Label targets are unaffected. Flows saved before this picker existed had a single "Entity ID(s)" text field; those are migrated automatically (see the upgrade note above).
 
 ### Switch Type
 
@@ -106,9 +111,9 @@ This node interprets scene data sent by multi-clicking a Red Series switch. Conn
 
 The Node ID of the switch being used for scene control (or a comma-delimited list of Node IDs).
 
-### Entity ID(s)
+### Message Fields
 
-Entity ID (or a comma-delimited list) appended to each matching message as `msg.entity_id`. Useful for controlling dedicated smart bulbs from a scene trigger.
+Click **add** to set an arbitrary field directly on each matching message — give it a field name (e.g. `entity_id`, or anything else your downstream flow expects) and a value. Adding more than one row with the same field name combines their values into an array (e.g. two `entity_id` rows sets `msg.entity_id` to a 2-element array) instead of the last one silently overwriting the others; a name used only once stays a plain value. Useful for controlling dedicated smart bulbs from a scene trigger, or passing along any other context your flow needs. Unlike LED/Notification/Config Manager, this node doesn't call an HA action itself, so it isn't tied to Entity/Device/Area/Floor/Label targeting — it just sets whatever plain `msg` fields you configure. Flows saved before this list existed had a single "Entity ID(s)" text field that just set `msg.entity_id`; that's migrated automatically into an equivalent field (see the upgrade note above).
 
 ### Switch Type
 
@@ -152,9 +157,9 @@ A few parameters are intentionally *not* unified across every model that has som
 
 ## How to use
 
-### Entity ID(s)
+### Targets
 
-The entity ID (or a comma-delimited list of entity IDs) to set the configuration parameter on. Can also be set in `msg.payload.entity_id`.
+Click **add** to add an Entity, Device, Area, Floor, or Label to set the configuration parameter on — the same Targets picker as the Home Assistant Action node. Add as many rows of any type/combination as needed. Entity targets are also configurable ad-hoc via `msg.payload.entity_id` (a single ID or a comma-delimited list), which replaces any Entity targets configured here for that run only — Device/Area/Floor/Label targets are unaffected. Flows saved before this picker existed had a single "Entity ID(s)" text field; those are migrated automatically (see the upgrade note above).
 
 ### Switch Type
 

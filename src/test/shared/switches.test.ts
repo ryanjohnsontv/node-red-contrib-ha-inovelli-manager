@@ -5,14 +5,12 @@ import {
   SCENE_BUTTON_MAPS,
   PIXEL_EFFECTS,
 } from "../../nodes/shared/switches";
-
 describe("shared/switches", () => {
   describe("resolveLedSwitch", () => {
     it("resolves LZW30-SN by numeric or string alias", () => {
       assert.deepStrictEqual(resolveLedSwitch(5).params, { color: 5, brightness: 6, brightnessOff: 7 });
       assert.deepStrictEqual(resolveLedSwitch("lzw30-sn").params, resolveLedSwitch(5).params);
     });
-
     it("resolves LZW36 combo to both light and fan params", () => {
       const def = resolveLedSwitch(38);
       assert.deepStrictEqual(def.params, {
@@ -24,21 +22,14 @@ describe("shared/switches", () => {
         fanBrightnessOff: 23,
       });
     });
-
     it("throws on an unknown switch type", () => {
       assert.throws(() => resolveLedSwitch(999), /Incorrect Switch Type/);
     });
-
-    // Regression test: an HTML <select>'s stored value is always a string,
-    // even for a numeric-looking option like "5" - this is exactly what a
-    // real saved flow contains, not the JS number 5. If this ever breaks,
-    // every existing LED Manager node configured via the dropdown breaks too.
     it("resolves a numeric-looking string the same as the number (matches what a <select> actually stores)", () => {
       assert.deepStrictEqual(resolveLedSwitch("5").params, resolveLedSwitch(5).params);
       assert.deepStrictEqual(resolveLedSwitch("38").params, resolveLedSwitch(38).params);
     });
   });
-
   describe("resolveNotificationSwitch", () => {
     it("resolves LZW45 to parameter 21 with its own effect set", () => {
       const def = resolveNotificationSwitch("lzw45");
@@ -46,21 +37,17 @@ describe("shared/switches", () => {
       assert.strictEqual(def.effects["fast fade"], 5);
       assert.strictEqual(def.effects["slow fade"], 6);
     });
-
     it("marks the legacy 49 sentinel as a combo switch", () => {
       const def = resolveNotificationSwitch(49);
       assert.strictEqual(def.isCombo, true);
     });
-
     it("throws on an unknown switch type", () => {
       assert.throws(() => resolveNotificationSwitch("nope"), /Incorrect Switch Type/);
     });
-
     it("resolves a numeric-looking string the same as the number (matches what a <select> actually stores)", () => {
       assert.strictEqual(resolveNotificationSwitch("8").param, resolveNotificationSwitch(8).param);
       assert.strictEqual(resolveNotificationSwitch("49").isCombo, true);
     });
-
     it("resolves LZW45 Pixel Effect (parameter 31) with the pixelEffect format", () => {
       const def = resolveNotificationSwitch("pixel effect");
       assert.strictEqual(def.param, 31);
@@ -68,11 +55,6 @@ describe("shared/switches", () => {
       assert.strictEqual(resolveNotificationSwitch(31).format, "pixelEffect");
     });
   });
-
-  // Transcribed by hand from zwave-js's device config for 0x031e/lzw45.json
-  // parameter 31 - a 45-entry table is exactly the kind of place a copy
-  // error hides silently, so pin down the shape and a handful of known
-  // name->number mappings against the source data.
   describe("PIXEL_EFFECTS", () => {
     it("has exactly 45 entries numbered 1-45 with no gaps or duplicates", () => {
       const values = Object.values(PIXEL_EFFECTS).sort((a, b) => a - b);
@@ -82,7 +64,6 @@ describe("shared/switches", () => {
         Array.from({ length: 45 }, (_, i) => i + 1)
       );
     });
-
     it("matches known name/number pairs from the zwave-js source", () => {
       assert.strictEqual(PIXEL_EFFECTS["static"], 1);
       assert.strictEqual(PIXEL_EFFECTS["rainbow"], 10);
@@ -91,7 +72,6 @@ describe("shared/switches", () => {
       assert.strictEqual(PIXEL_EFFECTS["aurora"], 45);
     });
   });
-
   describe("SCENE_BUTTON_MAPS", () => {
     it("has 15 entries for LZW30/LZW31, 18 for LZW36, 15 for LZW45", () => {
       assert.strictEqual(Object.keys(SCENE_BUTTON_MAPS.LZW30).length, 15);

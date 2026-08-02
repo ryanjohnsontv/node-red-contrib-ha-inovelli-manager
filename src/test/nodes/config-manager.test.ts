@@ -1,15 +1,11 @@
 import * as assert from "assert";
 import helper = require("node-red-node-test-helper");
-
 const configManagerNode = require("../../nodes/config-manager.js");
-
 helper.init(require.resolve("node-red"));
-
 describe("inovelli-config-manager", () => {
   afterEach((done) => {
     helper.unload().then(() => done());
   });
-
   it("sets Auto-Off Timer (LZW30-SN, parameter 3) from a friendly duration string", (done) => {
     const flow = [
       {
@@ -31,7 +27,7 @@ describe("inovelli-config-manager", () => {
           assert.strictEqual(msg.payload.action, "zwave_js.set_config_parameter");
           assert.strictEqual(msg.payload.data.parameter, 3);
           assert.strictEqual(msg.payload.data.value, 600);
-          assert.strictEqual(msg.payload.data.entity_id, "switch.test");
+          assert.deepStrictEqual(msg.payload.target, { entity_id: ["switch.test"] });
           done();
         } catch (err) {
           done(err);
@@ -40,7 +36,6 @@ describe("inovelli-config-manager", () => {
       n1.receive({ payload: {} });
     });
   });
-
   it("sets Power On State (LZW30-SN, parameter 1) by name", (done) => {
     const flow = [
       {
@@ -60,7 +55,7 @@ describe("inovelli-config-manager", () => {
       n2.on("input", (msg: any) => {
         try {
           assert.strictEqual(msg.payload.data.parameter, 1);
-          assert.strictEqual(msg.payload.data.value, 1); // "on" == 1
+          assert.strictEqual(msg.payload.data.value, 1);
           done();
         } catch (err) {
           done(err);
@@ -69,7 +64,6 @@ describe("inovelli-config-manager", () => {
       n1.receive({ payload: {} });
     });
   });
-
   it("uses the LZW36 fan-specific Auto-Off Timer (parameter 11), not the light one (10)", (done) => {
     const flow = [
       {
@@ -98,7 +92,6 @@ describe("inovelli-config-manager", () => {
       n1.receive({ payload: {} });
     });
   });
-
   it("sets Local Protection (LZW36, parameter 31)", (done) => {
     const flow = [
       {
@@ -118,7 +111,7 @@ describe("inovelli-config-manager", () => {
       n2.on("input", (msg: any) => {
         try {
           assert.strictEqual(msg.payload.data.parameter, 31);
-          assert.strictEqual(msg.payload.data.value, 3); // "both" == 3
+          assert.strictEqual(msg.payload.data.value, 3);
           done();
         } catch (err) {
           done(err);
@@ -127,7 +120,6 @@ describe("inovelli-config-manager", () => {
       n1.receive({ payload: {} });
     });
   });
-
   it("rejects Power On State on a switch type that doesn't have it (LZW31-SN)", (done) => {
     const flow = [
       {
@@ -150,12 +142,11 @@ describe("inovelli-config-manager", () => {
       });
       n1.receive({ payload: { powerOnState: "on" } });
       setTimeout(() => {
-        assert.strictEqual(called, false); // silently ignored - not applicable to LZW31-SN
+        assert.strictEqual(called, false);
         done();
       }, 50);
     });
   });
-
   it("uses multicast_set_value when multicast is enabled", (done) => {
     const flow = [
       {
@@ -185,7 +176,6 @@ describe("inovelli-config-manager", () => {
       n1.receive({ payload: {} });
     });
   });
-
   it("sets a plain 'number' type property (Active Power Reports, parameter 10 on LZW30-SN)", (done) => {
     const flow = [
       {
@@ -214,7 +204,6 @@ describe("inovelli-config-manager", () => {
       n1.receive({ payload: {} });
     });
   });
-
   it("rejects a 'number' type property outside its 0-100 range", (done) => {
     const flow = [
       {
@@ -241,7 +230,6 @@ describe("inovelli-config-manager", () => {
       n1.receive({ payload: {} });
     });
   });
-
   it("uses the LZW36 fan-specific LED Strip Timeout (parameter 27), not the light one (26)", (done) => {
     const flow = [
       {
@@ -270,7 +258,6 @@ describe("inovelli-config-manager", () => {
       n1.receive({ payload: {} });
     });
   });
-
   it("sets LZW45's State After Power Failure (parameter 10, its own distinct property from Power On State)", (done) => {
     const flow = [
       {
@@ -299,7 +286,6 @@ describe("inovelli-config-manager", () => {
       n1.receive({ payload: {} });
     });
   });
-
   it("sets Instant On (LZW30-SN, parameter 51) - Enabled maps to 0", (done) => {
     const flow = [
       {
@@ -328,7 +314,6 @@ describe("inovelli-config-manager", () => {
       n1.receive({ payload: {} });
     });
   });
-
   it("uses the LZW36 fan-specific Minimum/Maximum Fan Level (parameters 7/8), not the light ones (5/6)", (done) => {
     const flow = [
       {
@@ -367,7 +352,6 @@ describe("inovelli-config-manager", () => {
       n1.receive({ payload: {} });
     });
   });
-
   it("uses LZW31-SN's Dimming Speed (Z-Wave) at parameter 1 with its own 0-100 range", (done) => {
     const flow = [
       {
@@ -396,7 +380,6 @@ describe("inovelli-config-manager", () => {
       n1.receive({ payload: {} });
     });
   });
-
   it("sets Light Brightness After Power Restored (LZW36, parameter 16)", (done) => {
     const flow = [
       {
@@ -425,10 +408,6 @@ describe("inovelli-config-manager", () => {
       n1.receive({ payload: {} });
     });
   });
-
-  // Regression test: same reasoning as LED/Notification Manager's equivalent
-  // tests - a fractional "number"-type value must round to an integer
-  // before being sent as a Z-Wave config parameter.
   it("rounds a fractional 'number' type payload override to the nearest integer", (done) => {
     const flow = [
       {
@@ -454,6 +433,73 @@ describe("inovelli-config-manager", () => {
         }
       });
       n1.receive({ payload: { activePowerReports: 25.5 } });
+    });
+  });
+  it("migrates a legacy entityid-only config to a targets list and warns once", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-config-manager",
+        entityid: "switch.a, switch.b",
+        switchtype: "LZW30-SN",
+        properties: [{ property: "autoOffTimer", value: 60 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(configManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      let warned = false;
+      n1.on("call:warn", (call: any) => {
+        if (/Migrated legacy entity ID/.test(call.args[0])) {
+          warned = true;
+        }
+      });
+      n2.on("input", (msg: any) => {
+        try {
+          assert.deepStrictEqual(msg.payload.target, { entity_id: ["switch.a", "switch.b"] });
+          assert.strictEqual(warned, true);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("sends every configured target type together and lets a payload.entity_id override replace only entity targets", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-config-manager",
+        targets: [
+          { type: "entity_id", value: "switch.configured" },
+          { type: "area_id", value: "hallway" },
+        ],
+        switchtype: "LZW30-SN",
+        properties: [{ property: "autoOffTimer", value: 60 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(configManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.deepStrictEqual(msg.payload.target, {
+            area_id: ["hallway"],
+            entity_id: ["switch.override"],
+          });
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: { entity_id: "switch.override" } });
     });
   });
 });

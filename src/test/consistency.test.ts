@@ -3,13 +3,6 @@ import * as fs from "fs";
 import * as path from "path";
 import { resolveLedSwitch, resolveNotificationSwitch, SCENE_BUTTON_MAPS } from "../nodes/shared/switches";
 import { resolveConfigSwitch } from "../nodes/shared/config-params";
-
-// Guards against exactly the failure mode this project has hit twice: an
-// editor <select> offering a value that the runtime registry doesn't
-// actually know how to resolve. Every Switch Type option a user can pick in
-// the dropdown MUST resolve cleanly - a typo or an added-but-not-wired-up
-// <option> would otherwise silently break for anyone who selects it.
-
 function switchtypeOptionValues(fileName: string): string[] {
   const html = fs.readFileSync(path.join(__dirname, "..", "nodes", fileName), "utf8");
   const selectMatch = html.match(/<select[^>]*id="node-input-switchtype"[^>]*>([\s\S]*?)<\/select>/);
@@ -20,7 +13,6 @@ function switchtypeOptionValues(fileName: string): string[] {
   assert.ok(optionMatches.length > 0, `Found no <option> values in ${fileName}'s switchtype select`);
   return optionMatches.map((m) => m[1]);
 }
-
 describe("editor <-> registry consistency", () => {
   it("every LED Manager Switch Type option resolves", () => {
     for (const value of switchtypeOptionValues("led-manager.html")) {
@@ -29,7 +21,6 @@ describe("editor <-> registry consistency", () => {
       assert.ok(Object.keys(def.params).length > 0, `resolveLedSwitch("${value}") has no params`);
     }
   });
-
   it("every Notification Manager Switch Type option resolves", () => {
     for (const value of switchtypeOptionValues("notification-manager.html")) {
       assert.doesNotThrow(
@@ -38,14 +29,12 @@ describe("editor <-> registry consistency", () => {
       );
     }
   });
-
   it("every Scene Manager Switch Type option has a button map", () => {
     for (const value of switchtypeOptionValues("scene-manager.html")) {
       const map = SCENE_BUTTON_MAPS[value as keyof typeof SCENE_BUTTON_MAPS];
       assert.ok(map && Object.keys(map).length > 0, `SCENE_BUTTON_MAPS["${value}"] is missing or empty`);
     }
   });
-
   it("every Config Manager Switch Type option resolves with at least one property", () => {
     for (const value of switchtypeOptionValues("config-manager.html")) {
       assert.doesNotThrow(() => resolveConfigSwitch(value), `resolveConfigSwitch("${value}") threw`);
