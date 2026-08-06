@@ -1,4 +1,8 @@
 <script type="text/javascript">
+  const LED_MANAGER_BLUE_SWITCHTYPES = ["VZM30-SN", "VZM31-SN", "VZM32-SN", "VZM35-SN", "VZM36"];
+  function ledManagerIsBlueSwitchType(switchtype) {
+    return LED_MANAGER_BLUE_SWITCHTYPES.includes(switchtype);
+  }
   RED.nodes.registerType("inovelli-led-manager", {
     category: "inovelli",
     color: "#B68181",
@@ -6,7 +10,9 @@
       name: { value: "" },
       entityid: { value: "" },
       targets: { value: [] },
+      friendlyNames: { value: "" },
       switchtype: { value: 5 },
+      segment: { value: 0 },
       properties: {
         value: [
           { property: "color", value: 180 },
@@ -18,7 +24,11 @@
     },
     inputs: 1,
     outputs: 1,
-    outputLabels: "Connect to an Action node",
+    outputLabels: function () {
+      return ledManagerIsBlueSwitchType(this.switchtype)
+        ? "Connect to a core 'mqtt out' node"
+        : "Connect to an Action node";
+    },
     icon: "light.svg",
     align: "right",
     label: function () {
@@ -28,13 +38,25 @@
       InovelliTargetsEditor.init($("#node-input-targets-container"), this);
       const PROPERTY_LABELS = {
         color: "Color",
+        colorOff: "Color (Off)",
         brightness: "Brightness",
         brightnessOff: "Brightness (Off)",
         fanColor: "Fan Color",
         fanBrightness: "Fan Brightness",
         fanBrightnessOff: "Fan Brightness (Off)",
       };
+      const isBlueSwitchType = ledManagerIsBlueSwitchType;
+      const BLUE_LED_SEGMENT_SWITCHTYPES = ["VZM30-SN", "VZM31-SN", "VZM32-SN", "VZM35-SN"];
+      function supportsLedSegments(switchtype) {
+        return BLUE_LED_SEGMENT_SWITCHTYPES.includes(switchtype);
+      }
       function propertiesForSwitchType(switchtype) {
+        if (switchtype === "VZM36") {
+          return ["color", "brightness"];
+        }
+        if (isBlueSwitchType(switchtype)) {
+          return ["color", "colorOff", "brightness", "brightnessOff"];
+        }
         switch (String(switchtype)) {
           case "20":
             return ["fanColor", "fanBrightness", "fanBrightnessOff"];
@@ -45,7 +67,7 @@
         }
       }
       function isColorProperty(property) {
-        return property === "color" || property === "fanColor";
+        return property === "color" || property === "colorOff" || property === "fanColor";
       }
       const HUE_NAMES = [
         "Red",
@@ -87,9 +109,17 @@
           refreshColorPreview();
           input.on("input change", refreshColorPreview);
         } else {
-          const input = $("<input/>", { type: "range", min: 0, max: 10, class: "led-mgr-brightness-picker" })
+          const isBlue = isBlueSwitchType($("#node-input-switchtype").val());
+          const maxBrightness = isBlue ? 100 : 10;
+          const defaultBrightness = isBlue ? 50 : 5;
+          const input = $("<input/>", {
+            type: "range",
+            min: 0,
+            max: maxBrightness,
+            class: "led-mgr-brightness-picker",
+          })
             .css({ width: "70%", verticalAlign: "middle" })
-            .val(value !== undefined ? value : 5)
+            .val(value !== undefined ? value : defaultBrightness)
             .appendTo(valueContainer);
           const output = $("<output/>").css({ marginLeft: "8px" }).text(input.val()).appendTo(valueContainer);
           input.on("input change", function () {
@@ -171,7 +201,13 @@
               };
             });
             container.data("refreshOptions", function () {
+              const previousProperty = select.val();
+              const previousValue = Number(valueContainer.find("input").val());
               refreshPropertyOptions(select);
+              if (select.val() === previousProperty && !isColorProperty(previousProperty)) {
+                // Rebuild so a switchtype change picks up a new brightness range (0-10 vs 0-100).
+                buildValueInput(valueContainer, select.val(), previousValue);
+              }
             });
             refreshAddButtonState();
           },
@@ -187,7 +223,18 @@
         $("#node-input-properties-container").editableList("addItem", property);
       });
       refreshAddButtonState();
-      $("#node-input-switchtype").on("change", refreshAllPropertyOptions);
+      function refreshProtocolVisibility() {
+        const protocol = $("#node-input-switchtype option:selected").data("protocol");
+        $(".zigbee-only-row").toggle(protocol === "zigbee");
+        $(".zwave-only-row").toggle(protocol !== "zigbee");
+        const switchtype = $("#node-input-switchtype").val();
+        $(".led-segment-row").toggle(protocol === "zigbee" && supportsLedSegments(switchtype));
+      }
+      $("#node-input-switchtype").on("change", function () {
+        refreshAllPropertyOptions();
+        refreshProtocolVisibility();
+      });
+      refreshProtocolVisibility();
       function legacyPropertiesFrom(node) {
         const properties = [];
         const add = (toggle, property, value, fallback) => {
@@ -293,44 +340,68 @@
       <label for="node-input-name"><i class="icon-tag"></i>Name</label>
       <input type="text" id="node-input-name" placeholder="Name">
   </div>
-  <div class="form-row node-input-targets-container-row">
+  <div class="form-row zwave-only-row node-input-targets-container-row">
     <label><i class="icon-tag"></i>Targets</label>
     <ol id="node-input-targets-container"></ol>
+  </div>
+  <div class="form-row zigbee-only-row">
+    <label for="node-input-friendlyNames"><i class="icon-tag"></i>Friendly Name(s)</label>
+    <input type="text" id="node-input-friendlyNames" placeholder="e.g. Kitchen Dimmer, Hallway Switch">
   </div>
   <div class="form-row">
     <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
     <select name="node-input-switchtype" id="node-input-switchtype">
-        <option value="5">On/Off (LZW30-SN)</option>
-        <option value="13">Dimmer (LZW31-SN)</option>
-        <option value="18">Light Dimmer (LZW36)</option>
-        <option value="20">Fan Dimmer (LZW36)</option>
-        <option value="38">Fan & Light (LZW36)</option>
+      <optgroup label="Red Series (Z-Wave)">
+        <option value="5" data-protocol="zwave">On/Off (LZW30-SN)</option>
+        <option value="13" data-protocol="zwave">Dimmer (LZW31-SN)</option>
+        <option value="18" data-protocol="zwave">Light Dimmer (LZW36)</option>
+        <option value="20" data-protocol="zwave">Fan Dimmer (LZW36)</option>
+        <option value="38" data-protocol="zwave">Fan & Light (LZW36)</option>
+      </optgroup>
+      <optgroup label="Blue Series (Zigbee)">
+        <option value="VZM30-SN" data-protocol="zigbee">On/Off (VZM30-SN)</option>
+        <option value="VZM31-SN" data-protocol="zigbee">2-in-1 Switch/Dimmer (VZM31-SN)</option>
+        <option value="VZM32-SN" data-protocol="zigbee">mmWave Dimmer (VZM32-SN)</option>
+        <option value="VZM35-SN" data-protocol="zigbee">Fan Controller (VZM35-SN)</option>
+        <option value="VZM36" data-protocol="zigbee">Fan Canopy Module (VZM36)</option>
+      </optgroup>
     </select>
+  </div>
+  <div class="form-row zigbee-only-row led-segment-row">
+    <label for="node-input-segment"><i class="icon-tag"></i>Segment</label>
+    <input type="number" id="node-input-segment" min="0" max="7" step="1" style="width:80px">
+    <span style="margin-left:8px;color:#888;">0 = Global (whole LED bar), 1-7 = an individual segment</span>
   </div>
   <div class="form-row node-input-properties-container-row">
     <label><i class="icon-tag"></i>Properties</label>
     <ol id="node-input-properties-container"></ol>
   </div>
-  <div class="form-row">
+  <div class="form-row zwave-only-row">
     <label for="node-input-multicast"><i class="icon-tag"></i>Multicast</label>
     <input type="checkbox" id="node-input-multicast" style="display:inline-block; width:auto; vertical-align:top;">
   </div>
 </script>
 
 <script type="text/x-red" data-help-name="inovelli-led-manager">
-  <p>This node will help construct the value for controlling the LED indicator/strip on an Inovelli Red Series switch. The output should be connected to a Home Assistant Action node.</p>
+  <p>This node will help construct the value for controlling the LED indicator/strip on an Inovelli switch. Red Series switches are Z-Wave, and the output should be connected to a Home Assistant Action node. Blue Series switches are Zigbee (via Zigbee2MQTT), and the output should be connected to a core <b>mqtt out</b> node instead - this node automatically emits the right shape for whichever family the selected Switch Type belongs to.</p>
   <dl class="message-properties">
       <dt>Targets<span class="property-type">list</span></dt>
-      <dd>Click "add" to add an Entity, Device, Area, Floor, or Label to send this node's Z-Wave commands to, matching the Home Assistant Action node's own Targets picker. Add as many rows of any type/combination as needed. Entity ID targets are also configurable ad-hoc via <code>msg.payload.entity_id</code> (a single ID or a comma-delimited list), which replaces any Entity targets configured here for that run only - Device/Area/Floor/Label targets are unaffected. Any configured Entity targets are also set on a top-level <code>msg.entity_id</code> (in addition to <code>msg.payload.target.entity_id</code>), for downstream Action nodes whose own Target field is configured to read directly from <code>msg.entity_id</code>.</dd>
+      <dd>Red Series only. Click "add" to add an Entity, Device, Area, Floor, or Label to send this node's Z-Wave commands to, matching the Home Assistant Action node's own Targets picker. Add as many rows of any type/combination as needed. Every target type is also configurable ad-hoc via its own payload field - <code>msg.payload.entity_id</code>, <code>msg.payload.device_id</code>, <code>msg.payload.area_id</code>, <code>msg.payload.floor_id</code>, <code>msg.payload.label_id</code> (each a single ID, a comma-delimited list, or an array) - and each independently replaces only that target type's configured rows for that run, leaving the others untouched. Any configured Entity targets are also set on a top-level <code>msg.entity_id</code> (in addition to <code>msg.payload.target.entity_id</code>), for downstream Action nodes whose own Target field is configured to read directly from <code>msg.entity_id</code>.</dd>
+
+      <dt>Friendly Name(s)<span class="property-type">string</span></dt>
+      <dd>Blue Series only. The Zigbee2MQTT friendly name(s) of the device(s) to send this node's commands to - a single name, or a comma-delimited list to send to multiple devices. Also configurable ad-hoc via <code>msg.payload.friendly_name</code>, which replaces the configured list for that run only. Each targeted device/property combination is sent as its own <code>{topic, payload}</code> message (e.g. <code>zigbee2mqtt/Kitchen Dimmer/set/ledColorWhenOn</code>), since MQTT has no equivalent to a single Home Assistant service call fanning out to multiple devices.</dd>
 
       <dt>Switch Type<span class="property-type">number|string</span></dt>
-      <dd>Determines which parameters to set. (On/Off, Dimmer, Fan/Light Dimmer). Also configurable via <code>msg.payload.switchtype</code>.</dd>
+      <dd>Determines which parameters are available, and whether this node behaves as a Red Series (Z-Wave/Action node) or Blue Series (Zigbee/MQTT) node. Also configurable via <code>msg.payload.switchtype</code>.</dd>
+
+      <dt>Segment<span class="property-type">number</span></dt>
+      <dd>Blue Series only, and only for VZM30-SN/VZM31-SN/VZM32-SN/VZM35-SN - the models with a 7-segment RGBW LED bar. Not shown for VZM36, whose single status LED has no individually-addressable segments at all. 0 (the default) sets the whole bar's global default - the same <code>ledColorWhenOn</code>/<code>ledColorWhenOff</code>/<code>ledIntensityWhenOn</code>/<code>ledIntensityWhenOff</code> properties as before. 1-7 sets that one segment's own default instead (e.g. <code>defaultLed3ColorWhenOn</code>). Also configurable via <code>msg.payload.segment</code>.</dd>
 
       <dt>Properties<span class="property-type">list</span></dt>
-      <dd>Click "add" to add a property this node should set every time it runs (Color, Brightness, Brightness When Off, and the Fan equivalents for the LZW36). Color accepts color names, RGB arrays, hexadecimal, or 0-360 hue values (361 = white). Brightness is 0-10. Remove/reorder rows the same way as the core Switch/Change nodes.</dd>
+      <dd>Click "add" to add a property this node should set every time it runs (Color, Brightness, Brightness When Off, and the Fan equivalents for the Red Series LZW36; Blue Series switches also have a <b>Color (Off)</b> property but no Fan equivalents). VZM36 (Fan Canopy Module) is the one exception on Blue Series - its single non-RGBW status LED has no "when off" concept, so only <b>Color</b> and <b>Brightness</b> are offered for it. Color accepts color names, RGB arrays, hexadecimal, or 0-360 hue values (361 = white), for both Red and Blue Series alike. Brightness is 0-10 for Red Series, but natively 0-100 for Blue Series - the slider range switches automatically based on the selected Switch Type. Remove/reorder rows the same way as the core Switch/Change nodes.</dd>
 
       <dt>Multicast<span class="property-type">boolean</span></dt>
-      <dd>Check this box if your devices are set up to support multicasting. Also configurable via <code>msg.payload.multicast</code>.</dd>
+      <dd>Red Series only. Check this box if your devices are set up to support multicasting. Also configurable via <code>msg.payload.multicast</code>.</dd>
   </dl>
   <p>
     Any property can also be sent ad-hoc via the payload even if it isn't in this node's configured list, e.g.
@@ -341,6 +412,39 @@ msg = {
     fanColor: "Red",
     fanBrightness: 10,
     switchtype: "lzw36_fan"
+  }
+}
+    </pre>
+    or, for a Blue Series switch:
+    <pre>
+msg = {
+  payload: {
+    friendly_name: "Kitchen Dimmer",
+    brightness: 75,
+    switchtype: "vzm31-sn"
+  }
+}
+    </pre>
+    or, to set an individual LED bar segment's default instead of the global default:
+    <pre>
+msg = {
+  payload: {
+    friendly_name: "Kitchen Dimmer",
+    segment: 3,
+    color: "Red",
+    brightness: 50,
+    switchtype: "vzm31-sn"
+  }
+}
+    </pre>
+    or, for a VZM36 Fan Canopy Module (single status LED, color and brightness only):
+    <pre>
+msg = {
+  payload: {
+    friendly_name: "Fan Canopy",
+    color: "Blue",
+    brightness: 50,
+    switchtype: "vzm36"
   }
 }
     </pre>

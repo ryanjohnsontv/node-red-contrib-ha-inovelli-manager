@@ -7,6 +7,7 @@ import {
   TargetEntry,
 } from "./shared/targets";
 import { resolveConfigSwitch, ConfigPropertyDef, ConfigPropertyKey } from "./shared/config-params";
+import { parseFriendlyNames, resolveFriendlyNames, buildZigbeeMsg } from "./shared/zigbee";
 interface ConfigProperty {
   property: ConfigPropertyKey;
   value: number | string;
@@ -15,11 +16,12 @@ interface ConfigManagerConfig {
   name: string;
   entityid: string;
   targets?: TargetEntry[];
+  friendlyNames?: string;
   switchtype: string;
   properties?: ConfigProperty[];
   multicast: boolean;
 }
-function resolvePropertyValue(propDef: ConfigPropertyDef, rawValue: number | string): number {
+function resolvePropertyValue(propDef: ConfigPropertyDef, rawValue: number | string): number | string {
   if (propDef.type === "duration") {
     return parseSecondsValue(rawValue, propDef.max ?? 32767);
   }
@@ -33,6 +35,16 @@ function resolvePropertyValue(propDef: ConfigPropertyDef, rawValue: number | str
       );
     }
     return value;
+  }
+  if (propDef.type === "zigbeeEnum") {
+    const enumValues = propDef.enumValues as string[];
+    const match = enumValues.find((option) => option.toLowerCase() === String(rawValue).toLowerCase());
+    if (!match) {
+      throw new Error(
+        `Incorrect value for ${propDef.label}: ${rawValue}. Valid options: ${enumValues.join(", ")}`
+      );
+    }
+    return match;
   }
   const options = propDef.options as Record<string, number>;
   if (isNaN(rawValue as number)) {
@@ -61,9 +73,11 @@ module.exports = function (RED: any) {
     node.properties = Array.isArray(config.properties) ? config.properties : [];
     const hasCurrentTargets = Array.isArray(config.targets) && config.targets.length > 0;
     node.targets = hasCurrentTargets ? config.targets : legacyEntityTargets(config.entityid);
+    node.friendlyNames = parseFriendlyNames(config.friendlyNames);
     node.on("input", (msg: any, _send: any, done: any) => {
       const payload = msg.payload || {};
-      const targets = resolveTargets(node.targets, payload.entity_id);
+      const targets = resolveTargets(node.targets, payload);
+      const friendlyNames = resolveFriendlyNames(node.friendlyNames, payload.friendly_name);
       const switchtype = payload.switchtype ?? node.switchtype;
       const multicast = payload.multicast !== undefined ? payload.multicast : node.multicast;
       function fail(message: string): void {
@@ -100,7 +114,18 @@ module.exports = function (RED: any) {
         try {
           const value = resolvePropertyValue(propDef, rawValue);
           statusParts.push(`${propDef.label}: ${value}`);
-          send(value, propDef.param);
+          if (switchDef.protocol === "zigbee") {
+            if (friendlyNames.length === 0) {
+              throw new Error(
+                "No Friendly Name(s) configured. Set Friendly Name(s) or msg.payload.friendly_name."
+              );
+            }
+            for (const friendlyName of friendlyNames) {
+              node.send(buildZigbeeMsg(friendlyName, String(propDef.param), value));
+            }
+          } else {
+            send(value as number, propDef.param as number);
+          }
         } catch (err) {
           if (statusParts.length > 0) {
             node.status(statusParts.join(", "));

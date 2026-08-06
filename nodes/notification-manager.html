@@ -1,4 +1,8 @@
 <script type="text/javascript">
+  const NOTIFICATION_MANAGER_BLUE_SWITCHTYPES = ["VZM30-SN", "VZM31-SN", "VZM32-SN", "VZM35-SN"];
+  function notificationManagerIsBlueSwitchType(switchtype) {
+    return NOTIFICATION_MANAGER_BLUE_SWITCHTYPES.includes(switchtype);
+  }
   RED.nodes.registerType("inovelli-notification-manager", {
     category: "inovelli",
     color: "#B68181",
@@ -6,17 +10,23 @@
       name: { value: "" },
       entityid: { value: "" },
       targets: { value: [] },
+      friendlyNames: { value: "" },
       color: { value: 0 },
       brightness: { value: 5 },
       duration: { value: 10 },
       effect: { value: 4 },
       switchtype: { value: 8 },
+      segment: { value: 0 },
       clear: { value: false },
       multicast: { value: false },
     },
     inputs: 1,
     outputs: 1,
-    outputLabels: "Connect to an Action node",
+    outputLabels: function () {
+      return notificationManagerIsBlueSwitchType(this.switchtype)
+        ? "Connect to a core 'mqtt out' node"
+        : "Connect to an Action node";
+    },
     icon: "light.svg",
     align: "right",
     label: function () {
@@ -95,26 +105,75 @@
       function isPixelEffectMode(switchtype) {
         return String(switchtype) === "31";
       }
+      const isBlueSwitchType = notificationManagerIsBlueSwitchType;
+      const BLUE_GLOBAL_EFFECTS = [
+        "off", "solid", "fast blink", "slow blink", "pulse", "chase", "open close", "small to big",
+        "aurora", "slow falling", "medium falling", "fast falling", "slow rising", "medium rising",
+        "fast rising", "medium blink", "slow chase", "fast chase", "fast siren", "slow siren",
+      ];
+      const BLUE_SEGMENT_EFFECTS = [
+        "off", "solid", "fast blink", "slow blink", "pulse", "chase", "falling", "rising", "aurora",
+      ];
+      function titleCase(str) {
+        return str.replace(/\b\w/g, (ch) => ch.toUpperCase());
+      }
+      function blueEffectsForSegment(segment) {
+        return Number(segment) > 0 ? BLUE_SEGMENT_EFFECTS : BLUE_GLOBAL_EFFECTS;
+      }
+      function blueEffectOptions(segment) {
+        return blueEffectsForSegment(segment)
+          .map((name) => `<option value="${name}">${titleCase(name)}</option>`)
+          .join("");
+      }
+      function refreshBrightnessRange() {
+        const isBlue = isBlueSwitchType($("#node-input-switchtype").val());
+        $("#node-input-brightness").attr("max", isBlue ? 100 : 10);
+      }
       $("#node-input-switchtype").on("change", function () {
         const effectInput = $("#node-input-effect");
         const previous = effectInput.val();
-        if (isPixelEffectMode(this.value)) {
+        if (isBlueSwitchType(this.value)) {
+          const effects = blueEffectsForSegment($("#node-input-segment").val());
+          effectInput.html(blueEffectOptions($("#node-input-segment").val()));
+          effectInput.val(effects.includes(previous) ? previous : "solid");
+        } else if (isPixelEffectMode(this.value)) {
           effectInput.html(pixelEffectOptions);
+          effectInput.val(previous || "1");
         } else if (this.value === "8") {
           effectInput.html(onOffOptions);
+          effectInput.val(previous || "1");
         } else if (this.value === "21") {
           effectInput.html(lzw45Options);
+          effectInput.val(previous || "1");
         } else {
           effectInput.html(dimmerOptions);
+          effectInput.val(previous || "1");
         }
-        effectInput.val(previous || "1");
         $("#node-input-effect-label").text(isPixelEffectMode(this.value) ? "Pixel Effect" : "Effect Type");
         $("#node-input-brightness-label").text(
           isPixelEffectMode(this.value) ? "Intensity" : "Brightness Level"
         );
+        refreshBrightnessRange();
+        refreshProtocolVisibility();
         refreshFieldVisibility();
       });
+      $("#node-input-segment").on("change input", function () {
+        if (!isBlueSwitchType($("#node-input-switchtype").val())) {
+          return;
+        }
+        const effectInput = $("#node-input-effect");
+        const previous = effectInput.val();
+        const effects = blueEffectsForSegment(this.value);
+        effectInput.html(blueEffectOptions(this.value));
+        effectInput.val(effects.includes(previous) ? previous : "solid");
+      });
       $("#node-input-switchtype").trigger("change");
+      function refreshProtocolVisibility() {
+        const protocol = $("#node-input-switchtype option:selected").data("protocol");
+        $(".zigbee-only-row").toggle(protocol === "zigbee");
+        $(".zwave-only-row").toggle(protocol !== "zigbee");
+      }
+      refreshProtocolVisibility();
       const HUE_NAMES = [
         "Red",
         "Orange",
@@ -240,21 +299,38 @@
       <label for="node-input-name"><i class="icon-tag"></i>Name</label>
       <input type="text" id="node-input-name" placeholder="Name">
   </div>
-  <div class="form-row node-input-targets-container-row">
+  <div class="form-row zwave-only-row node-input-targets-container-row">
     <label><i class="icon-tag"></i>Targets</label>
     <ol id="node-input-targets-container"></ol>
+  </div>
+  <div class="form-row zigbee-only-row">
+    <label for="node-input-friendlyNames"><i class="icon-tag"></i>Friendly Name(s)</label>
+    <input type="text" id="node-input-friendlyNames" placeholder="e.g. Kitchen Dimmer, Hallway Switch">
   </div>
   <div class="form-row">
     <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
     <select name="node-input-switchtype" id="node-input-switchtype">
-        <option value="8">On/Off (LZW30-SN)</option>
-        <option value="16">Dimmer (LZW31-SN)</option>
-        <option value="24">Light Dimmer (LZW36)</option>
-        <option value="25">Fan Dimmer (LZW36)</option>
-        <option value="49">Fan & Light (LZW36)</option>
-        <option value="21">Light Strip - Quick Effect (LZW45)</option>
-        <option value="31">Light Strip - Pixel Effect (LZW45)</option>
+      <optgroup label="Red Series (Z-Wave)">
+        <option value="8" data-protocol="zwave">On/Off (LZW30-SN)</option>
+        <option value="16" data-protocol="zwave">Dimmer (LZW31-SN)</option>
+        <option value="24" data-protocol="zwave">Light Dimmer (LZW36)</option>
+        <option value="25" data-protocol="zwave">Fan Dimmer (LZW36)</option>
+        <option value="49" data-protocol="zwave">Fan & Light (LZW36)</option>
+        <option value="21" data-protocol="zwave">Light Strip - Quick Effect (LZW45)</option>
+        <option value="31" data-protocol="zwave">Light Strip - Pixel Effect (LZW45)</option>
+      </optgroup>
+      <optgroup label="Blue Series (Zigbee)">
+        <option value="VZM30-SN" data-protocol="zigbee">On/Off (VZM30-SN)</option>
+        <option value="VZM31-SN" data-protocol="zigbee">2-in-1 Switch/Dimmer (VZM31-SN)</option>
+        <option value="VZM32-SN" data-protocol="zigbee">mmWave Dimmer (VZM32-SN)</option>
+        <option value="VZM35-SN" data-protocol="zigbee">Fan Controller (VZM35-SN)</option>
+      </optgroup>
     </select>
+  </div>
+  <div class="form-row zigbee-only-row">
+    <label for="node-input-segment"><i class="icon-tag"></i>Segment</label>
+    <input type="number" id="node-input-segment" min="0" max="7" step="1" style="width:80px">
+    <span style="margin-left:8px;color:#888;">0 = Global (whole LED bar), 1-7 = an individual segment</span>
   </div>
   <div class="form-row color-input">
     <label for="node-input-color"><i class="icon-tag"></i>Color</label>
@@ -267,7 +343,7 @@
   <div class="form-row brightness-input">
     <label for="node-input-brightness"><i class="icon-tag"></i><span id="node-input-brightness-label">Brightness Level</span></label>
     <div class="brightness-picker-input">
-      <input type="range" id="node-input-brightness" min="0" max="10" class="brightness-picker">
+      <input type="range" id="node-input-brightness" min="0" max="100" class="brightness-picker">
     </div>
     <output id="brightnessOutput"></output>
   </div>
@@ -317,38 +393,44 @@
     <label for="node-input-clear"><i class="icon-tag"></i>Clear Notification</label>
     <input type="checkbox" id="node-input-clear">
   </div>
-  <div class="form-row multicast-input">
+  <div class="form-row multicast-input zwave-only-row">
     <label for="node-input-multicast"><i class="icon-tag"></i>Multicast</label>
     <input type="checkbox" id="node-input-multicast">
   </div>
 </script>
 
 <script type="text/x-red" data-help-name="inovelli-notification-manager">
-    <p>This node will help construct the value for controlling LED notifications on an Inovelli Red Series switch. The output should be connected to a Home Assistant Action node.</p>
+    <p>This node will help construct the value for controlling LED notifications on an Inovelli switch. Red Series switches are Z-Wave, and the output should be connected to a Home Assistant Action node. Blue Series switches are Zigbee (via Zigbee2MQTT), and the output should be connected to a core <b>mqtt out</b> node instead - this node automatically emits the right shape for whichever family the selected Switch Type belongs to.</p>
     <dl class="message-properties">
         <dt>Targets<span class="property-type">list</span></dt>
-        <dd>Click "add" to add an Entity, Device, Area, Floor, or Label to send this node's Z-Wave commands to, matching the Home Assistant Action node's own Targets picker. Add as many rows of any type/combination as needed. Entity ID targets are also configurable ad-hoc via <code>msg.payload.entity_id</code> (a single ID or a comma-delimited list), which replaces any Entity targets configured here for that run only - Device/Area/Floor/Label targets are unaffected. Any configured Entity targets are also set on a top-level <code>msg.entity_id</code> (in addition to <code>msg.payload.target.entity_id</code>), for downstream Action nodes whose own Target field is configured to read directly from <code>msg.entity_id</code>.</dd>
+        <dd>Red Series only. Click "add" to add an Entity, Device, Area, Floor, or Label to send this node's Z-Wave commands to, matching the Home Assistant Action node's own Targets picker. Add as many rows of any type/combination as needed. Every target type is also configurable ad-hoc via its own payload field - <code>msg.payload.entity_id</code>, <code>msg.payload.device_id</code>, <code>msg.payload.area_id</code>, <code>msg.payload.floor_id</code>, <code>msg.payload.label_id</code> (each a single ID, a comma-delimited list, or an array) - and each independently replaces only that target type's configured rows for that run, leaving the others untouched. Any configured Entity targets are also set on a top-level <code>msg.entity_id</code> (in addition to <code>msg.payload.target.entity_id</code>), for downstream Action nodes whose own Target field is configured to read directly from <code>msg.entity_id</code>.</dd>
+
+        <dt>Friendly Name(s)<span class="property-type">string</span></dt>
+        <dd>Blue Series only. The Zigbee2MQTT friendly name(s) of the device(s) to send this node's commands to - a single name, or a comma-delimited list to send to multiple devices. Also configurable ad-hoc via <code>msg.payload.friendly_name</code>, which replaces the configured list for that run only. Each targeted device is sent as its own <code>{topic, payload}</code> message (e.g. <code>zigbee2mqtt/Kitchen Dimmer/set/led_effect</code>), since MQTT has no equivalent to a single Home Assistant service call fanning out to multiple devices.</dd>
 
         <dt>Switch Type<span class="property-type">number|string</span></dt>
-        <dd>Determines which parameter to set. (LZW30-SN, LZW31-SN, LZW36 (fan and/or light), LZW45 Quick Effect, LZW45 Pixel Effect)</dd>
+        <dd>Determines which parameter to set, and whether this node behaves as a Red Series (Z-Wave/Action node) or Blue Series (Zigbee/MQTT) node. (LZW30-SN, LZW31-SN, LZW36 (fan and/or light), LZW45 Quick Effect, LZW45 Pixel Effect, or VZM30-SN/VZM31-SN/VZM32-SN/VZM35-SN for Blue Series). Also configurable via <code>msg.payload.switchtype</code>.</dd>
+
+        <dt>Segment<span class="property-type">number</span></dt>
+        <dd>Blue Series only. Which of the LED bar's 7 individually-addressable segments to target: 0 (the default) addresses the whole bar (the <code>led_effect</code> MQTT property), 1-7 addresses that one segment (the <code>individual_led_effect</code> property, with a smaller effect vocabulary). Also configurable via <code>msg.payload.segment</code>.</dd>
 
         <dt>Color<span class="property-type">number|string|array</span></dt>
-        <dd>Color you want to display (accepts color names, RGB arrays, hexadeciaml and 0-360* hue values) *361=white. Not used for LZW45 Pixel Effect.</dd>
+        <dd>Color you want to display (accepts color names, RGB arrays, hexadeciaml and 0-360* hue values) *361=white. Not used for LZW45 Pixel Effect. For Blue Series this is sent as the 0-255 hue-scale <code>color</code> property (255 = white).</dd>
 
         <dt>Brightness Level / Intensity<span class="property-type">number</span></dt>
-        <dd>Brightness/intensity of the LED light (0-10) for the notification. For LZW45 (both Quick Effect and Pixel Effect) this is scaled to its native 0-99 intensity range.</dd>
+        <dd>Brightness/intensity of the LED light for the notification. 0-10 for Red Series (LZW45, both Quick Effect and Pixel Effect, scales this to its native 0-99 intensity range). For Blue Series this is 0-100, sent directly as the native <code>level</code> property.</dd>
 
         <dt>Duration<span class="property-type">number|string</span></dt>
-        <dd>Duration to display the notification. Not used for LZW45 Pixel Effect.</dd>
+        <dd>Duration to display the notification. Not used for LZW45 Pixel Effect. Same 0-255 encoding (seconds/minutes/hours/indefinitely) for Blue Series, sent as the <code>duration</code> property.</dd>
 
         <dt>Effect<span class="property-type">number|string</span></dt>
-        <dd>Effect for the notification. Options depend on switch type: Off/Solid/Chase/Fast Blink/Slow Blink/Pulse for switches and dimmers, plus Fast Fade/Slow Fade for LZW45 Quick Effect, or one of 45 built-in animations (Rainbow, Fireworks, Aurora, etc.) for LZW45 Pixel Effect.</dd>
+        <dd>Effect for the notification. Options depend on switch type: Off/Solid/Chase/Fast Blink/Slow Blink/Pulse for Red Series switches and dimmers, plus Fast Fade/Slow Fade for LZW45 Quick Effect, or one of 45 built-in animations (Rainbow, Fireworks, Aurora, etc.) for LZW45 Pixel Effect. For Blue Series, options depend on the Segment field: 20 global effects (Open/Close, Small to Big, Aurora, Falling/Rising variants, etc.) for the whole bar (Segment 0), or 9 for an individual segment (Segment 1-7).</dd>
 
         <dt>Clear Notification<span class="property-type">boolean</span></dt>
-        <dd>Check this box or set msg.payload.clear to true to clear the current LED notification. Not available for LZW45 Pixel Effect, which has no notification/clear concept of its own.</dd>
+        <dd>Check this box or set msg.payload.clear to true to clear the current LED notification. Not available for LZW45 Pixel Effect, which has no notification/clear concept of its own. For Blue Series this sends the <code>clear_effect</code> effect (valid for both global and per-segment notifications) and works for every Blue Series switch type.</dd>
 
         <dt>Multicast<span class="property-type">boolean</span></dt>
-        <dd>Check this box if your devices are set up to support multicasting</dd>
+        <dd>Red Series only. Check this box if your devices are set up to support multicasting. Also configurable via <code>msg.payload.multicast</code>.</dd>
     </dl>
     <p>
       It is possible to override values set on this node by passing values in a payload e.g.
@@ -372,6 +454,31 @@
       effect: "Rainbow",
       brightness: 5,
       switchtype: "pixel effect"
+    }
+  }
+
+  or, for a Blue Series switch (global LED bar notification)
+
+  msg = {
+    payload: {
+      friendly_name: "Kitchen Dimmer",
+      color: "Red",
+      duration: "10 seconds",
+      effect: "fast blink",
+      brightness: 75,
+      switchtype: "vzm31-sn"
+    }
+  }
+
+  or, targeting an individual segment
+
+  msg = {
+    payload: {
+      friendly_name: "Kitchen Dimmer",
+      segment: 3,
+      effect: "falling",
+      brightness: 50,
+      switchtype: "vzm31-sn"
     }
   }
       </pre>

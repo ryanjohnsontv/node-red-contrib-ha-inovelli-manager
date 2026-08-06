@@ -1,3 +1,5 @@
+import { Protocol } from "./protocol";
+import { BLUE_CONFIG_SWITCH_TYPES } from "./blue-config-params";
 export type ConfigPropertyKey =
   | "autoOffTimer"
   | "autoOffFanTimer"
@@ -21,18 +23,132 @@ export type ConfigPropertyKey =
   | "dimmingSpeedZwave"
   | "dimmingSpeedManual"
   | "rampRateZwave"
-  | "rampRateManual";
-export type ConfigValueType = "duration" | "number" | "enum";
+  | "rampRateManual"
+  | "dimmingSpeedUpRemote"
+  | "dimmingSpeedUpLocal"
+  | "rampRateOffToOnRemote"
+  | "rampRateOffToOnLocal"
+  | "dimmingSpeedDownRemote"
+  | "dimmingSpeedDownLocal"
+  | "rampRateOnToOffRemote"
+  | "rampRateOnToOffLocal"
+  | "minimumLevel"
+  | "maximumLevel"
+  | "defaultLevelLocal"
+  | "defaultLevelRemote"
+  | "levelAfterPowerRestored"
+  | "loadLevelIndicatorTimeout"
+  | "switchType"
+  | "higherOutputInNonNeutral"
+  | "buttonPressDelay"
+  | "smartBulbMode"
+  | "enable2xTapUp"
+  | "enable2xTapDown"
+  | "brightnessLevelForDoubleTapUp"
+  | "brightnessLevelForDoubleTapDown"
+  | "ledBarScaling"
+  | "ledColorWhenOn"
+  | "ledColorWhenOff"
+  | "ledIntensityWhenOn"
+  | "ledIntensityWhenOff"
+  | "defaultLed1ColorWhenOn"
+  | "defaultLed1ColorWhenOff"
+  | "defaultLed1IntensityWhenOn"
+  | "defaultLed1IntensityWhenOff"
+  | "defaultLed2ColorWhenOn"
+  | "defaultLed2ColorWhenOff"
+  | "defaultLed2IntensityWhenOn"
+  | "defaultLed2IntensityWhenOff"
+  | "defaultLed3ColorWhenOn"
+  | "defaultLed3ColorWhenOff"
+  | "defaultLed3IntensityWhenOn"
+  | "defaultLed3IntensityWhenOff"
+  | "defaultLed4ColorWhenOn"
+  | "defaultLed4ColorWhenOff"
+  | "defaultLed4IntensityWhenOn"
+  | "defaultLed4IntensityWhenOff"
+  | "defaultLed5ColorWhenOn"
+  | "defaultLed5ColorWhenOff"
+  | "defaultLed5IntensityWhenOn"
+  | "defaultLed5IntensityWhenOff"
+  | "defaultLed6ColorWhenOn"
+  | "defaultLed6ColorWhenOff"
+  | "defaultLed6IntensityWhenOn"
+  | "defaultLed6IntensityWhenOff"
+  | "defaultLed7ColorWhenOn"
+  | "defaultLed7ColorWhenOff"
+  | "defaultLed7IntensityWhenOn"
+  | "defaultLed7IntensityWhenOff"
+  | "singleTapBehavior"
+  | "auxSwitchUniqueScenes"
+  | "bindingOffToOnSyncLevel"
+  | "fanControlMode"
+  | "lowLevelForFanControlMode"
+  | "mediumLevelForFanControlMode"
+  | "highLevelForFanControlMode"
+  | "ledColorForFanControlMode"
+  | "outputMode"
+  | "oneLedMode"
+  | "localProtectionChildLock"
+  | "firmwareUpdateInProgressIndicator"
+  | "relayClick"
+  | "doubleTapClearNotifications"
+  | "mmWaveHeightMin"
+  | "mmWaveHeightMax"
+  | "mmWaveWidthMin"
+  | "mmWaveWidthMax"
+  | "mmWaveDepthMin"
+  | "mmWaveDepthMax"
+  | "mmwaveControlWiredDevice"
+  | "mmWaveDetectSensitivity"
+  | "mmWaveDetectTrigger"
+  | "mmWaveHoldTime"
+  | "mmWaveStayLife"
+  | "mmWaveTargetInfoReport"
+  | "mmWaveRoomSizePreset"
+  | "otaImageType"
+  | "dimmingSpeedUpRemoteLight"
+  | "rampRateOffToOnRemoteLight"
+  | "dimmingSpeedDownRemoteLight"
+  | "rampRateOnToOffRemoteLight"
+  | "minimumLevelLight"
+  | "maximumLevelLight"
+  | "autoTimerOffLight"
+  | "defaultLevelRemoteLight"
+  | "stateAfterPowerRestoredLight"
+  | "higherOutputInNonNeutralLight"
+  | "dimmingModeLight"
+  | "quickStartTimeLight"
+  | "quickStartLevelLight"
+  | "smartBulbModeLight"
+  | "ledColorWhenOnLight"
+  | "ledIntensityWhenOnLight"
+  | "outputModeLight"
+  | "dimmingSpeedUpRemoteFan"
+  | "rampRateOffToOnRemoteFan"
+  | "dimmingSpeedDownRemoteFan"
+  | "rampRateOnToOffRemoteFan"
+  | "minimumLevelFan"
+  | "maximumLevelFan"
+  | "autoTimerOffFan"
+  | "defaultLevelRemoteFan"
+  | "stateAfterPowerRestoredFan"
+  | "quickStartTimeFan"
+  | "smartBulbModeFan"
+  | "outputModeFan";
+export type ConfigValueType = "duration" | "number" | "enum" | "zigbeeEnum";
 export interface ConfigPropertyDef {
   label: string;
-  param: number;
+  param: number | string;
   type: ConfigValueType;
   min?: number;
   max?: number;
   options?: Record<string, number>;
+  enumValues?: string[];
 }
 export interface ConfigSwitchDef {
   aliases: string[];
+  protocol: Protocol;
   properties: Partial<Record<ConfigPropertyKey, ConfigPropertyDef>>;
 }
 export const POWER_ON_STATE_OPTIONS: Record<string, number> = {
@@ -66,6 +182,7 @@ export const STATE_AFTER_POWER_FAILURE_OPTIONS: Record<string, number> = {
 export const CONFIG_SWITCH_TYPES: ConfigSwitchDef[] = [
   {
     aliases: ["lzw30-sn", "lzw30", "switch", "on/off"],
+    protocol: "zwave",
     properties: {
       autoOffTimer: { label: "Auto-Off Timer", param: 3, type: "duration", max: 32767 },
       powerOnState: { label: "Power On State", param: 1, type: "enum", options: POWER_ON_STATE_OPTIONS },
@@ -85,6 +202,7 @@ export const CONFIG_SWITCH_TYPES: ConfigSwitchDef[] = [
   },
   {
     aliases: ["lzw31-sn", "lzw31", "dimmer"],
+    protocol: "zwave",
     properties: {
       autoOffTimer: { label: "Auto-Off Timer", param: 8, type: "duration", max: 32767 },
       invertSwitch: { label: "Invert Switch", param: 7, type: "enum", options: ENABLE_DISABLE_OPTIONS },
@@ -112,6 +230,7 @@ export const CONFIG_SWITCH_TYPES: ConfigSwitchDef[] = [
   },
   {
     aliases: ["lzw36"],
+    protocol: "zwave",
     properties: {
       autoOffTimer: { label: "Auto-Off Timer (Light)", param: 10, type: "duration", max: 32767 },
       autoOffFanTimer: { label: "Auto-Off Timer (Fan)", param: 11, type: "duration", max: 32767 },
@@ -158,6 +277,7 @@ export const CONFIG_SWITCH_TYPES: ConfigSwitchDef[] = [
   },
   {
     aliases: ["lzw45", "light strip", "lightstrip"],
+    protocol: "zwave",
     properties: {
       autoOffTimer: { label: "Auto-Off Timer", param: 6, type: "duration", max: 32767 },
       activePowerReports: { label: "Active Power Reports (%)", param: 17, type: "number", min: 0, max: 100 },
@@ -175,6 +295,7 @@ export const CONFIG_SWITCH_TYPES: ConfigSwitchDef[] = [
       },
     },
   },
+  ...BLUE_CONFIG_SWITCH_TYPES,
 ];
 export function resolveConfigSwitch(input: string): ConfigSwitchDef {
   const key = String(input).toLowerCase();

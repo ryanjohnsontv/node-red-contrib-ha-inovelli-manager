@@ -1,0 +1,166 @@
+[
+    {
+        "id": "cfe8e8927c4c75b0",
+        "type": "tab",
+        "label": "Blue Series - Notification Manager",
+        "disabled": false,
+        "info": "Example: a global (whole LED bar) notification effect and a per-segment notification effect on a VZM31-SN, both published over Zigbee2MQTT.\n\nUpdate the mqtt-broker config node with your own Zigbee2MQTT-connected broker's address, and update Friendly Name(s) on both Notification Manager nodes to match a real device in your Zigbee2MQTT installation."
+    },
+    {
+        "id": "86c645a3843c1ccc",
+        "type": "inject",
+        "z": "cfe8e8927c4c75b0",
+        "name": "Trigger Global Effect",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 260,
+        "y": 160,
+        "wires": [
+            [
+                "c3e3729bf5f951eb"
+            ]
+        ]
+    },
+    {
+        "id": "1639c9e12aaa37ea",
+        "type": "inject",
+        "z": "cfe8e8927c4c75b0",
+        "name": "Trigger Segment Effect",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 260,
+        "y": 280,
+        "wires": [
+            [
+                "497f8d906cbdff10"
+            ]
+        ]
+    },
+    {
+        "id": "c3e3729bf5f951eb",
+        "type": "inovelli-notification-manager",
+        "z": "cfe8e8927c4c75b0",
+        "name": "Global Effect (Whole LED Bar)",
+        "entityid": "",
+        "targets": [],
+        "friendlyNames": "Kitchen Dimmer",
+        "color": 120,
+        "brightness": 100,
+        "duration": 10,
+        "effect": "pulse",
+        "switchtype": "VZM31-SN",
+        "segment": 0,
+        "clear": false,
+        "multicast": false,
+        "x": 560,
+        "y": 160,
+        "wires": [
+            [
+                "e35e314a8401456f"
+            ]
+        ]
+    },
+    {
+        "id": "497f8d906cbdff10",
+        "type": "inovelli-notification-manager",
+        "z": "cfe8e8927c4c75b0",
+        "name": "Segment Effect (LED 3)",
+        "entityid": "",
+        "targets": [],
+        "friendlyNames": "Kitchen Dimmer",
+        "color": 0,
+        "brightness": 100,
+        "duration": 5,
+        "effect": "falling",
+        "switchtype": "VZM31-SN",
+        "segment": 3,
+        "clear": false,
+        "multicast": false,
+        "x": 550,
+        "y": 280,
+        "wires": [
+            [
+                "e35e314a8401456f"
+            ]
+        ]
+    },
+    {
+        "id": "e35e314a8401456f",
+        "type": "mqtt out",
+        "z": "cfe8e8927c4c75b0",
+        "name": "Zigbee2MQTT Publish",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "b7d45201cd1064ca",
+        "x": 800,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "b7d45201cd1064ca",
+        "type": "mqtt-broker",
+        "name": "Zigbee2MQTT Broker (update with your own broker's address)",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "verifyservercert": false,
+        "compatmode": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

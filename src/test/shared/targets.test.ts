@@ -78,17 +78,67 @@ describe("shared/targets", () => {
     ];
     it("returns the configured targets unchanged when there's no payload override", () => {
       assert.deepStrictEqual(resolveTargets(configured, undefined), configured);
+      assert.deepStrictEqual(resolveTargets(configured, {}), configured);
+      assert.deepStrictEqual(resolveTargets(configured, null), configured);
     });
-    it("replaces only the entity_id entries when a payload override is given", () => {
-      const result = resolveTargets(configured, "light.override");
+    it("replaces only the entity_id entries when payload.entity_id is given", () => {
+      const result = resolveTargets(configured, { entity_id: "light.override" });
       assert.deepStrictEqual(result, [
         { type: "area_id", value: "kitchen" },
         { type: "entity_id", value: "light.override" },
       ]);
     });
-    it("falls back to the configured targets for a falsy payload override, matching the old `||` behavior", () => {
-      assert.deepStrictEqual(resolveTargets(configured, ""), configured);
-      assert.deepStrictEqual(resolveTargets(configured, null), configured);
+    it("replaces only the area_id entries when payload.area_id is given, leaving entity_id alone", () => {
+      const result = resolveTargets(configured, { area_id: "office" });
+      assert.deepStrictEqual(result, [
+        { type: "entity_id", value: "light.configured" },
+        { type: "area_id", value: "office" },
+      ]);
+    });
+    it("adds device_id/floor_id/label_id entries even though none were configured for those types", () => {
+      const result = resolveTargets(configured, {
+        device_id: "abc123",
+        floor_id: "first_floor",
+        label_id: "outdoor",
+      });
+      assert.deepStrictEqual(result, [
+        { type: "entity_id", value: "light.configured" },
+        { type: "area_id", value: "kitchen" },
+        { type: "device_id", value: "abc123" },
+        { type: "floor_id", value: "first_floor" },
+        { type: "label_id", value: "outdoor" },
+      ]);
+    });
+    it("resolves multiple override types in the same call independently", () => {
+      const result = resolveTargets(configured, { entity_id: "light.override", area_id: "office" });
+      assert.deepStrictEqual(result, [
+        { type: "entity_id", value: "light.override" },
+        { type: "area_id", value: "office" },
+      ]);
+    });
+    it("accepts a comma-delimited string for multiple values of the same type", () => {
+      const result = resolveTargets(configured, { device_id: "abc123, def456 ,ghi789" });
+      assert.deepStrictEqual(result, [
+        { type: "entity_id", value: "light.configured" },
+        { type: "area_id", value: "kitchen" },
+        { type: "device_id", value: "abc123" },
+        { type: "device_id", value: "def456" },
+        { type: "device_id", value: "ghi789" },
+      ]);
+    });
+    it("accepts a real array for multiple values of the same type", () => {
+      const result = resolveTargets(configured, { device_id: ["abc123", "def456"] });
+      assert.deepStrictEqual(result, [
+        { type: "entity_id", value: "light.configured" },
+        { type: "area_id", value: "kitchen" },
+        { type: "device_id", value: "abc123" },
+        { type: "device_id", value: "def456" },
+      ]);
+    });
+    it("falls back to the configured targets for a falsy or empty override value", () => {
+      assert.deepStrictEqual(resolveTargets(configured, { entity_id: "" }), configured);
+      assert.deepStrictEqual(resolveTargets(configured, { entity_id: null }), configured);
+      assert.deepStrictEqual(resolveTargets(configured, { device_id: [] }), configured);
     });
   });
   describe("legacyEntityIdField", () => {

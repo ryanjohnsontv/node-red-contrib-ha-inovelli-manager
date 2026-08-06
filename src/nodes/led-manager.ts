@@ -8,16 +8,21 @@ import {
 } from "./shared/targets";
 import { resolveLedSwitch, LedPropertyKey } from "./shared/switches";
 import { legacyLedProperties, LedProperty, LegacyLedConfig } from "./led-manager.migrations";
+import { parseFriendlyNames, resolveFriendlyNames, buildZigbeeMsg } from "./shared/zigbee";
+import { blueLedSegmentProperty, BLUE_LED_SEGMENT_SWITCHTYPES } from "./shared/blue-switches";
 interface LedManagerConfig extends LegacyLedConfig {
   name: string;
   entityid: string;
   switchtype: string | number;
   properties?: LedProperty[];
   targets?: TargetEntry[];
+  friendlyNames?: string;
+  segment?: number;
   multicast: boolean;
 }
 const PROPERTY_LABELS: Record<LedPropertyKey, string> = {
   color: "Color",
+  colorOff: "Color (Off)",
   brightness: "Brightness",
   brightnessOff: "Brightness (Off)",
   fanColor: "Fan Color",
@@ -34,9 +39,12 @@ module.exports = function (RED: any) {
     node.properties = hasCurrentProperties ? config.properties : legacyLedProperties(config);
     const hasCurrentTargets = Array.isArray(config.targets) && config.targets.length > 0;
     node.targets = hasCurrentTargets ? config.targets : legacyEntityTargets(config.entityid);
+    node.friendlyNames = parseFriendlyNames(config.friendlyNames);
+    node.segment = Number(config.segment ?? 0);
     node.on("input", (msg: any, _send: any, done: any) => {
       const payload = msg.payload || {};
-      const targets = resolveTargets(node.targets, payload.entity_id);
+      const targets = resolveTargets(node.targets, payload);
+      const friendlyNames = resolveFriendlyNames(node.friendlyNames, payload.friendly_name);
       const switchtype = payload.switchtype ?? node.switchtype;
       const multicast = payload.multicast !== undefined ? payload.multicast : node.multicast;
       function fail(message: string): void {
@@ -53,6 +61,23 @@ module.exports = function (RED: any) {
         fail((err as Error).message);
         return;
       }
+      let segment = 0;
+      if (switchDef.protocol === "zigbee") {
+        const segmentRaw = payload.segment ?? node.segment;
+        segment = Math.round(Number(segmentRaw));
+        if (isNaN(segment) || segment < 0 || segment > 7) {
+          fail(`Invalid segment value: ${segmentRaw}. Please enter a value between 0 (global) and 7.`);
+          return;
+        }
+        const segmentCapableAliases = BLUE_LED_SEGMENT_SWITCHTYPES.map((s) => s.toLowerCase());
+        const supportsSegments = switchDef.aliases.some(
+          (alias) => typeof alias === "string" && segmentCapableAliases.includes(alias)
+        );
+        if (!supportsSegments) {
+          // e.g. VZM36, whose single status LED has no individually-addressable segments at all.
+          segment = 0;
+        }
+      }
       const propertyKeys = new Set<LedPropertyKey>(node.properties.map((p: LedProperty) => p.property));
       for (const key of Object.keys(payload) as LedPropertyKey[]) {
         if (key in switchDef.params) {
@@ -61,7 +86,7 @@ module.exports = function (RED: any) {
       }
       const statusParts: string[] = [];
       for (const property of propertyKeys) {
-        const param = switchDef.params[property];
+        const param = segment > 0 ? blueLedSegmentProperty(property, segment) : switchDef.params[property];
         if (param === undefined) {
           continue;
         }
@@ -71,20 +96,35 @@ module.exports = function (RED: any) {
           continue;
         }
         try {
-          if (property === "color" || property === "fanColor") {
+          let value: number;
+          const segmentSuffix = segment > 0 ? ` (Segment ${segment})` : "";
+          if (property === "color" || property === "colorOff" || property === "fanColor") {
             const rgb = parseColor(rawValue, property);
             const { hue, keyword } = rgbToHue(rgb);
-            statusParts.push(`${PROPERTY_LABELS[property]}: ${keyword}`);
-            send(hue, param);
+            value = hue;
+            statusParts.push(`${PROPERTY_LABELS[property]}: ${keyword}${segmentSuffix}`);
           } else {
+            const maxBrightness = switchDef.protocol === "zigbee" ? 100 : 10;
             const brightness = Math.round(Number(rawValue));
-            if (brightness < 0 || brightness > 10) {
+            if (brightness < 0 || brightness > maxBrightness) {
               throw new Error(
-                `Invalid brightness value for ${property}: ${brightness}. Please enter a value between 0 and 10.`
+                `Invalid brightness value for ${property}: ${brightness}. Please enter a value between 0 and ${maxBrightness}.`
               );
             }
-            statusParts.push(`${PROPERTY_LABELS[property]}: ${brightness}`);
-            send(brightness, param);
+            value = brightness;
+            statusParts.push(`${PROPERTY_LABELS[property]}: ${brightness}${segmentSuffix}`);
+          }
+          if (switchDef.protocol === "zigbee") {
+            if (friendlyNames.length === 0) {
+              throw new Error(
+                "No Friendly Name(s) configured. Set Friendly Name(s) or msg.payload.friendly_name."
+              );
+            }
+            for (const friendlyName of friendlyNames) {
+              node.send(buildZigbeeMsg(friendlyName, String(param), value));
+            }
+          } else {
+            send(value, param as number);
           }
         } catch (err) {
           if (statusParts.length > 0) {
