@@ -1,4 +1,8 @@
 <script type="text/javascript">
+  const CONFIG_MANAGER_BLUE_SWITCHTYPES = ["VZM30-SN", "VZM31-SN", "VZM32-SN", "VZM35-SN", "VZM36"];
+  function configManagerIsBlueSwitchType(switchtype) {
+    return CONFIG_MANAGER_BLUE_SWITCHTYPES.includes(switchtype);
+  }
   RED.nodes.registerType("inovelli-config-manager", {
     category: "inovelli",
     color: "#B68181",
@@ -6,13 +10,18 @@
       name: { value: "" },
       entityid: { value: "" },
       targets: { value: [] },
+      friendlyNames: { value: "" },
       switchtype: { value: "LZW30-SN" },
       properties: { value: [] },
       multicast: { value: false },
     },
     inputs: 1,
     outputs: 1,
-    outputLabels: "Connect to an Action node",
+    outputLabels: function () {
+      return configManagerIsBlueSwitchType(this.switchtype)
+        ? "Connect to a core 'mqtt out' node"
+        : "Connect to an Action node";
+    },
     icon: "light.svg",
     align: "right",
     label: function () {
@@ -175,7 +184,313 @@
           },
         },
       };
+      const isBlueSwitchType = configManagerIsBlueSwitchType;
+      const DISABLED_ENABLED_STR = ["Disabled", "Enabled"];
+      const HIGHER_OUTPUT_NON_NEUTRAL_STR = ["Disabled (default)", "Enabled"];
+      const BLUE_PROPERTY_META = {
+        invertSwitch: { label: "Invert Switch", type: "stringEnum", enumValues: ["No", "Yes"] },
+        autoOffTimer: {
+          label: "Auto-Off Timer",
+          type: "duration",
+          max: 32767,
+          bySwitchtype: { VZM36: { label: "Light Auto-Off Timer" } },
+        },
+        autoOffFanTimer: { label: "Fan Auto-Off Timer", type: "duration", max: 32767 },
+        loadLevelIndicatorTimeout: {
+          label: "LED Indicator Timeout",
+          type: "stringEnum",
+          enumValues: [
+            "Stay Off", "1 Second", "2 Seconds", "3 Seconds", "4 Seconds", "5 Seconds",
+            "6 Seconds", "7 Seconds", "8 Seconds", "9 Seconds", "10 Seconds", "Stay On",
+          ],
+        },
+        activePowerReports: { label: "Active Power Reports (%)", type: "number", min: 0, max: 100 },
+        periodicPowerEnergyReports: {
+          label: "Periodic Power & Energy Reports",
+          type: "duration",
+          max: 32767,
+        },
+        energyReports: { label: "Active Energy Reports (0.01 kWh)", type: "number", min: 0, max: 32767 },
+        buttonPressDelay: {
+          label: "Button Press Delay",
+          type: "stringEnum",
+          enumValues: ["0ms", "100ms", "200ms", "300ms", "400ms", "500ms", "600ms", "700ms", "800ms", "900ms"],
+        },
+        switchType: {
+          label: "Switch Type",
+          type: "stringEnum",
+          enumValues: ["Single Pole", "Aux Switch"],
+          bySwitchtype: {
+            "VZM31-SN": {
+              enumValues: ["Single Pole", "3-Way Dumb Switch", "3-Way Aux Switch", "Single-Pole Full Sine Wave"],
+            },
+          },
+        },
+        smartBulbMode: {
+          label: "Smart Bulb Mode",
+          type: "stringEnum",
+          enumValues: ["Disabled", "Smart Bulb Mode"],
+          bySwitchtype: { "VZM35-SN": { label: "Smart Fan Mode", enumValues: ["Disabled", "Smart Fan Mode"] } },
+        },
+        outputMode: {
+          label: "Switch Mode",
+          type: "stringEnum",
+          enumValues: ["Dimmer", "On/Off"],
+          bySwitchtype: {
+            "VZM35-SN": { label: "Fan Mode", enumValues: ["Ceiling Fan (3-Speed)", "Exhaust Fan (On/Off)"] },
+          },
+        },
+        oneLedMode: { label: "One LED Mode", type: "stringEnum", enumValues: ["All", "One"] },
+        ledBarScaling: {
+          label: "LED Bar Scaling",
+          type: "stringEnum",
+          enumValues: ["Gen3 method (VZM-style)", "Gen2 method (LZW-style)"],
+        },
+        ledColorWhenOn: { label: "Default LED Color (On)", type: "number", min: 0, max: 255 },
+        ledColorWhenOff: { label: "Default LED Color (Off)", type: "number", min: 0, max: 255 },
+        ledIntensityWhenOn: { label: "Default LED Intensity (On)", type: "number", min: 0, max: 100 },
+        ledIntensityWhenOff: { label: "Default LED Intensity (Off)", type: "number", min: 0, max: 100 },
+        singleTapBehavior: {
+          label: "Single-Tap Behavior",
+          type: "stringEnum",
+          enumValues: ["Old Behavior", "New Behavior", "Down Always Off"],
+        },
+        auxSwitchUniqueScenes: { label: "Aux Switch Unique Scenes", type: "stringEnum", enumValues: DISABLED_ENABLED_STR },
+        localProtectionChildLock: { label: "Local Protection (Child Lock)", type: "stringEnum", enumValues: DISABLED_ENABLED_STR },
+        firmwareUpdateInProgressIndicator: {
+          label: "Firmware Update Indicator",
+          type: "stringEnum",
+          enumValues: DISABLED_ENABLED_STR,
+        },
+        doubleTapClearNotifications: {
+          label: "Clear Notification via 2x Tap",
+          type: "stringEnum",
+          enumValues: ["Enabled (Default)", "Disabled"],
+        },
+        fanControlMode: {
+          label: "Fan Control Mode (Config Button)",
+          type: "stringEnum",
+          enumValues: ["Disabled", "Multi Tap", "Cycle"],
+        },
+        lowLevelForFanControlMode: { label: "Fan Low Level", type: "number", min: 2, max: 254 },
+        mediumLevelForFanControlMode: { label: "Fan Medium Level", type: "number", min: 2, max: 254 },
+        highLevelForFanControlMode: { label: "Fan High Level", type: "number", min: 2, max: 254 },
+        ledColorForFanControlMode: { label: "Fan Control Mode LED Color", type: "number", min: 0, max: 255 },
+        minimumLevel: { label: "Minimum Level", type: "number", min: 1, max: 254 },
+        maximumLevel: { label: "Maximum Level", type: "number", min: 2, max: 255 },
+        defaultLevelLocal: { label: "Default Level (Local)", type: "number", min: 0, max: 255 },
+        defaultLevelRemote: { label: "Default Level (Remote)", type: "number", min: 0, max: 255 },
+        levelAfterPowerRestored: { label: "Level After Power Restored", type: "number", min: 0, max: 255 },
+        dimmingSpeedUpRemote: { label: "Dimming Speed Up (Remote)", type: "number", min: 0, max: 126 },
+        dimmingSpeedUpLocal: { label: "Dimming Speed Up (Local)", type: "number", min: 0, max: 127 },
+        rampRateOffToOnRemote: { label: "Ramp Rate Off to On (Remote)", type: "number", min: 0, max: 127 },
+        rampRateOffToOnLocal: { label: "Ramp Rate Off to On (Local)", type: "number", min: 0, max: 127 },
+        dimmingSpeedDownRemote: { label: "Dimming Speed Down (Remote)", type: "number", min: 0, max: 127 },
+        dimmingSpeedDownLocal: { label: "Dimming Speed Down (Local)", type: "number", min: 0, max: 127 },
+        rampRateOnToOffRemote: { label: "Ramp Rate On to Off (Remote)", type: "number", min: 0, max: 127 },
+        rampRateOnToOffLocal: { label: "Ramp Rate On to Off (Local)", type: "number", min: 0, max: 127 },
+        higherOutputInNonNeutral: {
+          label: "Higher Output (Non-Neutral)",
+          type: "stringEnum",
+          enumValues: HIGHER_OUTPUT_NON_NEUTRAL_STR,
+        },
+        enable2xTapUp: { label: "2x Tap Up Enable", type: "stringEnum", enumValues: DISABLED_ENABLED_STR },
+        enable2xTapDown: { label: "2x Tap Down Enable", type: "stringEnum", enumValues: DISABLED_ENABLED_STR },
+        brightnessLevelForDoubleTapUp: { label: "2x Tap Up Level", type: "number", min: 2, max: 255 },
+        brightnessLevelForDoubleTapDown: { label: "2x Tap Down Level", type: "number", min: 0, max: 255 },
+        relayClick: {
+          label: "Relay Click Sound",
+          type: "stringEnum",
+          enumValues: ["Disabled (Click Sound On)", "Enabled (Click Sound Off)"],
+        },
+        bindingOffToOnSyncLevel: { label: "Binding Default Level", type: "stringEnum", enumValues: DISABLED_ENABLED_STR },
+        mmWaveHeightMin: { label: "mmWave Height Minimum (Floor, cm)", type: "number", min: -600, max: 600 },
+        mmWaveHeightMax: { label: "mmWave Height Maximum (Ceiling, cm)", type: "number", min: -600, max: 600 },
+        mmWaveWidthMin: { label: "mmWave Width Minimum (Left, cm)", type: "number", min: -600, max: 600 },
+        mmWaveWidthMax: { label: "mmWave Width Maximum (Right, cm)", type: "number", min: -600, max: 600 },
+        mmWaveDepthMin: { label: "mmWave Depth Minimum (Near, cm)", type: "number", min: 0, max: 600 },
+        mmWaveDepthMax: { label: "mmWave Depth Maximum (Far, cm)", type: "number", min: 0, max: 600 },
+        mmwaveControlWiredDevice: {
+          label: "Light On Presence Behavior",
+          type: "stringEnum",
+          enumValues: [
+            "Disabled", "Occupancy (default)", "Vacancy", "Wasteful Occupancy",
+            "Mirrored Occupancy", "Mirrored Vacancy", "Mirrored Wasteful Occupancy",
+          ],
+        },
+        mmWaveDetectSensitivity: {
+          label: "mmWave Detection Sensitivity",
+          type: "stringEnum",
+          enumValues: ["Low", "Medium", "High (default)"],
+        },
+        mmWaveDetectTrigger: {
+          label: "mmWave Detection Delay",
+          type: "stringEnum",
+          enumValues: ["Slow (5s)", "Medium (1s)", "Fast (0.2s, default)"],
+        },
+        mmWaveHoldTime: { label: "mmWave Time Out (s)", type: "number", min: 0, max: 4294967295 },
+        mmWaveStayLife: { label: "mmWave Stay Life", type: "number", min: 0, max: 4294967295 },
+        mmWaveTargetInfoReport: {
+          label: "mmWave Target Info Report",
+          type: "stringEnum",
+          enumValues: ["Disable (default)", "Enable"],
+        },
+        mmWaveRoomSizePreset: {
+          label: "mmWave Room Size Preset",
+          type: "stringEnum",
+          enumValues: ["Custom", "Small", "Medium", "Large"],
+        },
+        otaImageType: {
+          label: "OTA Image Type",
+          type: "stringEnum",
+          enumValues: ["Zigbee (259)", "mmWave (260)", "Alternating (259 & 260) (default)"],
+        },
+        dimmingSpeedUpRemoteLight: { label: "Light Dimming Speed Up", type: "number", min: 0, max: 126 },
+        rampRateOffToOnRemoteLight: { label: "Light Ramp Rate Off to On", type: "number", min: 0, max: 127 },
+        dimmingSpeedDownRemoteLight: { label: "Light Dimming Speed Down", type: "number", min: 0, max: 127 },
+        rampRateOnToOffRemoteLight: { label: "Light Ramp Rate On to Off", type: "number", min: 0, max: 127 },
+        minimumLevelLight: { label: "Light Minimum Level", type: "number", min: 1, max: 254 },
+        maximumLevelLight: { label: "Light Maximum Level", type: "number", min: 2, max: 255 },
+        defaultLevelRemoteLight: { label: "Light Default Level", type: "number", min: 0, max: 255 },
+        stateAfterPowerRestoredLight: { label: "Light Level After Power Restored", type: "number", min: 0, max: 255 },
+        higherOutputInNonNeutralLight: {
+          label: "Light Higher Output (Non-Neutral)",
+          type: "stringEnum",
+          enumValues: HIGHER_OUTPUT_NON_NEUTRAL_STR,
+        },
+        quickStartTimeLight: { label: "Light Quick Start Time", type: "number", min: 0, max: 60 },
+        quickStartLevelLight: { label: "Light Quick Start Level", type: "number", min: 1, max: 254 },
+        smartBulbModeLight: { label: "Light Smart Bulb Mode", type: "stringEnum", enumValues: ["Disabled", "Smart Bulb Mode"] },
+        ledColorWhenOnLight: { label: "Light LED Color", type: "number", min: 0, max: 255 },
+        ledIntensityWhenOnLight: { label: "Light LED Intensity", type: "number", min: 0, max: 100 },
+        outputModeLight: { label: "Light Switch Mode", type: "stringEnum", enumValues: ["Dimmer", "On/Off"] },
+        dimmingSpeedUpRemoteFan: { label: "Fan Speed Up", type: "number", min: 0, max: 126 },
+        rampRateOffToOnRemoteFan: { label: "Fan Ramp Rate Off to On", type: "number", min: 0, max: 127 },
+        dimmingSpeedDownRemoteFan: { label: "Fan Speed Down", type: "number", min: 0, max: 127 },
+        rampRateOnToOffRemoteFan: { label: "Fan Ramp Rate On to Off", type: "number", min: 0, max: 127 },
+        minimumLevelFan: { label: "Fan Minimum Level", type: "number", min: 1, max: 254 },
+        maximumLevelFan: { label: "Fan Maximum Level", type: "number", min: 2, max: 255 },
+        defaultLevelRemoteFan: { label: "Fan Default Level", type: "number", min: 0, max: 255 },
+        stateAfterPowerRestoredFan: { label: "Fan Level After Power Restored", type: "number", min: 0, max: 255 },
+        quickStartTimeFan: { label: "Fan Quick Start Time", type: "number", min: 0, max: 60 },
+        smartBulbModeFan: { label: "Fan Smart Fan Mode", type: "stringEnum", enumValues: ["Disabled", "Smart Fan Mode"] },
+        outputModeFan: {
+          label: "Fan Switch Mode",
+          type: "stringEnum",
+          enumValues: ["Ceiling Fan (3-Speed)", "Exhaust Fan (On/Off)"],
+        },
+      };
+      const LED_SEGMENT_NUMBERS = [1, 2, 3, 4, 5, 6, 7];
+      function ledSegmentPropertyKeys() {
+        const keys = [];
+        LED_SEGMENT_NUMBERS.forEach(function (n) {
+          keys.push(
+            "defaultLed" + n + "ColorWhenOn",
+            "defaultLed" + n + "ColorWhenOff",
+            "defaultLed" + n + "IntensityWhenOn",
+            "defaultLed" + n + "IntensityWhenOff"
+          );
+        });
+        return keys;
+      }
+      LED_SEGMENT_NUMBERS.forEach(function (n) {
+        BLUE_PROPERTY_META["defaultLed" + n + "ColorWhenOn"] = {
+          label: "LED " + n + " Color (On)",
+          type: "number",
+          min: 0,
+          max: 255,
+        };
+        BLUE_PROPERTY_META["defaultLed" + n + "ColorWhenOff"] = {
+          label: "LED " + n + " Color (Off)",
+          type: "number",
+          min: 0,
+          max: 255,
+        };
+        BLUE_PROPERTY_META["defaultLed" + n + "IntensityWhenOn"] = {
+          label: "LED " + n + " Intensity (On)",
+          type: "number",
+          min: 0,
+          max: 101,
+        };
+        BLUE_PROPERTY_META["defaultLed" + n + "IntensityWhenOff"] = {
+          label: "LED " + n + " Intensity (Off)",
+          type: "number",
+          min: 0,
+          max: 101,
+        };
+      });
+      function blueMetaFor(property, switchtype) {
+        const base = BLUE_PROPERTY_META[property];
+        const override = (base.bySwitchtype && base.bySwitchtype[switchtype]) || {};
+        return Object.assign(
+          { label: base.label, type: base.type, min: base.min, max: base.max, enumValues: base.enumValues },
+          override
+        );
+      }
+      function bluePropertiesForSwitchType(switchtype) {
+        const common = [
+          "invertSwitch", "autoOffTimer", "loadLevelIndicatorTimeout", "activePowerReports",
+          "periodicPowerEnergyReports", "energyReports", "buttonPressDelay", "switchType",
+          "smartBulbMode", "outputMode", "ledBarScaling", "ledColorWhenOn", "ledColorWhenOff",
+          "ledIntensityWhenOn", "ledIntensityWhenOff", "singleTapBehavior", "auxSwitchUniqueScenes",
+          "localProtectionChildLock", "firmwareUpdateInProgressIndicator", "doubleTapClearNotifications",
+          ...ledSegmentPropertyKeys(),
+        ];
+        const dimmerLevels = [
+          "minimumLevel", "maximumLevel", "defaultLevelLocal", "defaultLevelRemote",
+          "levelAfterPowerRestored", "dimmingSpeedUpRemote", "dimmingSpeedUpLocal",
+          "rampRateOffToOnRemote", "rampRateOffToOnLocal", "dimmingSpeedDownRemote",
+          "dimmingSpeedDownLocal", "rampRateOnToOffRemote", "rampRateOnToOffLocal",
+        ];
+        const doubleTapLevels = [
+          "higherOutputInNonNeutral", "enable2xTapUp", "enable2xTapDown",
+          "brightnessLevelForDoubleTapUp", "brightnessLevelForDoubleTapDown",
+        ];
+        const externalFanBinding = [
+          "fanControlMode", "lowLevelForFanControlMode", "mediumLevelForFanControlMode",
+          "highLevelForFanControlMode", "ledColorForFanControlMode",
+        ];
+        switch (switchtype) {
+          case "VZM30-SN":
+            return [...common, "oneLedMode", ...externalFanBinding];
+          case "VZM31-SN":
+            return [
+              ...common, ...dimmerLevels, ...doubleTapLevels, "relayClick",
+              "bindingOffToOnSyncLevel", ...externalFanBinding,
+            ];
+          case "VZM32-SN":
+            return [
+              ...common, ...dimmerLevels, ...doubleTapLevels, "bindingOffToOnSyncLevel",
+              ...externalFanBinding,
+              "mmWaveHeightMin", "mmWaveHeightMax", "mmWaveWidthMin", "mmWaveWidthMax",
+              "mmWaveDepthMin", "mmWaveDepthMax", "mmwaveControlWiredDevice",
+              "mmWaveDetectSensitivity", "mmWaveDetectTrigger", "mmWaveHoldTime",
+              "mmWaveStayLife", "mmWaveTargetInfoReport", "mmWaveRoomSizePreset", "otaImageType",
+            ];
+          case "VZM35-SN":
+            return [...common, ...dimmerLevels];
+          case "VZM36":
+            return [
+              "autoOffTimer", "autoOffFanTimer",
+              "dimmingSpeedUpRemoteLight", "rampRateOffToOnRemoteLight",
+              "dimmingSpeedDownRemoteLight", "rampRateOnToOffRemoteLight",
+              "minimumLevelLight", "maximumLevelLight", "defaultLevelRemoteLight",
+              "stateAfterPowerRestoredLight", "higherOutputInNonNeutralLight",
+              "quickStartTimeLight", "quickStartLevelLight", "smartBulbModeLight",
+              "ledColorWhenOnLight", "ledIntensityWhenOnLight", "outputModeLight",
+              "dimmingSpeedUpRemoteFan", "rampRateOffToOnRemoteFan",
+              "dimmingSpeedDownRemoteFan", "rampRateOnToOffRemoteFan",
+              "minimumLevelFan", "maximumLevelFan", "defaultLevelRemoteFan",
+              "stateAfterPowerRestoredFan", "quickStartTimeFan", "smartBulbModeFan", "outputModeFan",
+            ];
+          default:
+            return [];
+        }
+      }
       function metaFor(property, switchtype) {
+        if (isBlueSwitchType(switchtype)) {
+          return blueMetaFor(property, switchtype);
+        }
         const base = PROPERTY_META[property];
         const override = (base.bySwitchtype && base.bySwitchtype[switchtype]) || {};
         return Object.assign(
@@ -184,6 +499,9 @@
         );
       }
       function propertiesForSwitchType(switchtype) {
+        if (isBlueSwitchType(switchtype)) {
+          return bluePropertiesForSwitchType(switchtype);
+        }
         switch (switchtype) {
           case "LZW30-SN":
             return [
@@ -257,6 +575,12 @@
           });
           const defaultValue = Object.values(meta.options)[0];
           select.val(value !== undefined ? value : defaultValue);
+        } else if (meta.type === "stringEnum") {
+          const select = $("<select/>").css({ width: "70%" }).appendTo(valueContainer);
+          meta.enumValues.forEach(function (option) {
+            select.append($("<option/>", { value: option, text: option }));
+          });
+          select.val(value !== undefined ? value : meta.enumValues[0]);
         } else if (meta.type === "number") {
           $("<input/>", { type: "number", min: meta.min, max: meta.max, step: 1 })
             .css({ width: "70%" })
@@ -341,7 +665,7 @@
             });
             container.data("getData", function () {
               const property = select.val();
-              const meta = PROPERTY_META[property];
+              const meta = metaFor(property, $("#node-input-switchtype").val());
               const rawValue = valueContainer.find("input,select").val();
               return {
                 property,
@@ -364,7 +688,16 @@
         $("#node-input-properties-container").editableList("addItem", property);
       });
       refreshAddButtonState();
-      $("#node-input-switchtype").on("change", refreshAllPropertyOptions);
+      function refreshProtocolVisibility() {
+        const protocol = $("#node-input-switchtype option:selected").data("protocol");
+        $(".zigbee-only-row").toggle(protocol === "zigbee");
+        $(".zwave-only-row").toggle(protocol !== "zigbee");
+      }
+      $("#node-input-switchtype").on("change", function () {
+        refreshAllPropertyOptions();
+        refreshProtocolVisibility();
+      });
+      refreshProtocolVisibility();
     },
     oneditsave: function () {
       const properties = [];
@@ -407,37 +740,53 @@
       <label for="node-input-name"><i class="icon-tag"></i>Name</label>
       <input type="text" id="node-input-name" placeholder="Name">
   </div>
-  <div class="form-row node-input-targets-container-row">
+  <div class="form-row zwave-only-row node-input-targets-container-row">
     <label><i class="icon-tag"></i>Targets</label>
     <ol id="node-input-targets-container"></ol>
+  </div>
+  <div class="form-row zigbee-only-row">
+    <label for="node-input-friendlyNames"><i class="icon-tag"></i>Friendly Name(s)</label>
+    <input type="text" id="node-input-friendlyNames" placeholder="e.g. Kitchen Dimmer, Hallway Switch">
   </div>
   <div class="form-row">
     <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
     <select name="node-input-switchtype" id="node-input-switchtype">
-        <option value="LZW30-SN">On/Off (LZW30-SN)</option>
-        <option value="LZW31-SN">Dimmer (LZW31-SN)</option>
-        <option value="LZW36">Fan/Light (LZW36)</option>
-        <option value="LZW45">Light Strip (LZW45)</option>
+      <optgroup label="Red Series (Z-Wave)">
+        <option value="LZW30-SN" data-protocol="zwave">On/Off (LZW30-SN)</option>
+        <option value="LZW31-SN" data-protocol="zwave">Dimmer (LZW31-SN)</option>
+        <option value="LZW36" data-protocol="zwave">Fan/Light (LZW36)</option>
+        <option value="LZW45" data-protocol="zwave">Light Strip (LZW45)</option>
+      </optgroup>
+      <optgroup label="Blue Series (Zigbee)">
+        <option value="VZM30-SN" data-protocol="zigbee">On/Off (VZM30-SN)</option>
+        <option value="VZM31-SN" data-protocol="zigbee">2-in-1 Switch/Dimmer (VZM31-SN)</option>
+        <option value="VZM32-SN" data-protocol="zigbee">mmWave Dimmer (VZM32-SN)</option>
+        <option value="VZM35-SN" data-protocol="zigbee">Fan Controller (VZM35-SN)</option>
+        <option value="VZM36" data-protocol="zigbee">Fan Canopy Module (VZM36)</option>
+      </optgroup>
     </select>
   </div>
   <div class="form-row node-input-properties-container-row">
     <label><i class="icon-tag"></i>Properties</label>
     <ol id="node-input-properties-container"></ol>
   </div>
-  <div class="form-row">
+  <div class="form-row zwave-only-row">
     <label for="node-input-multicast"><i class="icon-tag"></i>Multicast</label>
     <input type="checkbox" id="node-input-multicast" style="display:inline-block; width:auto; vertical-align:top;">
   </div>
 </script>
 
 <script type="text/x-red" data-help-name="inovelli-config-manager">
-  <p>This node sets miscellaneous configuration parameters on an Inovelli Red Series switch that aren't LED/notification/scene related. The output should be connected to a Home Assistant Action node.</p>
+  <p>This node sets miscellaneous configuration parameters on an Inovelli switch that aren't LED/notification/scene related. Red Series switches are Z-Wave, and the output should be connected to a Home Assistant Action node. Blue Series switches are Zigbee (via Zigbee2MQTT), and the output should be connected to a core <b>mqtt out</b> node instead - this node automatically emits the right shape for whichever family the selected Switch Type belongs to.</p>
   <dl class="message-properties">
       <dt>Targets<span class="property-type">list</span></dt>
-      <dd>Click "add" to add an Entity, Device, Area, Floor, or Label to send this node's Z-Wave commands to, matching the Home Assistant Action node's own Targets picker. Add as many rows of any type/combination as needed. Entity ID targets are also configurable ad-hoc via <code>msg.payload.entity_id</code> (a single ID or a comma-delimited list), which replaces any Entity targets configured here for that run only - Device/Area/Floor/Label targets are unaffected. Any configured Entity targets are also set on a top-level <code>msg.entity_id</code> (in addition to <code>msg.payload.target.entity_id</code>), for downstream Action nodes whose own Target field is configured to read directly from <code>msg.entity_id</code>.</dd>
+      <dd>Red Series only. Click "add" to add an Entity, Device, Area, Floor, or Label to send this node's Z-Wave commands to, matching the Home Assistant Action node's own Targets picker. Add as many rows of any type/combination as needed. Every target type is also configurable ad-hoc via its own payload field - <code>msg.payload.entity_id</code>, <code>msg.payload.device_id</code>, <code>msg.payload.area_id</code>, <code>msg.payload.floor_id</code>, <code>msg.payload.label_id</code> (each a single ID, a comma-delimited list, or an array) - and each independently replaces only that target type's configured rows for that run, leaving the others untouched. Any configured Entity targets are also set on a top-level <code>msg.entity_id</code> (in addition to <code>msg.payload.target.entity_id</code>), for downstream Action nodes whose own Target field is configured to read directly from <code>msg.entity_id</code>.</dd>
+
+      <dt>Friendly Name(s)<span class="property-type">string</span></dt>
+      <dd>Blue Series only. The Zigbee2MQTT friendly name(s) of the device(s) to send this node's commands to - a single name, or a comma-delimited list to send to multiple devices. Also configurable ad-hoc via <code>msg.payload.friendly_name</code>, which replaces the configured list for that run only. Each targeted device/property combination is sent as its own <code>{topic, payload}</code> message (e.g. <code>zigbee2mqtt/Kitchen Dimmer/set/switchType</code>), since MQTT has no equivalent to a single Home Assistant service call fanning out to multiple devices.</dd>
 
       <dt>Switch Type<span class="property-type">string</span></dt>
-      <dd>Determines which parameters are available. Also configurable via <code>msg.payload.switchtype</code>.</dd>
+      <dd>Determines which parameters are available, and whether this node behaves as a Red Series (Z-Wave/Action node) or Blue Series (Zigbee/MQTT) node. Also configurable via <code>msg.payload.switchtype</code>.</dd>
 
       <dt>Properties<span class="property-type">list</span></dt>
       <dd>
@@ -454,11 +803,13 @@
           <li><b>Load Type</b> (LZW30-SN only) - automatic or manual load type detection.</li>
           <li><b>Instant On</b> (LZW30-SN, LZW36) - disables the 700ms button delay and multi-tap scenes when enabled.</li>
         </ul>
-        Association Behavior and Smart Bulb Mode aren't supported yet - see the README for why.
+        Association Behavior and Smart Bulb Mode aren't supported yet on Red Series - see the README for why.
+        <br><br>
+        For Blue Series, the dropdown exposes every Zigbee2MQTT parameter for the selected model (dimming/ramp speed, min/max/default level, invert switch, switch type, smart bulb mode, button delay, double-tap behavior, individual LED bar segments 1-7, external fan binding, local protection, and full mmWave tuning on the VZM32-SN). Any parameter can still be set ad-hoc via the payload using the Zigbee2MQTT property name directly instead, e.g. <code>msg.payload.defaultLed3ColorWhenOn</code>.
       </dd>
 
       <dt>Multicast<span class="property-type">boolean</span></dt>
-      <dd>Check this box if your devices are set up to support multicasting. Also configurable via <code>msg.payload.multicast</code>.</dd>
+      <dd>Red Series only. Check this box if your devices are set up to support multicasting. Also configurable via <code>msg.payload.multicast</code>.</dd>
   </dl>
   <p>
     Any property can also be sent ad-hoc via the payload even if it isn't in this node's configured list, e.g.
@@ -468,6 +819,16 @@ msg = {
     entity_id: "switch.hallway",
     autoOffTimer: "10 minutes",
     switchtype: "lzw30-sn"
+  }
+}
+    </pre>
+    or, for a Blue Series switch:
+    <pre>
+msg = {
+  payload: {
+    friendly_name: "Kitchen Dimmer",
+    switchType: "3-Way Aux Switch",
+    switchtype: "vzm31-sn"
   }
 }
     </pre>

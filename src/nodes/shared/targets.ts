@@ -34,12 +34,29 @@ export function legacyEntityTargets(entityid: string | undefined): TargetEntry[]
     .filter(Boolean)
     .map((value) => ({ type: "entity_id" as const, value }));
 }
-export function resolveTargets(configuredTargets: TargetEntry[], payloadEntityId: unknown): TargetEntry[] {
-  if (!payloadEntityId) {
-    return configuredTargets;
+function parseIdList(input: unknown): string[] {
+  if (Array.isArray(input)) {
+    return input.map((value) => String(value).trim()).filter(Boolean);
   }
-  const withoutEntities = configuredTargets.filter((entry) => entry.type !== "entity_id");
-  return withoutEntities.concat(legacyEntityTargets(String(payloadEntityId)));
+  if (!input) {
+    return [];
+  }
+  return String(input)
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+export function resolveTargets(configuredTargets: TargetEntry[], payload: unknown): TargetEntry[] {
+  const source = (payload ?? {}) as Record<string, unknown>;
+  let result = configuredTargets;
+  for (const type of TARGET_TYPES) {
+    const values = parseIdList(source[type]);
+    if (values.length === 0) {
+      continue;
+    }
+    result = result.filter((entry) => entry.type !== type).concat(values.map((value) => ({ type, value })));
+  }
+  return result;
 }
 export function legacyEntityIdField(target: Target | undefined): { entity_id?: string[] } {
   return target?.entity_id ? { entity_id: target.entity_id } : {};

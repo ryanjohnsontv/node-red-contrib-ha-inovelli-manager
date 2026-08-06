@@ -8,15 +8,19 @@ import {
   TargetEntry,
 } from "./shared/targets";
 import { resolveNotificationSwitch } from "./shared/switches";
+import { parseFriendlyNames, resolveFriendlyNames, buildZigbeeMsg } from "./shared/zigbee";
+import { BLUE_CLEAR_EFFECT } from "./shared/blue-switches";
 interface NotificationManagerConfig {
   name: string;
   entityid: string;
   targets?: TargetEntry[];
+  friendlyNames?: string;
   color: number;
   brightness: number;
   duration: number | string;
   effect: number | string;
   switchtype: string | number;
+  segment?: number;
   clear: boolean;
   multicast: boolean;
 }
@@ -40,22 +44,39 @@ function resolveEffect(effect: number | string, effects: Record<string, number>)
   }
   return value;
 }
+function stringEffectName(value: string, effects: Record<string, string>): string {
+  const found = Object.entries(effects).find(([, wire]) => wire === value);
+  return found ? found[0] : value;
+}
+function resolveStringEffect(effect: number | string, effects: Record<string, string>): string {
+  const key = String(effect).toLowerCase();
+  if (key in effects) {
+    return effects[key];
+  }
+  if (Object.values(effects).includes(String(effect))) {
+    return String(effect);
+  }
+  throw new Error(`Incorrect Effect: ${effect}. Valid effects are: ${Object.keys(effects).join(", ")}`);
+}
 module.exports = function (RED: any) {
   function InovelliNotificationManager(this: any, config: NotificationManagerConfig): void {
     RED.nodes.createNode(this, config);
     const node = this;
     const hasCurrentTargets = Array.isArray(config.targets) && config.targets.length > 0;
     node.targets = hasCurrentTargets ? config.targets : legacyEntityTargets(config.entityid);
+    node.friendlyNames = parseFriendlyNames(config.friendlyNames);
     node.color = Number(config.color);
     node.brightness = Number(config.brightness);
     node.duration = config.duration;
     node.effect = config.effect;
     node.switchtype = config.switchtype;
+    node.segment = Number(config.segment ?? 0);
     node.clear = config.clear;
     node.multicast = config.multicast;
     node.on("input", (msg: any, _send: any, done: any) => {
       const payload = msg.payload || {};
-      const targets = resolveTargets(node.targets, payload.entity_id);
+      const targets = resolveTargets(node.targets, payload);
+      const friendlyNames = resolveFriendlyNames(node.friendlyNames, payload.friendly_name);
       const clear = payload.clear !== undefined ? payload.clear : node.clear;
       const multicast = payload.multicast !== undefined ? payload.multicast : node.multicast;
       function fail(message: string): void {
@@ -67,56 +88,104 @@ module.exports = function (RED: any) {
       }
       try {
         const switchDef = resolveNotificationSwitch(payload.switchtype ?? node.switchtype);
-        const service = multicast ? "multicast_set_value" : "bulk_set_partial_config_parameters";
-        let value: number;
-        if (switchDef.format === "pixelEffect") {
-          if (clear) {
-            throw new Error("Clear Notification is not supported for Pixel Effect.");
-          }
-          const effect = resolveEffect(payload.effect ?? node.effect, switchDef.effects);
-          const brightness = Math.round(Number(payload.brightness ?? node.brightness));
-          if (brightness < 0 || brightness > 10) {
-            throw new Error(
-              `Invalid brightness value: ${brightness}. Please enter a value between 0 and 10.`
+        if (switchDef.protocol === "zwave") {
+          const service = multicast ? "multicast_set_value" : "bulk_set_partial_config_parameters";
+          let value: number;
+          if (switchDef.format === "pixelEffect") {
+            if (clear) {
+              throw new Error("Clear Notification is not supported for Pixel Effect.");
+            }
+            const effect = resolveEffect(payload.effect ?? node.effect, switchDef.effects);
+            const brightness = Math.round(Number(payload.brightness ?? node.brightness));
+            if (brightness < 0 || brightness > 10) {
+              throw new Error(
+                `Invalid brightness value: ${brightness}. Please enter a value between 0 and 10.`
+              );
+            }
+            const intensity = Math.min(Math.round(brightness * 10), 99);
+            value = effect + intensity * 256;
+            node.status(`Pixel Effect: ${effectName(effect, switchDef.effects)}, Intensity: ${brightness}`);
+          } else if (clear) {
+            value = 65536;
+            node.status("Cleared notification!");
+          } else {
+            const rgb = parseColor(payload.color ?? node.color, "Notification");
+            const { hue, keyword } = rgbToHue(rgb);
+            const duration = parseDuration(payload.duration ?? node.duration);
+            const effect = resolveEffect(payload.effect ?? node.effect, switchDef.effects);
+            const brightness = Math.round(Number(payload.brightness ?? node.brightness));
+            if (brightness < 0 || brightness > 10) {
+              throw new Error(
+                `Invalid brightness value: ${brightness}. Please enter a value between 0 and 10.`
+              );
+            }
+            const scaledBrightness =
+              switchDef.param === 21 ? Math.min(Math.round(brightness * 10), 99) : brightness;
+            value = hue + scaledBrightness * 256 + duration * 65536 + effect * 16777216;
+            node.status(
+              `Color: ${keyword}, Brightness: ${brightness}, Effect: ${effectName(effect, switchDef.effects)}, Duration: ${duration}`
             );
           }
-          const intensity = Math.min(Math.round(brightness * 10), 99);
-          value = effect + intensity * 256;
-          node.status(`Pixel Effect: ${effectName(effect, switchDef.effects)}, Intensity: ${brightness}`);
-        } else if (clear) {
-          value = 65536;
-          node.status("Cleared notification!");
+          const { target } = buildTarget(targets);
+          function sendNotification(parameter: number): void {
+            const data = multicast
+              ? { property: parameter, command_class: 112, value }
+              : { parameter, value };
+            node.send({
+              ...legacyEntityIdField(target),
+              payload: { action: `zwave_js.${service}`, ...(target ? { target } : {}), data },
+            });
+          }
+          if (switchDef.isCombo) {
+            sendNotification(24);
+            sendNotification(25);
+          } else {
+            sendNotification(switchDef.param);
+          }
         } else {
+          if (friendlyNames.length === 0) {
+            throw new Error(
+              "No Friendly Name(s) configured. Set Friendly Name(s) or msg.payload.friendly_name."
+            );
+          }
+          const segmentRaw = payload.segment ?? node.segment;
+          const segment = Math.round(Number(segmentRaw));
+          if (isNaN(segment) || segment < 0 || segment > 7) {
+            throw new Error(
+              `Invalid segment value: ${segmentRaw}. Please enter a value between 0 (global) and 7.`
+            );
+          }
+          const effects = segment === 0 ? switchDef.globalEffects : switchDef.segmentEffects;
+          const property = segment === 0 ? switchDef.globalProperty : switchDef.segmentProperty;
           const rgb = parseColor(payload.color ?? node.color, "Notification");
           const { hue, keyword } = rgbToHue(rgb);
           const duration = parseDuration(payload.duration ?? node.duration);
-          const effect = resolveEffect(payload.effect ?? node.effect, switchDef.effects);
           const brightness = Math.round(Number(payload.brightness ?? node.brightness));
-          if (brightness < 0 || brightness > 10) {
+          if (brightness < 0 || brightness > 100) {
             throw new Error(
-              `Invalid brightness value: ${brightness}. Please enter a value between 0 and 10.`
+              `Invalid brightness value: ${brightness}. Please enter a value between 0 and 100.`
             );
           }
-          const scaledBrightness =
-            switchDef.param === 21 ? Math.min(Math.round(brightness * 10), 99) : brightness;
-          value = hue + scaledBrightness * 256 + duration * 65536 + effect * 16777216;
+          const effect = clear
+            ? BLUE_CLEAR_EFFECT
+            : resolveStringEffect(payload.effect ?? node.effect, effects);
+          const notificationPayload: Record<string, unknown> = {
+            effect,
+            color: hue,
+            level: brightness,
+            duration,
+          };
+          if (segment > 0) {
+            notificationPayload.led = String(segment);
+          }
           node.status(
-            `Color: ${keyword}, Brightness: ${brightness}, Effect: ${effectName(effect, switchDef.effects)}, Duration: ${duration}`
+            clear
+              ? "Cleared notification!"
+              : `Color: ${keyword}, Brightness: ${brightness}, Effect: ${stringEffectName(effect, effects)}, Duration: ${duration}${segment > 0 ? `, Segment: ${segment}` : ""}`
           );
-        }
-        const { target } = buildTarget(targets);
-        function sendNotification(parameter: number): void {
-          const data = multicast ? { property: parameter, command_class: 112, value } : { parameter, value };
-          node.send({
-            ...legacyEntityIdField(target),
-            payload: { action: `zwave_js.${service}`, ...(target ? { target } : {}), data },
-          });
-        }
-        if (switchDef.isCombo) {
-          sendNotification(24);
-          sendNotification(25);
-        } else {
-          sendNotification(switchDef.param);
+          for (const friendlyName of friendlyNames) {
+            node.send(buildZigbeeMsg(friendlyName, property, notificationPayload));
+          }
         }
         if (done) {
           done();

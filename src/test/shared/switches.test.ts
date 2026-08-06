@@ -4,7 +4,11 @@ import {
   resolveNotificationSwitch,
   SCENE_BUTTON_MAPS,
   PIXEL_EFFECTS,
+  NotificationSwitchDef,
 } from "../../nodes/shared/switches";
+function resolveRedNotificationSwitch(input: string | number): NotificationSwitchDef {
+  return resolveNotificationSwitch(input) as NotificationSwitchDef;
+}
 describe("shared/switches", () => {
   describe("resolveLedSwitch", () => {
     it("resolves LZW30-SN by numeric or string alias", () => {
@@ -32,27 +36,27 @@ describe("shared/switches", () => {
   });
   describe("resolveNotificationSwitch", () => {
     it("resolves LZW45 to parameter 21 with its own effect set", () => {
-      const def = resolveNotificationSwitch("lzw45");
+      const def = resolveRedNotificationSwitch("lzw45");
       assert.strictEqual(def.param, 21);
       assert.strictEqual(def.effects["fast fade"], 5);
       assert.strictEqual(def.effects["slow fade"], 6);
     });
     it("marks the legacy 49 sentinel as a combo switch", () => {
-      const def = resolveNotificationSwitch(49);
+      const def = resolveRedNotificationSwitch(49);
       assert.strictEqual(def.isCombo, true);
     });
     it("throws on an unknown switch type", () => {
       assert.throws(() => resolveNotificationSwitch("nope"), /Incorrect Switch Type/);
     });
     it("resolves a numeric-looking string the same as the number (matches what a <select> actually stores)", () => {
-      assert.strictEqual(resolveNotificationSwitch("8").param, resolveNotificationSwitch(8).param);
-      assert.strictEqual(resolveNotificationSwitch("49").isCombo, true);
+      assert.strictEqual(resolveRedNotificationSwitch("8").param, resolveRedNotificationSwitch(8).param);
+      assert.strictEqual(resolveRedNotificationSwitch("49").isCombo, true);
     });
     it("resolves LZW45 Pixel Effect (parameter 31) with the pixelEffect format", () => {
-      const def = resolveNotificationSwitch("pixel effect");
+      const def = resolveRedNotificationSwitch("pixel effect");
       assert.strictEqual(def.param, 31);
       assert.strictEqual(def.format, "pixelEffect");
-      assert.strictEqual(resolveNotificationSwitch(31).format, "pixelEffect");
+      assert.strictEqual(resolveRedNotificationSwitch(31).format, "pixelEffect");
     });
   });
   describe("PIXEL_EFFECTS", () => {

@@ -1,12 +1,48 @@
 <script type="text/javascript">
+  function blueSceneLabels() {
+    const buttons = [
+      { key: "down", label: "Down Paddle" },
+      { key: "up", label: "Up Paddle" },
+      { key: "config", label: "Config Button" },
+      { key: "aux_down", label: "Aux Down Paddle" },
+      { key: "aux_up", label: "Aux Up Paddle" },
+      { key: "aux_config", label: "Aux Config Button" },
+    ];
+    const clicks = [
+      { key: "single", label: "Single Tap" },
+      { key: "release", label: "Release" },
+      { key: "held", label: "Held" },
+      { key: "double", label: "Double Tap" },
+      { key: "triple", label: "Triple Tap" },
+      { key: "quadruple", label: "Quadruple Tap" },
+      { key: "quintuple", label: "Quintuple Tap" },
+    ];
+    const labels = [];
+    buttons.forEach(function (button) {
+      clicks.forEach(function (click) {
+        labels.push(button.label + ": " + click.label);
+      });
+    });
+    return labels;
+  }
+  const SCENE_MANAGER_BLUE_SWITCHTYPES = ["VZM30-SN", "VZM31-SN", "VZM32-SN", "VZM35-SN"];
+  function sceneManagerIsBlueSwitchType(switchtype) {
+    return SCENE_MANAGER_BLUE_SWITCHTYPES.includes(switchtype);
+  }
+  const SCENE_MANAGER_WHITE_SWITCHTYPES = ["VTM30-SN", "VTM31-SN", "VTM35-SN", "VTM36"];
+  function sceneManagerIsWhiteSwitchType(switchtype) {
+    return SCENE_MANAGER_WHITE_SWITCHTYPES.includes(switchtype);
+  }
   RED.nodes.registerType("inovelli-scene-manager", {
     category: "inovelli",
     color: "#B68181",
     defaults: {
       name: { value: "" },
       nodeid: { value: "" },
+      friendlyNames: { value: "" },
       entityid: { value: "" },
       fields: { value: [] },
+      entityRoles: { value: [] },
       switchtype: { value: "LZW30" },
       outputs: { value: 1 },
       labels: { value: ["Please select a Switch Type"] },
@@ -15,7 +51,11 @@
     },
     inputs: 1,
     outputs: 1,
-    inputLabels: "Connect to an 'events: all' node",
+    inputLabels: function () {
+      return sceneManagerIsBlueSwitchType(this.switchtype)
+        ? "Connect to a core 'mqtt in' node"
+        : "Connect to an 'events: all' node";
+    },
     outputLabels: function (index) {
       return this.labels[index];
     },
@@ -25,12 +65,24 @@
       return this.name || "inovelli-scene-manager";
     },
     oneditprepare: function () {
+      function refreshNodeIdVisibility() {
+        const protocol = $("#node-input-switchtype option:selected").data("protocol");
+        const isZwave = protocol === "zwave";
+        const passthroughChecked = $("#node-input-passthrough").is(":checked");
+        $(".nodeid-input").toggle(isZwave && !passthroughChecked);
+      }
+      function refreshProtocolVisibility() {
+        const protocol = $("#node-input-switchtype option:selected").data("protocol");
+        $(".zigbee-only-row").toggle(protocol === "zigbee");
+        $(".matter-only-row").toggle(protocol === "matter");
+        $(".singleoutput-row").toggle(protocol !== "matter");
+        refreshNodeIdVisibility();
+      }
       $("#node-input-passthrough").change(function () {
-        if ($("#node-input-passthrough").is(":checked")) {
-          $(".nodeid-input").hide();
-        } else {
-          $(".nodeid-input").show();
-        }
+        refreshNodeIdVisibility();
+      });
+      $("#node-input-switchtype").on("change", function () {
+        refreshProtocolVisibility();
       });
       function legacyFieldsFrom(entityid) {
         return entityid ? [{ name: "entity_id", value: entityid }] : [];
@@ -60,6 +112,31 @@
       initialFields.forEach((field) => {
         $("#node-input-fields-container").editableList("addItem", field);
       });
+      $("#node-input-entityRoles-container")
+        .css("min-width", "450px")
+        .editableList({
+          addItem: (container, _index, data) => {
+            container.css({ display: "flex", alignItems: "center", gap: "6px" });
+            const roleInput = $("<input/>", { type: "text", placeholder: "role, e.g. up" })
+              .css({ flex: "1" })
+              .val(data.role || "")
+              .appendTo(container);
+            const entityIdInput = $("<input/>", { type: "text", placeholder: "entity_id, e.g. event.kitchen_switch_button_up" })
+              .css({ flex: "1" })
+              .val(data.entityId || "")
+              .appendTo(container);
+            container.data("getData", function () {
+              return { role: roleInput.val().trim(), entityId: entityIdInput.val().trim() };
+            });
+          },
+          removable: true,
+          sortable: true,
+        });
+      const initialEntityRoles = Array.isArray(this.entityRoles) ? this.entityRoles : [];
+      initialEntityRoles.forEach((entityRole) => {
+        $("#node-input-entityRoles-container").editableList("addItem", entityRole);
+      });
+      refreshProtocolVisibility();
     },
     oneditsave: function () {
       const switchtype = $("#node-input-switchtype").val();
@@ -144,13 +221,30 @@
             "Tap Config Button 1x",
           ];
           break;
+        case "VZM30-SN":
+        case "VZM31-SN":
+        case "VZM32-SN":
+        case "VZM35-SN":
+          label = blueSceneLabels();
+          break;
+        case "VTM30-SN":
+        case "VTM31-SN":
+        case "VTM35-SN":
+        case "VTM36":
+          this.outputs = 1;
+          this.labels = ["Matched button/event (see msg.button/msg.action)"];
+          break;
       }
-      if ($("#node-input-singleOutput").is(":checked")) {
-        this.outputs = 1;
-        this.labels = ["Matched scene (see msg.topic/msg.button/msg.scene)"];
-      } else {
-        this.outputs = label.length;
-        this.labels = label;
+      if (!sceneManagerIsWhiteSwitchType(switchtype)) {
+        if ($("#node-input-singleOutput").is(":checked")) {
+          this.outputs = 1;
+          this.labels = [
+            "Matched scene (see msg.topic/msg.button/msg.scene, or msg.topic/msg.action for Blue Series)",
+          ];
+        } else {
+          this.outputs = label.length;
+          this.labels = label;
+        }
       }
       const fields = [];
       $("#node-input-fields-container")
@@ -162,6 +256,16 @@
           }
         });
       this.fields = fields;
+      const entityRoles = [];
+      $("#node-input-entityRoles-container")
+        .editableList("items")
+        .each(function () {
+          const data = $(this).data("getData")();
+          if (data.role && data.entityId) {
+            entityRoles.push(data);
+          }
+        });
+      this.entityRoles = entityRoles;
     },
   });
 </script>
@@ -176,9 +280,17 @@
       <label for="node-input-name"><i class="icon-tag"></i>Name</label>
       <input type="text" id="node-input-name" placeholder="Name">
   </div>
-  <div class="form-row nodeid-input">
+  <div class="form-row nodeid-input zwave-only-row">
     <label for="node-input-nodeid"><i class="icon-tag"></i>Node ID(s)</label>
     <input type="text" id="node-input-nodeid">
+  </div>
+  <div class="form-row zigbee-only-row">
+    <label for="node-input-friendlyNames"><i class="icon-tag"></i>Friendly Name(s)</label>
+    <input type="text" id="node-input-friendlyNames" placeholder="e.g. Kitchen Dimmer, Hallway Switch">
+  </div>
+  <div class="form-row matter-only-row">
+    <label><i class="icon-tag"></i>Button Entity IDs</label>
+    <ol id="node-input-entityRoles-container"></ol>
   </div>
   <div class="form-row node-input-fields-container-row">
     <label><i class="icon-tag"></i>Message Fields</label>
@@ -187,38 +299,62 @@
   <div class="form-row">
     <label for="node-input-switchtype"><i class="icon-tag"></i>Switch Type</label>
     <select name="node-input-switchtype" id="node-input-switchtype">
-        <option value="LZW30">On/Off Switch (LZW30-SN)</option>
-        <option value="LZW31">Dimmer Switch (LZW31-SN)</option>
-        <option value="LZW36">Fan/Light Switch (LZW36)</option>
-        <option value="LZW45">Lightstrip & Controller Kit (LZW45)</option>
+      <optgroup label="Red Series (Z-Wave)">
+        <option value="LZW30" data-protocol="zwave">On/Off Switch (LZW30-SN)</option>
+        <option value="LZW31" data-protocol="zwave">Dimmer Switch (LZW31-SN)</option>
+        <option value="LZW36" data-protocol="zwave">Fan/Light Switch (LZW36)</option>
+        <option value="LZW45" data-protocol="zwave">Lightstrip & Controller Kit (LZW45)</option>
+      </optgroup>
+      <optgroup label="Blue Series (Zigbee)">
+        <option value="VZM30-SN" data-protocol="zigbee">On/Off Switch (VZM30-SN)</option>
+        <option value="VZM31-SN" data-protocol="zigbee">2-in-1 Switch/Dimmer (VZM31-SN)</option>
+        <option value="VZM32-SN" data-protocol="zigbee">mmWave Dimmer (VZM32-SN)</option>
+        <option value="VZM35-SN" data-protocol="zigbee">Fan Controller (VZM35-SN)</option>
+      </optgroup>
+      <optgroup label="White Series (Matter)">
+        <option value="VTM30-SN" data-protocol="matter">On/Off Switch (VTM30-SN)</option>
+        <option value="VTM31-SN" data-protocol="matter">2-in-1 Switch/Dimmer (VTM31-SN)</option>
+        <option value="VTM35-SN" data-protocol="matter">Fan Controller (VTM35-SN)</option>
+        <option value="VTM36" data-protocol="matter">Canopy Module (VTM36)</option>
+      </optgroup>
     </select>
   </div>
   <div class="form-row">
-    <label for="node-input-passthrough"><i class="icon-tag"></i>Node ID Passthrough</label>
+    <label for="node-input-passthrough"><i class="icon-tag"></i>Node ID/Friendly Name Passthrough</label>
     <input type="checkbox" id="node-input-passthrough">
   </div>
-  <div class="form-row">
+  <div class="form-row singleoutput-row">
     <label for="node-input-singleOutput"><i class="icon-tag"></i>Single Output</label>
     <input type="checkbox" id="node-input-singleOutput">
   </div>
 </script>
 
 <script type="text/x-red" data-help-name="inovelli-scene-manager">
-  <p>This node will decipher button clicks on an Inovelli Red Series switch allowing for easy scene control in Home Assistant. Just connect this input of this node to the output of a Home Assistant "events: all" node</p>
+  <p>This node will decipher button clicks on an Inovelli switch allowing for easy scene control in Home Assistant. Red Series (Z-Wave) switches: connect the input of this node to the output of a Home Assistant "events: all" node. Blue Series (Zigbee, via Zigbee2MQTT) switches: connect the input of this node to the output of a core <b>mqtt in</b> node subscribed to a Zigbee2MQTT action topic (e.g. <code>zigbee2mqtt/+/action</code> for every device, or a specific device's own <code>zigbee2mqtt/&lt;friendly name&gt;/action</code> topic). White Series (Matter) switches: connect the input of this node to the output of the same Home Assistant "events: all" node Red Series uses - it also fires for the generic <code>state_changed</code> bus event that each button's own <code>event.*</code> entity produces.</p>
+  <p><b>White Series (Matter) is different from the other two protocols.</b> Home Assistant's Matter integration exposes every physical button (Up paddle, Down paddle, Config button, and any Aux paddle) as its own separate <code>event.*</code> entity - there is no single incoming message that identifies "which button" the way a Z-Wave node ID or a Zigbee2MQTT friendly name does. Worse, that entity's ID is not derivable from any naming convention: it varies by model/firmware and is fully user-renamable. Rather than guess, this node requires you to look each one up yourself in Home Assistant (Settings &gt; Devices &amp; services &gt; Matter &gt; your device &gt; Events &gt; the button in question &gt; gear icon &gt; entity ID) and enter it under <b>Button Entity IDs</b> alongside a role name you choose. This is a deliberate design choice, not a limitation - it mirrors the same manual-lookup approach used by the well-established <code>jay-kub/inovelli-matter-switch-tap-sequences</code> Home Assistant blueprint, since there is no reliable way to auto-detect these entity IDs. Because the click-type vocabulary for Matter event entities isn't a fixed, universal list the way Red Series' button/scene combinations or Blue Series' 42 actions are (it depends on each device's own <code>MultiPressMax</code> attribute), White Series switch types always behave in "Single Output" style - one output, with <code>msg.button</code>/<code>msg.action</code> identifying the match - regardless of the Single Output checkbox, which is hidden for White Series switch types since it has nothing to toggle.</p>
   <dl class="message-properties">
-      <dt>Node ID<span class="property-type">number</span></dt>
-      <dd>Node ID (or a comma-delimited list of node IDs) of the Inovelli switch you are trying to configure</dd>
+      <dt>Node ID(s)<span class="property-type">number</span></dt>
+      <dd>Red Series only. Node ID (or a comma-delimited list of node IDs) of the Inovelli switch you are trying to configure.</dd>
+
+      <dt>Friendly Name(s)<span class="property-type">string</span></dt>
+      <dd>Blue Series only. The Zigbee2MQTT friendly name (or a comma-delimited list of friendly names) of the device(s) you are trying to configure - matched against the second path segment of the incoming <code>msg.topic</code> (e.g. <code>zigbee2mqtt/Kitchen Dimmer/action</code> matches "Kitchen Dimmer").</dd>
+
+      <dt>Button Entity IDs<span class="property-type">list</span></dt>
+      <dd>White Series only. Click "add" for each physical button you want this node to recognize - a free-text role name you choose (e.g. <code>up</code>, <code>down</code>, <code>config</code>, <code>aux_down</code> - button layout isn't identical across all four White Series models, so this isn't a fixed list) paired with that button's exact <code>event.*</code> entity ID from Home Assistant. See above for where to find it.</dd>
 
       <dt>Message Fields<span class="property-type">list</span></dt>
       <dd>Click "add" to set an arbitrary field directly on each matching message - give it a field name (e.g. <code>entity_id</code>, or anything else your downstream flow expects) and a value. Adding more than one row with the same field name combines their values into an array (e.g. two <code>entity_id</code> rows sets <code>msg.entity_id</code> to a 2-element array) instead of the last one silently overwriting the others; a name used only once stays a plain value. Useful for controlling dedicated smart bulbs from a scene trigger, or passing along any other context your flow needs. Unlike LED/Notification/Config Manager, this node doesn't call an HA action itself, so it isn't tied to Entity/Device/Area/Floor/Label targeting - it just sets whatever plain <code>msg</code> fields you configure.</dd>
 
       <dt>Switch Type<span class="property-type">number|string</span></dt>
-      <dd>Determines which Inovelli switch is being used. (LZW30-SN, LZW31-SN, LZW36, LZW45)</dd>
+      <dd>Determines which Inovelli switch is being used, and which input shape this node expects: Home Assistant Z-Wave JS events (Red Series: LZW30-SN, LZW31-SN, LZW36, LZW45), Zigbee2MQTT action messages (Blue Series: VZM30-SN, VZM31-SN, VZM32-SN, VZM35-SN), or Home Assistant Matter button/event entity <code>state_changed</code> events (White Series: VTM30-SN, VTM31-SN, VTM35-SN, VTM36). The <code>aux_*</code> Blue Series actions (e.g. "Aux Down Paddle: Single Tap") are for a switch wired to an auxiliary/3-way paddle, not the switch's own paddle.</dd>
 
-      <dt>Node ID Passthrough<span class="property-type">boolean</span></dt>
-      <dd>Disables specifying a node id, node will instead pass through all value/scene notifications (ideal when your Z-Wave network uses ALL of the same switch)</dd>
+      <dt>Node ID/Friendly Name Passthrough<span class="property-type">boolean</span></dt>
+      <dd>Disables the Node ID(s)/Friendly Name(s)/Button Entity IDs filter entirely - this node will instead process every matching button/scene (Red Series), action (Blue Series), or button event (White Series) notification regardless of which device it came from (ideal when your network uses ALL of the same switch). For White Series, an unconfigured entity ID that passes through this way falls back to using its raw entity ID as the role in <code>msg.button</code>/<code>msg.action</code>, since there's no configured role name to use instead.</dd>
 
       <dt>Single Output<span class="property-type">boolean</span></dt>
-      <dd>Instead of one wire per button/scene combination, use a single output and set <code>msg.topic</code> to the matched combination's index (the same index that would have picked a wire), plus <code>msg.button</code> and <code>msg.scene</code> with the raw matched values. Route with a <code>switch</code> node on <code>msg.topic</code> instead of wiring every output. Useful for the LZW36's 18 combinations if you don't want an 18-output node.</dd>
+      <dd>Red/Blue Series only - hidden for White Series, which always behaves this way (see above). Instead of one wire per button/scene combination, use a single output and set <code>msg.topic</code> to the matched combination's index (the same index that would have picked a wire). For Red Series, also sets <code>msg.button</code> and <code>msg.scene</code> with the raw matched values; for Blue Series, also sets <code>msg.action</code> with the matched action string (e.g. <code>"down_single"</code>). Route with a <code>switch</code> node on <code>msg.topic</code> instead of wiring every output. Useful for the LZW36's 18 combinations (or a Blue Series switch's 42) if you don't want that many outputs on the node.</dd>
+
+      <dt>msg.button / msg.action<span class="property-type">string</span></dt>
+      <dd>White Series only. Every matching message sets <code>msg.topic</code>, <code>msg.button</code> (the configured role, or the raw entity ID as a passthrough fallback), and <code>msg.action</code> all to the same combined string: <code>&lt;role&gt;_&lt;event_type&gt;</code> (e.g. <code>up_multi_press_2</code>, <code>config_long_press</code>), where <code>event_type</code> is read from the firing entity's own <code>new_state.attributes.event_type</code> (confirmed values include <code>initial_press</code>, <code>long_press</code>, <code>short_release</code>, <code>long_release</code>, <code>switch_latched</code>, and <code>multi_press_1</code> through <code>multi_press_N</code>, where N depends on the device). Route with a <code>switch</code> node on <code>msg.action</code>.</dd>
   </dl>
 </script>

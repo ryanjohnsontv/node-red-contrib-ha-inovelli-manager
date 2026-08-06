@@ -501,4 +501,297 @@ describe("inovelli-config-manager", () => {
       n1.receive({ payload: { entity_id: "switch.override" } });
     });
   });
+  it("supports overriding every target type (entity_id, device_id, area_id, floor_id, label_id) independently via payload", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-config-manager",
+        targets: [
+          { type: "entity_id", value: "switch.configured" },
+          { type: "area_id", value: "hallway" },
+          { type: "floor_id", value: "first_floor" },
+        ],
+        switchtype: "LZW30-SN",
+        properties: [{ property: "autoOffTimer", value: 60 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(configManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.deepStrictEqual(msg.payload.target, {
+            entity_id: ["switch.configured"],
+            area_id: ["office"],
+            floor_id: ["first_floor"],
+            device_id: ["abc123", "def456"],
+            label_id: ["outdoor"],
+          });
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({
+        payload: { area_id: "office", device_id: ["abc123", "def456"], label_id: "outdoor" },
+      });
+    });
+  });
+  it("sends a Blue Series (VZM30-SN) numeric property as a {topic, payload} MQTT message", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-config-manager",
+        friendlyNames: "Kitchen Switch",
+        switchtype: "VZM30-SN",
+        properties: [{ property: "activePowerReports", value: 25 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(configManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.strictEqual(msg.topic, "zigbee2mqtt/Kitchen Switch/set/activePowerReports");
+          assert.strictEqual(msg.payload, 25);
+          assert.strictEqual(msg.entity_id, undefined);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("sends a Blue Series zigbeeEnum property (Invert Switch) as its raw string value, not a numeric code", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-config-manager",
+        friendlyNames: "Kitchen Switch",
+        switchtype: "VZM30-SN",
+        properties: [{ property: "invertSwitch", value: "Yes" }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(configManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.strictEqual(msg.topic, "zigbee2mqtt/Kitchen Switch/set/invertSwitch");
+          assert.strictEqual(msg.payload, "Yes");
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("fans out a Blue Series property to every configured friendly name as separate messages", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-config-manager",
+        friendlyNames: "Kitchen Switch, Hallway Switch",
+        switchtype: "VZM30-SN",
+        properties: [{ property: "activePowerReports", value: 10 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(configManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      const received: any[] = [];
+      n2.on("input", (msg: any) => {
+        received.push(msg);
+        if (received.length === 2) {
+          try {
+            assert.deepStrictEqual(received.map((m) => m.topic).sort(), [
+              "zigbee2mqtt/Hallway Switch/set/activePowerReports",
+              "zigbee2mqtt/Kitchen Switch/set/activePowerReports",
+            ]);
+            done();
+          } catch (err) {
+            done(err);
+          }
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("lets a payload.friendly_name override replace the configured friendly names for one run", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-config-manager",
+        friendlyNames: "Kitchen Switch",
+        switchtype: "VZM30-SN",
+        properties: [{ property: "activePowerReports", value: 10 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(configManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.strictEqual(msg.topic, "zigbee2mqtt/Office Switch/set/activePowerReports");
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: { friendly_name: "Office Switch" } });
+    });
+  });
+  it("rejects an invalid Blue Series zigbeeEnum value", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-config-manager",
+        friendlyNames: "Kitchen Switch",
+        switchtype: "VZM30-SN",
+        properties: [{ property: "invertSwitch", value: "Maybe" }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(configManagerNode, flow, () => {
+      const n1 = helper.getNode("n1");
+      n1.on("call:error", (call: any) => {
+        try {
+          assert.match(call.args[0], /Valid options: No, Yes/);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("sets a newly-exposed Blue Series LED segment property (defaultLed3ColorWhenOn)", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-config-manager",
+        friendlyNames: "Kitchen Switch",
+        switchtype: "VZM31-SN",
+        properties: [{ property: "defaultLed3ColorWhenOn", value: 170 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(configManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.strictEqual(msg.topic, "zigbee2mqtt/Kitchen Switch/set/defaultLed3ColorWhenOn");
+          assert.strictEqual(msg.payload, 170);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("sets a newly-exposed Blue Series external fan binding property (fanControlMode)", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-config-manager",
+        friendlyNames: "Kitchen Switch",
+        switchtype: "VZM31-SN",
+        properties: [{ property: "fanControlMode", value: "Cycle" }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(configManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.strictEqual(msg.topic, "zigbee2mqtt/Kitchen Switch/set/fanControlMode");
+          assert.strictEqual(msg.payload, "Cycle");
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("sets a newly-exposed VZM36 remote-fan-side property (dimmingSpeedUpRemoteFan) distinctly from its light-side sibling", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-config-manager",
+        friendlyNames: "Canopy Module",
+        switchtype: "VZM36",
+        properties: [{ property: "dimmingSpeedUpRemoteFan", value: 50 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(configManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.strictEqual(msg.topic, "zigbee2mqtt/Canopy Module/set/dimmingSpeedUpRemote_2");
+          assert.strictEqual(msg.payload, 50);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("errors clearly on a Blue Series switch type with no Friendly Name(s) configured", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-config-manager",
+        friendlyNames: "",
+        switchtype: "VZM30-SN",
+        properties: [{ property: "activePowerReports", value: 10 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(configManagerNode, flow, () => {
+      const n1 = helper.getNode("n1");
+      n1.on("call:error", (call: any) => {
+        try {
+          assert.match(call.args[0], /No Friendly Name\(s\) configured/);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
 });

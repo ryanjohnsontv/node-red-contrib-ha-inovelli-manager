@@ -369,4 +369,480 @@ describe("inovelli-led-manager", () => {
       n1.receive({ payload: { entity_id: "light.override" } });
     });
   });
+  it("supports overriding every target type (entity_id, device_id, area_id, floor_id, label_id) independently via payload", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-led-manager",
+        targets: [
+          { type: "entity_id", value: "light.configured" },
+          { type: "area_id", value: "kitchen" },
+          { type: "floor_id", value: "first_floor" },
+        ],
+        switchtype: "5",
+        properties: [{ property: "brightness", value: 3 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(ledManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.deepStrictEqual(msg.payload.target, {
+            entity_id: ["light.configured"],
+            area_id: ["office"],
+            floor_id: ["first_floor"],
+            device_id: ["abc123", "def456"],
+            label_id: ["outdoor"],
+          });
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({
+        payload: { area_id: "office", device_id: ["abc123", "def456"], label_id: "outdoor" },
+      });
+    });
+  });
+  it("sends a Blue Series (VZM31-SN) color property as a {topic, payload} MQTT message", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-led-manager",
+        friendlyNames: "Kitchen Dimmer",
+        switchtype: "VZM31-SN",
+        properties: [{ property: "color", value: 0 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(ledManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.strictEqual(msg.topic, "zigbee2mqtt/Kitchen Dimmer/set/ledColorWhenOn");
+          assert.strictEqual(msg.payload, 0);
+          assert.strictEqual(msg.entity_id, undefined);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("accepts a Blue Series brightness value in its native 0-100 range", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-led-manager",
+        friendlyNames: "Kitchen Dimmer",
+        switchtype: "VZM31-SN",
+        properties: [{ property: "brightness", value: 75 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(ledManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.strictEqual(msg.topic, "zigbee2mqtt/Kitchen Dimmer/set/ledIntensityWhenOn");
+          assert.strictEqual(msg.payload, 75);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("rejects a Blue Series brightness value outside its native 0-100 range", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-led-manager",
+        friendlyNames: "Kitchen Dimmer",
+        switchtype: "VZM31-SN",
+        properties: [{ property: "brightness", value: 150 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(ledManagerNode, flow, () => {
+      const n1 = helper.getNode("n1");
+      n1.on("call:error", (call: any) => {
+        try {
+          assert.match(call.args[0], /Please enter a value between 0 and 100/);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("fans out a Blue Series property to every configured friendly name as separate messages", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-led-manager",
+        friendlyNames: "Kitchen Dimmer, Hallway Dimmer",
+        switchtype: "VZM31-SN",
+        properties: [{ property: "brightness", value: 50 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(ledManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      const received: any[] = [];
+      n2.on("input", (msg: any) => {
+        received.push(msg);
+        if (received.length === 2) {
+          try {
+            assert.deepStrictEqual(received.map((m) => m.topic).sort(), [
+              "zigbee2mqtt/Hallway Dimmer/set/ledIntensityWhenOn",
+              "zigbee2mqtt/Kitchen Dimmer/set/ledIntensityWhenOn",
+            ]);
+            done();
+          } catch (err) {
+            done(err);
+          }
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("lets a payload.friendly_name override replace the configured friendly names for one run", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-led-manager",
+        friendlyNames: "Kitchen Dimmer",
+        switchtype: "VZM31-SN",
+        properties: [{ property: "brightness", value: 50 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(ledManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.strictEqual(msg.topic, "zigbee2mqtt/Office Dimmer/set/ledIntensityWhenOn");
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: { friendly_name: "Office Dimmer" } });
+    });
+  });
+  it("sends a segment-specific property topic when Segment is set to an individual LED (1-7)", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-led-manager",
+        friendlyNames: "Kitchen Dimmer",
+        switchtype: "VZM31-SN",
+        segment: 3,
+        properties: [{ property: "color", value: 0 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(ledManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.strictEqual(msg.topic, "zigbee2mqtt/Kitchen Dimmer/set/defaultLed3ColorWhenOn");
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("sends the correct property topic for every segment 1-7, including brightnessOff", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-led-manager",
+        friendlyNames: "Kitchen Dimmer",
+        switchtype: "VZM31-SN",
+        properties: [{ property: "brightnessOff", value: 1 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(ledManagerNode, flow, () => {
+      const n1 = helper.getNode("n1");
+      const n2 = helper.getNode("n2");
+      let segment = 1;
+      const checkNext = (): void => {
+        if (segment > 7) {
+          done();
+          return;
+        }
+        const expectedSegment = segment;
+        n2.once("input", (msg: any) => {
+          try {
+            assert.strictEqual(
+              msg.topic,
+              `zigbee2mqtt/Kitchen Dimmer/set/defaultLed${expectedSegment}IntensityWhenOff`
+            );
+            segment += 1;
+            checkNext();
+          } catch (err) {
+            done(err);
+          }
+        });
+        n1.receive({ payload: { segment: expectedSegment } });
+      };
+      checkNext();
+    });
+  });
+  it("uses the global (segment 0) topic by default, regression check against segment behavior", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-led-manager",
+        friendlyNames: "Kitchen Dimmer",
+        switchtype: "VZM31-SN",
+        properties: [{ property: "color", value: 0 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(ledManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.strictEqual(msg.topic, "zigbee2mqtt/Kitchen Dimmer/set/ledColorWhenOn");
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("also uses the global topic when segment is explicitly set to 0", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-led-manager",
+        friendlyNames: "Kitchen Dimmer",
+        switchtype: "VZM31-SN",
+        segment: 0,
+        properties: [{ property: "brightness", value: 50 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(ledManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.strictEqual(msg.topic, "zigbee2mqtt/Kitchen Dimmer/set/ledIntensityWhenOn");
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("rejects an out-of-range segment value with a clear error", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-led-manager",
+        friendlyNames: "Kitchen Dimmer",
+        switchtype: "VZM31-SN",
+        properties: [{ property: "color", value: 0 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(ledManagerNode, flow, () => {
+      const n1 = helper.getNode("n1");
+      n1.on("call:error", (call: any) => {
+        try {
+          assert.match(call.args[0], /Invalid segment value/);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: { segment: 8 } });
+    });
+  });
+  it("ignores a Segment override for VZM36, which has no individually-addressable segments", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-led-manager",
+        friendlyNames: "Fan Canopy",
+        switchtype: "VZM36",
+        properties: [{ property: "color", value: 0 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(ledManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.strictEqual(msg.topic, "zigbee2mqtt/Fan Canopy/set/ledColorWhenOn_1");
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: { segment: 3 } });
+    });
+  });
+  it("sends a VZM36 (Fan Canopy Module) color property to its ledColorWhenOn_1 topic", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-led-manager",
+        friendlyNames: "Fan Canopy",
+        switchtype: "VZM36",
+        properties: [{ property: "color", value: 0 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(ledManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.strictEqual(msg.topic, "zigbee2mqtt/Fan Canopy/set/ledColorWhenOn_1");
+          assert.strictEqual(msg.payload, 0);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("sends a VZM36 (Fan Canopy Module) brightness property to its ledIntensityWhenOn_1 topic", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-led-manager",
+        friendlyNames: "Fan Canopy",
+        switchtype: "VZM36",
+        properties: [{ property: "brightness", value: 60 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(ledManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      n2.on("input", (msg: any) => {
+        try {
+          assert.strictEqual(msg.topic, "zigbee2mqtt/Fan Canopy/set/ledIntensityWhenOn_1");
+          assert.strictEqual(msg.payload, 60);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
+  it("silently skips colorOff/brightnessOff for VZM36, which has no 'when off' properties", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-led-manager",
+        friendlyNames: "Fan Canopy",
+        switchtype: "VZM36",
+        properties: [{ property: "color", value: 0 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(ledManagerNode, flow, () => {
+      const n2 = helper.getNode("n2");
+      const n1 = helper.getNode("n1");
+      const received: any[] = [];
+      n2.on("input", (msg: any) => {
+        received.push(msg);
+      });
+      n1.receive({ payload: { colorOff: 10, brightnessOff: 5 } });
+      setTimeout(() => {
+        try {
+          // Only the configured "color" property should have been sent - colorOff/brightnessOff
+          // aren't in VZM36's params map at all, so they're silently skipped, matching how
+          // Red Series LZW30-SN already skips "fanColor" today.
+          assert.strictEqual(received.length, 1);
+          assert.strictEqual(received[0].topic, "zigbee2mqtt/Fan Canopy/set/ledColorWhenOn_1");
+          done();
+        } catch (err) {
+          done(err);
+        }
+      }, 20);
+    });
+  });
+  it("errors clearly on a Blue Series switch type with no Friendly Name(s) configured", (done) => {
+    const flow = [
+      {
+        id: "n1",
+        type: "inovelli-led-manager",
+        friendlyNames: "",
+        switchtype: "VZM30-SN",
+        properties: [{ property: "brightness", value: 50 }],
+        multicast: false,
+        wires: [["n2"]],
+      },
+      { id: "n2", type: "helper" },
+    ];
+    helper.load(ledManagerNode, flow, () => {
+      const n1 = helper.getNode("n1");
+      n1.on("call:error", (call: any) => {
+        try {
+          assert.match(call.args[0], /No Friendly Name\(s\) configured/);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+      n1.receive({ payload: {} });
+    });
+  });
 });

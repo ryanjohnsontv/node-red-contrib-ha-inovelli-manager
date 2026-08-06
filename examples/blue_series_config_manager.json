@@ -1,0 +1,142 @@
+[
+    {
+        "id": "32a4f0f61a753200",
+        "type": "tab",
+        "label": "Blue Series - Config Manager",
+        "disabled": false,
+        "info": "Example: setting Blue Series (Zigbee2MQTT) config parameters on a VZM31-SN.\n\nUpdate the mqtt-broker config node with your own Zigbee2MQTT-connected broker's address, and update Friendly Name(s) on the Config Manager node to match a real device in your Zigbee2MQTT installation."
+    },
+    {
+        "id": "d296d53a6e4d61a7",
+        "type": "inject",
+        "z": "32a4f0f61a753200",
+        "name": "Apply Configured Properties",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 280,
+        "y": 180,
+        "wires": [
+            [
+                "bbd9046d9cff7849"
+            ]
+        ]
+    },
+    {
+        "id": "63d41ec7ad4bd6ee",
+        "type": "inject",
+        "z": "32a4f0f61a753200",
+        "name": "Override Friendly Name (ad-hoc)",
+        "props": [
+            {
+                "p": "payload.friendly_name",
+                "v": "Office Dimmer",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 280,
+        "y": 260,
+        "wires": [
+            [
+                "bbd9046d9cff7849"
+            ]
+        ]
+    },
+    {
+        "id": "bbd9046d9cff7849",
+        "type": "inovelli-config-manager",
+        "z": "32a4f0f61a753200",
+        "name": "Kitchen Dimmer Config",
+        "entityid": "",
+        "targets": [],
+        "friendlyNames": "Kitchen Dimmer",
+        "switchtype": "VZM31-SN",
+        "properties": [
+            {
+                "property": "switchType",
+                "value": "Single Pole"
+            },
+            {
+                "property": "smartBulbMode",
+                "value": "Disabled"
+            }
+        ],
+        "multicast": false,
+        "x": 540,
+        "y": 220,
+        "wires": [
+            [
+                "8b2d00b522ab5e80"
+            ]
+        ]
+    },
+    {
+        "id": "8b2d00b522ab5e80",
+        "type": "mqtt out",
+        "z": "32a4f0f61a753200",
+        "name": "Zigbee2MQTT Publish",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "beaf3d0d419b1508",
+        "x": 780,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "beaf3d0d419b1508",
+        "type": "mqtt-broker",
+        "name": "Zigbee2MQTT Broker (update with your own broker's address)",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "verifyservercert": false,
+        "compatmode": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

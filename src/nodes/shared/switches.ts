@@ -1,28 +1,43 @@
+import { Protocol } from "./protocol";
+import {
+  BLUE_LED_SWITCH_TYPES,
+  BlueNotificationSwitchDef,
+  resolveBlueNotificationSwitch,
+  BLUE_SCENE_BUTTON_MAPS,
+  BlueSceneSwitchType,
+} from "./blue-switches";
+import { resolveWhiteSceneSwitch } from "./white-switches";
 export type LedPropertyKey =
-  "color" | "brightness" | "brightnessOff" | "fanColor" | "fanBrightness" | "fanBrightnessOff";
+  "color" | "colorOff" | "brightness" | "brightnessOff" | "fanColor" | "fanBrightness" | "fanBrightnessOff";
 export interface LedSwitchDef {
   aliases: (string | number)[];
-  params: Partial<Record<LedPropertyKey, number>>;
+  protocol: Protocol;
+  params: Partial<Record<LedPropertyKey, number | string>>;
 }
 export const LED_SWITCH_TYPES: LedSwitchDef[] = [
   {
     aliases: ["switch", "lzw30", "lzw30-sn", 5],
+    protocol: "zwave",
     params: { color: 5, brightness: 6, brightnessOff: 7 },
   },
   {
     aliases: ["dimmer", "lzw31", "lzw31-sn", 13],
+    protocol: "zwave",
     params: { color: 13, brightness: 14, brightnessOff: 15 },
   },
   {
     aliases: ["combo_light", "lzw36_light", 18],
+    protocol: "zwave",
     params: { color: 18, brightness: 19, brightnessOff: 22 },
   },
   {
     aliases: ["combo_fan", "lzw36_fan", "fan", 20],
+    protocol: "zwave",
     params: { fanColor: 20, fanBrightness: 21, fanBrightnessOff: 23 },
   },
   {
     aliases: ["lzw36", "fan and light", "light and fan", 38],
+    protocol: "zwave",
     params: {
       color: 18,
       brightness: 19,
@@ -32,6 +47,7 @@ export const LED_SWITCH_TYPES: LedSwitchDef[] = [
       fanBrightnessOff: 23,
     },
   },
+  ...BLUE_LED_SWITCH_TYPES,
 ];
 function normalizeAliasKey(input: string | number): string | number {
   if (typeof input === "string") {
@@ -121,37 +137,54 @@ export const PIXEL_EFFECTS: Record<string, number> = {
 };
 export interface NotificationSwitchDef {
   aliases: (string | number)[];
+  protocol: "zwave";
   param: number;
   isCombo?: boolean;
   effects: Record<string, number>;
   format?: "bitpacked" | "pixelEffect";
 }
 export const NOTIFICATION_SWITCH_TYPES: NotificationSwitchDef[] = [
-  { aliases: ["switch", "lzw30", "lzw30-sn", "on/off", 8], param: 8, effects: SWITCH_EFFECTS },
-  { aliases: ["dimmer", "lzw31", "lzw31-sn", 16], param: 16, effects: DIMMER_EFFECTS },
-  { aliases: ["combo_light", "lzw36_light", 24], param: 24, effects: DIMMER_EFFECTS },
-  { aliases: ["combo_fan", "lzw36_fan", "fan", 25], param: 25, effects: DIMMER_EFFECTS },
+  {
+    aliases: ["switch", "lzw30", "lzw30-sn", "on/off", 8],
+    protocol: "zwave",
+    param: 8,
+    effects: SWITCH_EFFECTS,
+  },
+  { aliases: ["dimmer", "lzw31", "lzw31-sn", 16], protocol: "zwave", param: 16, effects: DIMMER_EFFECTS },
+  { aliases: ["combo_light", "lzw36_light", 24], protocol: "zwave", param: 24, effects: DIMMER_EFFECTS },
+  { aliases: ["combo_fan", "lzw36_fan", "fan", 25], protocol: "zwave", param: 25, effects: DIMMER_EFFECTS },
   {
     aliases: ["lzw36", "fan and light", "light and fan", 49],
+    protocol: "zwave",
     param: 49,
     isCombo: true,
     effects: DIMMER_EFFECTS,
   },
   {
     aliases: ["lzw45", "light strip", "lightstrip", 21],
+    protocol: "zwave",
     param: 21,
     effects: LZW45_EFFECTS,
   },
   {
     aliases: ["lzw45_pixel", "pixel effect", "pixeleffect", 31],
+    protocol: "zwave",
     param: 31,
     effects: PIXEL_EFFECTS,
     format: "pixelEffect",
   },
 ];
-export function resolveNotificationSwitch(input: string | number): NotificationSwitchDef {
+export function resolveNotificationSwitch(
+  input: string | number
+): NotificationSwitchDef | BlueNotificationSwitchDef {
   const key = normalizeAliasKey(input);
   const found = NOTIFICATION_SWITCH_TYPES.find((def) => def.aliases.includes(key));
+  if (!found && typeof key === "string") {
+    const blueFound = resolveBlueNotificationSwitch(key);
+    if (blueFound) {
+      return blueFound;
+    }
+  }
   if (!found) {
     throw new Error(`Incorrect Switch Type: ${input}`);
   }
@@ -235,3 +268,19 @@ export const SCENE_BUTTON_MAPS: Record<SceneSwitchType, Record<number, SceneButt
     14: { button: 3, scene: 1 },
   },
 };
+export type SceneSwitchDef =
+  | { protocol: "zwave"; buttonMap: Record<number, SceneButton> }
+  | { protocol: "zigbee"; actions: string[] }
+  | { protocol: "matter" };
+export function resolveSceneSwitch(switchtype: string): SceneSwitchDef {
+  if (switchtype in SCENE_BUTTON_MAPS) {
+    return { protocol: "zwave", buttonMap: SCENE_BUTTON_MAPS[switchtype as SceneSwitchType] };
+  }
+  if (switchtype in BLUE_SCENE_BUTTON_MAPS) {
+    return { protocol: "zigbee", actions: BLUE_SCENE_BUTTON_MAPS[switchtype as BlueSceneSwitchType] };
+  }
+  if (resolveWhiteSceneSwitch(switchtype)) {
+    return { protocol: "matter" };
+  }
+  throw new Error(`Incorrect Switch Type: ${switchtype}`);
+}
